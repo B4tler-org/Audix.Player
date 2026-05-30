@@ -1167,14 +1167,31 @@ async function playTrack(idx) {
     toast('Track file unavailable — try re-adding it to the library','error');
     return;
   }
-  audio.src    = track.url;
-  audio.load();                // force the element to reload the new source
+
+  // Stop current playback cleanly before switching source
+  audio.pause();
+  audio.src    = '';
   audio.volume = state.volume;
+
+  // Small delay lets mobile browsers release the old source
+  await new Promise(r => setTimeout(r, 50));
+
+  audio.src    = track.url;
+  audio.volume = state.volume;
+
   setupAudioContext();
   try {
     if(state.audioCtx && state.audioCtx.state==='suspended')
       await state.audioCtx.resume();
   } catch(e) { console.warn('[Audix] resume error:', e); }
+
+  // Wait for enough data before playing
+  await new Promise(r => {
+    if(audio.readyState >= 2) { r(); return; }
+    audio.addEventListener('canplay', r, { once: true });
+    audio.addEventListener('error',   r, { once: true });
+  });
+
   audio.play().then(()=>{
     state.isPlaying=true;
     updatePlayerUI();
@@ -1184,6 +1201,14 @@ async function playTrack(idx) {
     state.isPlaying=false;
     updatePlayerUI();
   });
+
+  // Update UI immediately so title/artist show while audio loads
+  updatePlayerUI();
+
+  // Trigger identification pipeline
+  const btn = document.getElementById('lyricsFetchBtn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Identify Track'; }
+  setTimeout(() => triggerIdentification(), 200);
 }
 function togglePlay() {
   if(state.currentIdx<0 && state.tracks.length>0){playTrack(0);return;}
@@ -2140,74 +2165,25 @@ function seekToLyric(time) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Hook into existing playTrack & file upload
+// Hook into file upload to stash File references for the pipeline
 // ──────────────────────────────────────────────────────────────────────
-// Patch handleFileUpload to stash File reference
-const _origHandleFileUpload = handleFileUpload;
-function handleFileUpload(e) {
-  const files = Array.from(e.target.files);
-  files.forEach(f => {
-    // We don't have the id yet, stash by name temporarily
-    _pendingFiles = _pendingFiles || [];
-    _pendingFiles.push(f);
-  });
-  _origHandleFileUpload.call(this, e);
-}
 let _pendingFiles = [];
 
-// Patch playTrack to auto-trigger identification
-const _origPlayTrack = playTrack;
-async function playTrack(idx) {
-  await _origPlayTrack(idx);
-  const track = state.tracks[idx];
-  if (!track) return;
-
-  // Enable the button
-  const btn = document.getElementById('lyricsFetchBtn');
-  if (btn) { btn.disabled = false; btn.textContent = 'Identify Track'; }
-
-  // Resolve file from fileMap (populated when file was added)
-  // Try matching by pending files array
-  if (_pendingFiles && _pendingFiles.length) {
-    // Match by name similarity
-    const name = (track.name || '') + ' ' + (track.artist || '');
-    for (let i = 0; i < _pendingFiles.length; i++) {
-      const f = _pendingFiles[i];
-      if (!_fileMap.has(String(track.id))) {
-        _fileMap.set(String(track.id), f);
-        // remove from pending after match (best-effort)
-        break;
+document.addEventListener('DOMContentLoaded', () => {
+  const fi = document.getElementById('fileInput');
+  if (!fi) return;
+  fi.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files);
+    setTimeout(() => {
+      const nFiles = files.length;
+      const total  = state.tracks.length;
+      for (let i = 0; i < nFiles; i++) {
+        const track = state.tracks[total - nFiles + i];
+        if (track) _fileMap.set(String(track.id), files[i]);
       }
-    }
-  }
-
-  // Auto-trigger pipeline
-  triggerIdentification();
-}
-
-// Override file upload to map files to track ids immediately
-(function patchUpload() {
-  const orig = window.handleFileUpload;
-  const fileInputEl = () => document.getElementById('fileInput');
-  // re-wire after DOM ready
-  document.addEventListener('DOMContentLoaded', () => {
-    const fi = fileInputEl();
-    if (!fi) return;
-    fi.addEventListener('change', async (e) => {
-      const files = Array.from(e.target.files);
-      // Wait a tick so state.tracks is updated by the original handler
-      setTimeout(() => {
-        // Match by order: last N tracks = last N files
-        const nFiles = files.length;
-        const total  = state.tracks.length;
-        for (let i = 0; i < nFiles; i++) {
-          const track = state.tracks[total - nFiles + i];
-          if (track) _fileMap.set(String(track.id), files[i]);
-        }
-      }, 300);
-    }, true);
-  });
-})();
+    }, 400);
+  }, true);
+});
 
 // ========== TOAST ==========
 function toast(msg,type=''){
