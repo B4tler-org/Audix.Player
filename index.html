@@ -2265,6 +2265,21 @@ if('launchQueue' in window){
   });
 }
 
+// ========== PWA — SERVICE WORKER ==========
+if('serviceWorker' in navigator){
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('sw.js');
+      console.log('[Audix] SW registered');
+      if(navigator.storage && navigator.storage.persist){
+        await navigator.storage.persist();
+      }
+    } catch(err){
+      console.log('[Audix] SW not available in this environment');
+    }
+  });
+}
+
 // ========== INIT ==========
 window.addEventListener('DOMContentLoaded',()=>{
   startLoader();
