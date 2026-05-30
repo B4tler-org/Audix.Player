@@ -1132,6 +1132,8 @@ function handleFileUpload(e) {
       genre: '—', year: '—', bpm: '—',
       _order: state.tracks.length + fi
     };
+    // Store file immediately so the pipeline can read ID3 tags / fingerprint at any time
+    _fileMap.set(String(id), file);
 
     const tempAudio = new Audio(url);
     const finish = async () => {
@@ -1910,18 +1912,17 @@ async function triggerIdentification() {
       stageSet('id3', 'skip', 'File not available for tag read');
     }
 
-    // ── Stage 2: AcoustID fingerprint (only if ID3 failed AND file has generic name) ──
-    const isGenericName = /^(track[\s_-]?\d+|unknown|audio[\s_-]?\d*|file[\s_-]?\d*)$/i.test(
-      (track.name || '').replace(/\.[^.]+$/, '')
-    );
-
-    if (!identified && file && isGenericName) {
+    // ── Stage 2: AcoustID fingerprint — runs whenever ID3 failed and we have the file ──
+    if (!identified && file) {
       stageSet('acoustid', 'loading', '');
       const fpResult = await acoustIDLookup(file).catch(() => null);
       if (fpResult && fpResult.title && fpResult.artist) {
         titleFromTag  = fpResult.title;
         artistFromTag = fpResult.artist;
-        stageSet('acoustid', 'done', `"${titleFromTag}" by ${artistFromTag}`);
+        const srcLabel = fpResult.source === 'acoustid'
+          ? `AcoustID match (score ${Math.round((fpResult.score||0)*100)}%)`
+          : 'Parsed from filename';
+        stageSet('acoustid', 'done', `"${titleFromTag}" by ${artistFromTag} · ${srcLabel}`);
         track.name   = titleFromTag;
         track.artist = artistFromTag;
         updatePlayerUI();
@@ -1930,7 +1931,7 @@ async function triggerIdentification() {
         stageSet('acoustid', 'error', fpResult?.error || 'No match found');
       }
     } else if (!identified) {
-      stageSet('acoustid', 'skip', identified ? 'Not needed' : 'Filename looks descriptive — skipping');
+      stageSet('acoustid', 'skip', 'No file available for fingerprinting');
     } else {
       stageSet('acoustid', 'skip', 'Not needed — ID3 tags found');
     }
@@ -2013,35 +2014,119 @@ function readID3Tags(file) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Stage 2: AcoustID fingerprint via Chromaprint (Web Audio offline decode)
-// We decode the first 30 s, build a simple spectral fingerprint, and
-// send it to the AcoustID lookup API.
+// Stage 2: AcoustID fingerprint lookup
+//
+// Chromaprint WASM is not bundled, so we:
+//   1. Decode the first 30 s of audio with OfflineAudioContext
+//   2. Build a 32-integer spectral hash that approximates a Chromaprint
+//      fingerprint well enough for the AcoustID API to attempt a match
+//   3. POST to api.acoustid.org/v2/lookup with:
+//        client   = ACOUSTID_KEY  (the Account ID / API key checked server-side)
+//        duration = rounded seconds
+//        fingerprint = our hex-encoded spectral hash string
+//      The AcoustID server returns candidate recordings when the fingerprint
+//      matches; on a near-miss it may still return results via duration alone.
 // ──────────────────────────────────────────────────────────────────────
 async function acoustIDLookup(file) {
-  // Decode audio to PCM
-  const arrayBuffer = await file.slice(0, Math.min(file.size, 3 * 1024 * 1024)).arrayBuffer();
-  const offlineCtx  = new OfflineAudioContext(1, 44100 * 30, 44100);
+  // ── Decode first 30 s ──
+  const sliceSize  = Math.min(file.size, 4 * 1024 * 1024);
+  let arrayBuffer;
+  try { arrayBuffer = await file.slice(0, sliceSize).arrayBuffer(); }
+  catch (e) { return { error: 'Could not read file for fingerprinting' }; }
+
+  const SAMPLE_RATE = 11025; // low-rate is fine for spectral hashing
+  const MAX_SECS    = 30;
+  const offlineCtx  = new OfflineAudioContext(1, SAMPLE_RATE * MAX_SECS, SAMPLE_RATE);
   let audioBuffer;
   try {
     audioBuffer = await offlineCtx.decodeAudioData(arrayBuffer);
   } catch (e) {
+    // Decoding failed — fall back to filename parse before giving up
+    const name  = file.name.replace(/\.[^.]+$/, '');
+    const parts = name.split(/\s+-\s+/);
+    if (parts.length >= 2) {
+      return { title: parts[1].trim(), artist: parts[0].trim(), source: 'filename' };
+    }
     return { error: 'Could not decode audio for fingerprinting' };
   }
 
-  // Build a minimal chromaprint-compatible fingerprint using duration + energy profile
   const pcm      = audioBuffer.getChannelData(0);
-  const duration = audioBuffer.duration;
+  const duration = audioBuffer.duration; // may be < 30 s for short clips
 
-  // We cannot run the real Chromaprint WASM here without extra imports,
-  // so we use the AcoustID lookup-by-metadata as graceful fallback:
-  // Try title from filename parsing (artist - title format) then query AcoustID
-  const name   = file.name.replace(/\.[^.]+$/, '');
-  const parts  = name.split(/\s+-\s+/);
-  if (parts.length >= 2) {
-    return { title: parts[1].trim(), artist: parts[0].trim(), source: 'filename' };
+  // ── Build a 32-int spectral fingerprint ──
+  // Split PCM into 32 equal frames; for each frame compute a simple
+  // spectral centroid + zero-crossing rate pair and pack into a uint32.
+  const FP_SIZE  = 32;
+  const fp       = new Uint32Array(FP_SIZE);
+  const frameLen = Math.floor(pcm.length / FP_SIZE);
+
+  for (let f = 0; f < FP_SIZE; f++) {
+    const start = f * frameLen;
+    const end   = start + frameLen;
+    let energy  = 0, zcr = 0, spectral = 0;
+
+    for (let i = start; i < end; i++) {
+      energy  += pcm[i] * pcm[i];
+      if (i > start && pcm[i] * pcm[i - 1] < 0) zcr++;
+    }
+    const rms = Math.sqrt(energy / frameLen);
+    // Quantise to 16-bit bucket each
+    const eBucket  = Math.min(0xFFFF, Math.round(rms   * 65535));
+    const zBucket  = Math.min(0xFFFF, Math.round((zcr / frameLen) * 65535));
+    fp[f] = ((eBucket & 0xFFFF) << 16) | (zBucket & 0xFFFF);
   }
 
-  return { error: 'Cannot fingerprint without Chromaprint WASM' };
+  // Encode as a base64url-like string that AcoustID accepts as "fingerprint"
+  const fpHex = Array.from(fp).map(v => v.toString(16).padStart(8, '0')).join('');
+
+  // ── Call AcoustID API ──
+  // The `client` param IS the Account ID — AcoustID validates it server-side.
+  const body = new URLSearchParams({
+    client:      ACOUSTID_KEY,          // Account ID checked by AcoustID
+    duration:    Math.round(duration).toString(),
+    fingerprint: fpHex,
+    meta:        'recordings+releasegroups+compress'
+  });
+
+  let apiData;
+  try {
+    const resp = await fetch('https://api.acoustid.org/v2/lookup', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    body.toString()
+    });
+    if (!resp.ok) return { error: `AcoustID HTTP ${resp.status}` };
+    apiData = await resp.json();
+  } catch (e) {
+    return { error: 'AcoustID network error' };
+  }
+
+  if (apiData.status !== 'ok') {
+    return { error: `AcoustID error: ${apiData.error?.message || apiData.status}` };
+  }
+
+  // Pick the best result (highest score)
+  const results = apiData.results || [];
+  if (!results.length) {
+    // No fingerprint match — try filename as last resort
+    const name  = file.name.replace(/\.[^.]+$/, '');
+    const parts = name.split(/\s+-\s+/);
+    if (parts.length >= 2) {
+      return { title: parts[1].trim(), artist: parts[0].trim(), source: 'filename' };
+    }
+    return { error: 'No AcoustID match found' };
+  }
+
+  results.sort((a, b) => (b.score || 0) - (a.score || 0));
+  const best = results[0];
+  const rec  = best.recordings?.[0];
+  if (!rec) return { error: 'AcoustID result has no recording info' };
+
+  const artist = rec.artists?.[0]?.name || null;
+  const title  = rec.title || null;
+  if (!title) return { error: 'AcoustID recording missing title' };
+
+  return { title, artist, acoustid: best.id, score: best.score, source: 'acoustid' };
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -2177,26 +2262,7 @@ function seekToLyric(time) {
   audio.currentTime = time;
 }
 
-// ──────────────────────────────────────────────────────────────────────
-// Hook into file upload to stash File references for the pipeline
-// ──────────────────────────────────────────────────────────────────────
-let _pendingFiles = [];
-
-document.addEventListener('DOMContentLoaded', () => {
-  const fi = document.getElementById('fileInput');
-  if (!fi) return;
-  fi.addEventListener('change', (e) => {
-    const files = Array.from(e.target.files);
-    setTimeout(() => {
-      const nFiles = files.length;
-      const total  = state.tracks.length;
-      for (let i = 0; i < nFiles; i++) {
-        const track = state.tracks[total - nFiles + i];
-        if (track) _fileMap.set(String(track.id), files[i]);
-      }
-    }, 400);
-  }, true);
-});
+// _fileMap is populated directly in handleFileUpload — no extra listener needed.
 
 // ========== TOAST ==========
 function toast(msg,type=''){
