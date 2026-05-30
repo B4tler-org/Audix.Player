@@ -991,31 +991,29 @@ function handleFileUpload(e) {
 
   files.forEach((file, fi) => {
     const url  = URL.createObjectURL(file);
-    const name = file.name.replace(/\.[^.]+$/, '');
-    const parts = name.split(' - ');
+    const rawName = file.name.replace(/\.[^.]+$/, '');
+
+    // Instantly apply local regex cleaner so names look clean from the start
+    const cleaned = localCleanTitle(rawName);
     const id = Date.now() + Math.random();
     const track = {
       id,
-      name:   parts.length > 1 ? parts[1].trim() : name,
-      artist: parts.length > 1 ? parts[0].trim() : 'Unknown Artist',
+      name:   cleaned.title || rawName,
+      artist: cleaned.artist || 'Unknown Artist',
       album:  'Unknown Album',
-      url,           // temporary blob URL for this session
+      url,
       duration: 0,
       emoji:  randomMusicEmoji(),
       genre: '—', year: '—', bpm: '—',
       _order: state.tracks.length + fi
     };
-    // Store file immediately so the pipeline can read ID3 tags / fingerprint at any time
     _fileMap.set(String(id), file);
 
     const tempAudio = new Audio(url);
     const finish = async () => {
       try {
-        // Save the actual audio file bytes into IndexedDB
         await idbSaveAudio(id, file);
-        // Save metadata (without url — regenerated from blob on load)
-        const meta = { ...track };
-        delete meta.url;
+        const meta = { ...track }; delete meta.url;
         await idbSaveMeta(meta);
       } catch(err) {
         console.warn('[Audix] IndexedDB save failed:', err);
@@ -1026,6 +1024,28 @@ function handleFileUpload(e) {
       done++;
       if (done === files.length) {
         toast(`✓ ${done} track${done>1?'s':''} saved — available offline!`, 'success');
+        // Background AI clean for all newly added tracks (non-blocking)
+        // Stagger requests to avoid hammering the API
+        files.forEach((_, i) => {
+          const t = state.tracks[state.tracks.length - files.length + i];
+          if (!t) return;
+          const rawFile = _fileMap.get(String(t.id));
+          const raw = rawFile ? rawFile.name.replace(/\.[^.]+$/, '') : t.name;
+          setTimeout(async () => {
+            try {
+              const aiResult = await aiCleanTitle(raw);
+              if (aiResult && aiResult.title && aiResult.title !== t.name) {
+                t.name   = aiResult.title;
+                if (aiResult.artist) t.artist = aiResult.artist;
+                const m = {...t}; delete m.url;
+                await idbSaveMeta(m).catch(() => {});
+                renderTrackList();
+                if (state.currentIdx >= 0 && state.tracks[state.currentIdx].id === t.id)
+                  updatePlayerUI();
+              }
+            } catch(e) { /* silent fail — local clean already applied */ }
+          }, i * 600); // 600ms stagger between tracks
+        });
       }
     };
     tempAudio.onloadedmetadata = () => { track.duration = tempAudio.duration; finish(); };
@@ -1752,10 +1772,28 @@ function resetPipeline() {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Stage 0: AI Title Cleaner — uses Claude API to extract clean title+artist
-// from messy filenames like "Djo_-_End_Of_Beginning__Official_Audio_(0)"
+// Local regex cleaner — instant fallback if AI API is unavailable
+// ──────────────────────────────────────────────────────────────────────
+function localCleanTitle(rawName) {
+  let s = rawName.replace(/_/g, ' ');
+  // Remove junk tags in brackets/parens and known platform names
+  s = s.replace(/[\[(][^\])]*(lyrics?|audio|video|hd|hq|4k|vevo|official|music\s*video|lyric\s*video|visualizer|remaster(ed)?|\d+k(bps)?|\d{3,4}p)[^\])]*[\])]/gi, '');
+  s = s.replace(/\(?\b(official\s*(audio|video|music\s*video|lyric\s*video|visualizer|hd|4k|hq))\b\)?/gi, '');
+  s = s.replace(/\b(youtube|vevo|spotify|soundcloud)\b/gi, '');
+  s = s.replace(/^\d{1,3}[\s.\-_]+/, ''); // leading track numbers
+  s = s.replace(/\s{2,}/g, ' ').trim().replace(/[\s\-]+$/, '').trim();
+  // Split on artist - title separator
+  const sepMatch = s.match(/^(.+?)\s+[-\u2013\u2014]\s+(.+)$/);
+  if (sepMatch) return { artist: sepMatch[1].trim(), title: sepMatch[2].trim(), _source: 'local' };
+  return { artist: '', title: s.trim(), _source: 'local' };
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Stage 0: AI Title Cleaner — uses Claude API, falls back to local regex
 // ──────────────────────────────────────────────────────────────────────
 async function aiCleanTitle(rawName) {
+  // Always compute local result as guaranteed baseline
+  const localResult = localCleanTitle(rawName);
   try {
     const prompt = `You are a music metadata extractor. Given a raw song filename or title string, extract the clean song title and artist name.
 
@@ -1783,16 +1821,16 @@ Respond with ONLY a JSON object, no explanation:
         messages: [{ role: 'user', content: prompt }]
       })
     });
-    if (!resp.ok) return null;
+    if (!resp.ok) return localResult;
     const data = await resp.json();
     const text = data.content?.[0]?.text?.trim() || '';
     // Strip any markdown fences just in case
     const clean = text.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
     if (parsed.title) return { title: parsed.title.trim(), artist: (parsed.artist || '').trim() };
-    return null;
+    return localResult;
   } catch(e) {
-    return null;
+    return localResult;
   }
 }
 
@@ -1824,22 +1862,17 @@ async function triggerIdentification() {
     }
 
     const rawName = file ? file.name.replace(/\.[^.]+$/, '') : track.name;
-    const aiResult = await aiCleanTitle(rawName).catch(() => null);
+    const aiResult = await aiCleanTitle(rawName).catch(() => localCleanTitle(rawName));
     let cleanTitle, cleanArtist;
 
-    if (aiResult && aiResult.title) {
-      cleanTitle  = aiResult.title;
-      cleanArtist = aiResult.artist || track.artist || 'Unknown Artist';
-      stageSet('ai', 'done', aiResult.artist ? `"${cleanTitle}" by ${cleanArtist}` : `"${cleanTitle}"`);
-      track.name   = cleanTitle;
-      track.artist = cleanArtist;
-      updatePlayerUI();
-    } else {
-      // Fallback: use existing track metadata
-      cleanTitle  = track.name;
-      cleanArtist = track.artist || 'Unknown Artist';
-      stageSet('ai', 'skip', 'Could not clean — using existing name');
-    }
+    // aiCleanTitle always returns a result (AI or local fallback)
+    cleanTitle  = aiResult.title  || track.name;
+    cleanArtist = aiResult.artist || track.artist || '';
+    const source = aiResult._source === 'local' ? ' (local fallback)' : '';
+    stageSet('ai', 'done', cleanArtist ? `"${cleanTitle}" by ${cleanArtist}${source}` : `"${cleanTitle}"${source}`);
+    track.name = cleanTitle;
+    if (cleanArtist) track.artist = cleanArtist;
+    updatePlayerUI();
 
     // Save updated meta to IndexedDB
     const m = {...track}; delete m.url;
@@ -1862,7 +1895,8 @@ async function triggerIdentification() {
     }
     if (!audioDur || !isFinite(audioDur)) audioDur = track.duration || 0;
 
-    const lyricsResult = await fetchLRCLIBLyrics(cleanTitle, cleanArtist, track.album, audioDur).catch(() => null);
+    const lyricsArtist = cleanArtist || 'Unknown Artist';
+    const lyricsResult = await fetchLRCLIBLyrics(cleanTitle, lyricsArtist, track.album, audioDur).catch(() => null);
     if (lyricsResult && (lyricsResult.synced || lyricsResult.plain)) {
       if (lyricsResult.synced) {
         _lyricsData   = parseLRC(lyricsResult.synced);
@@ -1877,8 +1911,8 @@ async function triggerIdentification() {
       renderLyrics();
       pipelineStatus('Complete ✓');
     } else {
-      stageSet('lyrics', 'error', `No lyrics found — searched: "${cleanTitle}" by ${cleanArtist}`);
-      setLyricsBody(`<div class="lyrics-idle">No lyrics found for<br><b>${cleanTitle}</b> by <b>${cleanArtist}</b><br><span style="font-size:0.75rem;color:var(--text3)">Try correcting the track name in Library</span></div>`);
+      stageSet('lyrics', 'error', `No lyrics found — searched: "${cleanTitle}" by ${lyricsArtist}`);
+      setLyricsBody(`<div class="lyrics-idle">No lyrics found for<br><b>${cleanTitle}</b> by <b>${lyricsArtist}</b><br><span style="font-size:0.75rem;color:var(--text3)">Try correcting the track name in Library</span></div>`);
       pipelineStatus('Done — no lyrics');
     }
   } catch (err) {
