@@ -826,12 +826,50 @@ async function loadTracksFromDB() {
     }
     state.tracks.sort((a, b) => (a._order||0) - (b._order||0));
   } catch(e) {
-    // IndexedDB unavailable (e.g. content:// URL or private mode) — start fresh
     console.warn('[Audix] IndexedDB unavailable:', e.message);
     try {
       const saved = JSON.parse(localStorage.getItem('audix_tracks')||'[]');
       state.tracks = saved.map(t => ({ ...t, url: '' }));
     } catch(e2) {}
+  }
+
+  // Background pass: clean any track whose name still looks like a raw filename
+  // (has underscores, download counters, or no artist set)
+  // Uses local cleaner instantly, then AI refines — all non-blocking
+  const needsClean = state.tracks.filter(t =>
+    t.name.includes('_') ||
+    /\(\d{1,3}\)$/.test(t.name) ||
+    !t.artist || t.artist === 'Unknown Artist'
+  );
+  if (needsClean.length > 0) {
+    // Run local cleaner synchronously on all tracks first (instant)
+    needsClean.forEach(t => {
+      const local = localCleanTitle(t.name);
+      let changed = false;
+      if (local.title && local.title !== t.name) { t.name = local.title; changed = true; }
+      if (local.artist && (!t.artist || t.artist === 'Unknown Artist')) { t.artist = local.artist; changed = true; }
+      if (changed) idbSaveMeta({...t, url: undefined}).catch(() => {});
+    });
+    renderTrackList();
+
+    // Then queue AI refinement in background (staggered to avoid rate limits)
+    needsClean.forEach((t, i) => {
+      setTimeout(async () => {
+        try {
+          const aiResult = await aiCleanTitle(t.name);
+          let changed = false;
+          if (aiResult.title && aiResult.title !== t.name) { t.name = aiResult.title; changed = true; }
+          if (aiResult.artist && aiResult.artist !== t.artist) { t.artist = aiResult.artist; changed = true; }
+          if (changed) {
+            const m = {...t}; delete m.url;
+            await idbSaveMeta(m).catch(() => {});
+            renderTrackList();
+            if (state.currentIdx >= 0 && state.tracks[state.currentIdx].id === t.id)
+              updatePlayerUI();
+          }
+        } catch(e) { /* silent */ }
+      }, i * 500);
+    });
   }
 }
 
@@ -1776,11 +1814,15 @@ function resetPipeline() {
 // ──────────────────────────────────────────────────────────────────────
 function localCleanTitle(rawName) {
   let s = rawName.replace(/_/g, ' ');
-  // Remove junk tags in brackets/parens and known platform names
-  s = s.replace(/[\[(][^\])]*(lyrics?|audio|video|hd|hq|4k|vevo|official|music\s*video|lyric\s*video|visualizer|remaster(ed)?|\d+k(bps)?|\d{3,4}p)[^\])]*[\])]/gi, '');
+  // Remove download counters like (0), (1), (2), (10) at end of name
+  s = s.replace(/\s*\(\d{1,3}\)\s*$/, '');
+  // Remove junk tags in brackets/parens
+  s = s.replace(/[\[(][^\])]*(lyrics?|audio|video|hd|hq|4k|vevo|official|music\s*video|lyric\s*video|visualizer|remaster(ed)?|\d+k(bps)?|\d{3,4}p|slowed|reverb|sped\s*up|nightcore|clean|explicit|radio\s*edit|extended|instrumental)[^\])]*[\])]/gi, '');
   s = s.replace(/\(?\b(official\s*(audio|video|music\s*video|lyric\s*video|visualizer|hd|4k|hq))\b\)?/gi, '');
   s = s.replace(/\b(youtube|vevo|spotify|soundcloud)\b/gi, '');
   s = s.replace(/^\d{1,3}[\s.\-_]+/, ''); // leading track numbers
+  // Clean up leftover empty parens/brackets
+  s = s.replace(/[\[(]\s*[\])]/g, '');
   s = s.replace(/\s{2,}/g, ' ').trim().replace(/[\s\-]+$/, '').trim();
   // Split on artist - title separator
   const sepMatch = s.match(/^(.+?)\s+[-\u2013\u2014]\s+(.+)$/);
@@ -1802,7 +1844,7 @@ Rules:
 - Remove quality/format tags: (Official Audio), (Official Video), (Lyrics), (HD), (HQ), (4K), (Audio), (Official), (Music Video), (Official Music Video), (Official Lyric Video), (Lyric Video), (Official Visualizer), (Visualizer), (VEVO), [Official], [Lyrics], [HD] etc.
 - Remove platform tags: YouTube, Vevo, Spotify, etc.
 - Remove track numbers like "01 ", "02 - "
-- Remove file extensions
+- Remove download counter suffixes like (0), (1), (2) at the end
 - Remove trailing/leading whitespace and punctuation
 - Common separators between artist and title: " - ", " – ", " — ", "_-_"
 - If no artist separator found, put everything in title and leave artist empty
@@ -1896,7 +1938,18 @@ async function triggerIdentification() {
     if (!audioDur || !isFinite(audioDur)) audioDur = track.duration || 0;
 
     const lyricsArtist = cleanArtist || 'Unknown Artist';
-    const lyricsResult = await fetchLRCLIBLyrics(cleanTitle, lyricsArtist, track.album, audioDur).catch(() => null);
+
+    // Strip "ft. / feat. / x / featuring" from title and artist for cleaner LRCLIB search
+    // e.g. "Kathaa Ft Dharmendra Sewan" → title "Kathaa", featArtist kept for fallback
+    const stripFeat = s => s.replace(/\s*(ft\.?|feat\.?|featuring|×|x)\s+.+$/i, '').trim();
+    const searchTitle  = stripFeat(cleanTitle);
+    const searchArtist = stripFeat(lyricsArtist);
+    // Also try with just the primary artist (before "x" or "&")
+    const primaryArtist = searchArtist.replace(/\s*(x|&|\+|and)\s+.+$/i, '').trim();
+
+    const lyricsResult = await fetchLRCLIBLyrics(searchTitle, primaryArtist, track.album, audioDur).catch(() => null)
+      // If primary didn't work, retry with full artist
+      || await fetchLRCLIBLyrics(searchTitle, searchArtist, track.album, audioDur).catch(() => null);
     if (lyricsResult && (lyricsResult.synced || lyricsResult.plain)) {
       if (lyricsResult.synced) {
         _lyricsData   = parseLRC(lyricsResult.synced);
@@ -1911,7 +1964,7 @@ async function triggerIdentification() {
       renderLyrics();
       pipelineStatus('Complete ✓');
     } else {
-      stageSet('lyrics', 'error', `No lyrics found — searched: "${cleanTitle}" by ${lyricsArtist}`);
+      stageSet('lyrics', 'error', `No lyrics found — searched: "${searchTitle}" by ${primaryArtist}`);
       setLyricsBody(`<div class="lyrics-idle">No lyrics found for<br><b>${cleanTitle}</b> by <b>${lyricsArtist}</b><br><span style="font-size:0.75rem;color:var(--text3)">Try correcting the track name in Library</span></div>`);
       pipelineStatus('Done — no lyrics');
     }
@@ -2099,9 +2152,7 @@ async function musicBrainzEnrich(title, artist) {
 async function fetchLRCLIBLyrics(title, artist, album, duration) {
   if (!title) return null;
 
-  // Don't send placeholder album strings — they break exact matching
   const cleanAlbum = (!album || /^unknown/i.test(album.trim())) ? '' : album.trim();
-  // Only send duration if it looks valid (> 10 s)
   const dur = (duration && duration > 10) ? Math.round(duration) : 0;
 
   const extractResult = d => ({
@@ -2109,6 +2160,18 @@ async function fetchLRCLIBLyrics(title, artist, album, duration) {
     plain:  d.plainLyrics  || null
   });
   const hasLyrics = r => r && (r.synced || r.plain);
+
+  const trySearch = async (q) => {
+    try {
+      const r = await fetch(`https://lrclib.net/api/search?${new URLSearchParams({ q })}`);
+      if (!r.ok) return null;
+      const results = await r.json();
+      if (!Array.isArray(results) || !results.length) return null;
+      const withLyrics = results.filter(x => x.syncedLyrics || x.plainLyrics);
+      const best = withLyrics[0] || results[0];
+      return best ? extractResult(best) : null;
+    } catch(e) { return null; }
+  };
 
   // ── Attempt 1: exact match with duration ──
   if (dur > 0) {
@@ -2119,28 +2182,32 @@ async function fetchLRCLIBLyrics(title, artist, album, duration) {
     } catch(e) {}
   }
 
-  // ── Attempt 2: exact match without duration (LRCLIB is strict on duration) ──
+  // ── Attempt 2: exact match without duration ──
   try {
     const p = new URLSearchParams({ track_name: title, artist_name: artist || '', album_name: cleanAlbum });
     const r = await fetch(`https://lrclib.net/api/get?${p}`);
     if (r.ok) { const d = await r.json(); const res = extractResult(d); if (hasLyrics(res)) return res; }
   } catch(e) {}
 
-  // ── Attempt 3: fuzzy search — much more forgiving ──
-  try {
-    const q = artist ? `${title} ${artist}` : title;
-    const p = new URLSearchParams({ q });
-    const r = await fetch(`https://lrclib.net/api/search?${p}`);
-    if (r.ok) {
-      const results = await r.json();
-      if (Array.isArray(results) && results.length) {
-        // Pick the best match: prefer synced lyrics, then closest title match
-        const withLyrics = results.filter(x => x.syncedLyrics || x.plainLyrics);
-        const best = withLyrics[0] || results[0];
-        if (best) return extractResult(best);
-      }
-    }
-  } catch(e) {}
+  // ── Attempt 3: fuzzy search — "title artist" ──
+  const r3 = await trySearch(artist ? `${title} ${artist}` : title);
+  if (hasLyrics(r3)) return r3;
+
+  // ── Attempt 4: fuzzy search — "artist title" (reversed) ──
+  if (artist) {
+    const r4 = await trySearch(`${artist} ${title}`);
+    if (hasLyrics(r4)) return r4;
+  }
+
+  // ── Attempt 5: title only (helps when artist name confuses search) ──
+  const r5 = await trySearch(title);
+  if (hasLyrics(r5)) return r5;
+
+  // ── Attempt 6: artist only (last resort for short/unique titles) ──
+  if (artist) {
+    const r6 = await trySearch(artist);
+    if (hasLyrics(r6)) return r6;
+  }
 
   return null;
 }
