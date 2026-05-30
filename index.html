@@ -943,25 +943,27 @@ async function startLoader() {
   tipEl.textContent = tip;
   animateLoaderParticles();
 
-  // Load persisted audio from IndexedDB in background
-  await loadTracksFromDB();
+  // Wait for both the min loader time AND the DB to finish
+  await Promise.all([
+    new Promise(r => setTimeout(r, 2800)),
+    loadTracksFromDB()
+  ]);
 
+  document.getElementById('loader').style.opacity = '0';
+  document.getElementById('loader').style.transition = 'opacity 0.5s';
   setTimeout(() => {
-    document.getElementById('loader').style.opacity='0';
-    document.getElementById('loader').style.transition='opacity 0.5s';
-    setTimeout(()=>{
-      document.getElementById('loader').style.display='none';
-      document.getElementById('app').style.display='flex';
-      document.getElementById('app').classList.add('visible');
-      if(!state.user && !localStorage.getItem('audix_skip')) document.getElementById('loginModal').style.display='flex';
-      buildEqBars();
-      initViz();
-      renderTrackList();
-      renderPlaylists();
-      updateUserUI();
-      updateStorageInfo();
-    },500);
-  }, 3200);
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('app').classList.add('visible');
+    if(!state.user && !localStorage.getItem('audix_skip'))
+      document.getElementById('loginModal').style.display = 'flex';
+    buildEqBars();
+    initViz();
+    renderTrackList();
+    renderPlaylists();
+    updateUserUI();
+    updateStorageInfo();
+  }, 500);
 }
 
 function animateLoaderParticles() {
@@ -1168,47 +1170,58 @@ async function playTrack(idx) {
     return;
   }
 
-  // Stop current playback cleanly before switching source
-  audio.pause();
-  audio.src    = '';
-  audio.volume = state.volume;
+  // If blob URL is missing, try to rebuild from IndexedDB
+  if (!track.url) {
+    const blob = await idbGetAudio(track.id).catch(() => null);
+    if (blob) {
+      track.url = URL.createObjectURL(blob);
+    } else {
+      toast('Track file missing — please re-add it to the library', 'error');
+      return;
+    }
+  }
 
-  // Small delay lets mobile browsers release the old source
-  await new Promise(r => setTimeout(r, 50));
+  // Stop current playback cleanly
+  audio.pause();
+  audio.src = '';
+
+  await new Promise(r => setTimeout(r, 80));
 
   audio.src    = track.url;
   audio.volume = state.volume;
 
   setupAudioContext();
   try {
-    if(state.audioCtx && state.audioCtx.state==='suspended')
+    if(state.audioCtx && state.audioCtx.state === 'suspended')
       await state.audioCtx.resume();
   } catch(e) { console.warn('[Audix] resume error:', e); }
 
-  // Wait for enough data before playing
+  // Wait for canplay
   await new Promise(r => {
     if(audio.readyState >= 2) { r(); return; }
-    audio.addEventListener('canplay', r, { once: true });
-    audio.addEventListener('error',   r, { once: true });
+    const onReady = () => { audio.removeEventListener('error', onErr); r(); };
+    const onErr   = () => { audio.removeEventListener('canplay', onReady); r(); };
+    audio.addEventListener('canplay', onReady, { once: true });
+    audio.addEventListener('error',   onErr,   { once: true });
   });
 
-  audio.play().then(()=>{
-    state.isPlaying=true;
+  audio.play().then(() => {
+    state.isPlaying = true;
     updatePlayerUI();
-  }).catch(err=>{
-    console.log('Playback error:',err);
-    toast('Playback failed: '+err.message,'error');
-    state.isPlaying=false;
+  }).catch(err => {
+    console.log('Playback error:', err);
+    toast('Playback failed: ' + err.message, 'error');
+    state.isPlaying = false;
     updatePlayerUI();
   });
 
-  // Update UI immediately so title/artist show while audio loads
+  // Show title/artist immediately
   updatePlayerUI();
 
-  // Trigger identification pipeline
+  // Trigger identification pipeline after short delay
   const btn = document.getElementById('lyricsFetchBtn');
   if (btn) { btn.disabled = false; btn.textContent = 'Identify Track'; }
-  setTimeout(() => triggerIdentification(), 200);
+  setTimeout(() => triggerIdentification(), 300);
 }
 function togglePlay() {
   if(state.currentIdx<0 && state.tracks.length>0){playTrack(0);return;}
