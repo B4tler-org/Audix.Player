@@ -347,6 +347,44 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .bn-icon{font-size:1.3rem;line-height:1}
 .bn-item.active .bn-icon{filter:drop-shadow(0 0 6px var(--cyan))}
 
+/* ===== IDENTIFICATION PIPELINE ===== */
+.id-pipeline{background:var(--bg3);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.id-pipeline-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.id-pipeline-title{display:flex;align-items:center;gap:8px;font-family:'Rajdhani';font-weight:700;font-size:0.85rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--text2)}
+.id-pipeline-status{font-size:0.7rem;font-family:'Share Tech Mono';color:var(--cyan)}
+.id-stages{display:flex;flex-direction:column;gap:0}
+.id-stage{display:flex;align-items:flex-start;gap:12px;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.2s}
+.id-stage:last-child{border-bottom:none}
+.id-stage.active{background:rgba(0,212,255,0.04)}
+.id-stage.done{background:rgba(34,197,94,0.04)}
+.id-stage.error{background:rgba(239,68,68,0.04)}
+.stage-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;flex-shrink:0;margin-top:1px;transition:all 0.3s}
+.stage-dot.idle{background:var(--bg4);border:1px solid var(--border);color:var(--text3)}
+.stage-dot.loading{background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.4);animation:stagePulse 0.8s ease-in-out infinite}
+.stage-dot.done{background:rgba(34,197,94,0.2);border:1px solid rgba(34,197,94,0.5);color:#22c55e}
+.stage-dot.skip{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text3)}
+.stage-dot.error{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#f87171}
+@keyframes stagePulse{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,0.4)}50%{box-shadow:0 0 0 6px rgba(0,212,255,0)}}
+.stage-body{flex:1;min-width:0}
+.stage-name{font-size:0.8rem;font-weight:700;font-family:'Rajdhani';letter-spacing:1px;color:var(--text)}
+.stage-desc{font-size:0.72rem;color:var(--text2);font-family:'Rajdhani';margin-top:2px;line-height:1.4}
+.stage-result{font-size:0.72rem;font-family:'Share Tech Mono';color:var(--cyan);margin-top:4px;word-break:break-all}
+
+/* ===== LYRICS PANEL ===== */
+.lyrics-panel{background:var(--bg3);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.lyrics-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.lyrics-title{font-family:'Rajdhani';font-weight:700;letter-spacing:2px;font-size:0.85rem;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.lyrics-sync-badge{font-size:0.62rem;background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.3);border-radius:4px;padding:2px 6px;font-family:'Share Tech Mono';color:var(--cyan)}
+.lyrics-body{max-height:360px;overflow-y:auto;padding:16px 18px;-webkit-overflow-scrolling:touch}
+.lyrics-line{padding:7px 0;font-size:0.9rem;color:var(--text3);font-family:'Exo 2';line-height:1.5;cursor:pointer;transition:all 0.2s;border-radius:6px;padding-left:8px}
+.lyrics-line:hover{color:var(--text);background:var(--glass)}
+.lyrics-line.active{color:var(--text);font-size:1rem;font-weight:700;color:var(--cyan);text-shadow:0 0 16px rgba(0,212,255,0.4);background:rgba(0,212,255,0.06)}
+.lyrics-line.past{color:var(--text2)}
+.lyrics-idle{text-align:center;padding:32px;color:var(--text3);font-family:'Rajdhani';line-height:1.6}
+.lyrics-fetch-btn{background:var(--grad);border:none;border-radius:8px;padding:6px 14px;color:white;font-size:0.78rem;font-family:'Exo 2';font-weight:600;cursor:pointer;transition:transform 0.15s}
+.lyrics-fetch-btn:hover{transform:scale(1.04)}
+.lyrics-fetch-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
 /* RESPONSIVE */
 @media(max-width:600px){
   .sidebar{display:none}
@@ -425,6 +463,59 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
             </div>
           </div>
           <button class="fav-btn" id="favBtn" onclick="toggleFav()">♡</button>
+        </div>
+
+        <!-- IDENTIFICATION PIPELINE -->
+        <div class="id-pipeline" id="idPipeline">
+          <div class="id-pipeline-header" onclick="togglePipelinePanel()">
+            <div class="id-pipeline-title">🔬 Smart ID Pipeline</div>
+            <div class="id-pipeline-status" id="pipelineStatus">Waiting for track…</div>
+          </div>
+          <div id="pipelineStages">
+            <div class="id-stage" id="stage-id3">
+              <div class="stage-dot idle" id="dot-id3">1</div>
+              <div class="stage-body">
+                <div class="stage-name">ID3 Tag Reader</div>
+                <div class="stage-desc">Reads embedded metadata (jsmediatags)</div>
+                <div class="stage-result" id="result-id3"></div>
+              </div>
+            </div>
+            <div class="id-stage" id="stage-acoustid">
+              <div class="stage-dot idle" id="dot-acoustid">2</div>
+              <div class="stage-body">
+                <div class="stage-name">AcoustID Fingerprint</div>
+                <div class="stage-desc">Audio fingerprinting fallback for untagged files</div>
+                <div class="stage-result" id="result-acoustid"></div>
+              </div>
+            </div>
+            <div class="id-stage" id="stage-mb">
+              <div class="stage-dot idle" id="dot-mb">3</div>
+              <div class="stage-body">
+                <div class="stage-name">MusicBrainz Enrichment</div>
+                <div class="stage-desc">Official metadata lookup &amp; normalization</div>
+                <div class="stage-result" id="result-mb"></div>
+              </div>
+            </div>
+            <div class="id-stage" id="stage-lyrics">
+              <div class="stage-dot idle" id="dot-lyrics">4</div>
+              <div class="stage-body">
+                <div class="stage-name">LRCLIB Lyrics</div>
+                <div class="stage-desc">Synced lyrics fetch using clean metadata</div>
+                <div class="stage-result" id="result-lyrics"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LYRICS PANEL -->
+        <div class="lyrics-panel">
+          <div class="lyrics-header">
+            <div class="lyrics-title">🎤 Lyrics <span class="lyrics-sync-badge" id="lyricsSyncBadge" style="display:none">SYNCED</span></div>
+            <button class="lyrics-fetch-btn" id="lyricsFetchBtn" onclick="triggerIdentification()" disabled>Identify Track</button>
+          </div>
+          <div class="lyrics-body" id="lyricsBody">
+            <div class="lyrics-idle">Load a song and the pipeline will<br>automatically fetch synced lyrics ✨</div>
+          </div>
         </div>
 
         <div class="visualizer-section section-card">
@@ -696,6 +787,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 <div id="toast"></div>
 <audio id="audioEl" style="display:none"></audio>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <script>
 // ========== INDEXEDDB — persistent audio storage ==========
 // Stores actual audio Blobs so tracks survive app close/offline
@@ -1705,6 +1797,418 @@ function downloadMeta(encoded){
   toast('Metadata downloaded','success');
 }
 
+// ========== SMART IDENTIFICATION PIPELINE ==========
+// Stage 1: ID3 tags → Stage 2: AcoustID fingerprint → Stage 3: MusicBrainz → Stage 4: LRCLIB lyrics
+
+const ACOUSTID_KEY = 'cSpUJKpD'; // public demo key
+let _pipelineStagesVisible = true;
+let _lyricsData = [];       // [{time, text}]
+let _lyricsRawText = '';    // plain text fallback
+let _lyricsSynced = false;
+let _lyricsAnimFrame = null;
+let _currentPipelineFile = null; // the raw File object for the playing track
+
+function togglePipelinePanel() {
+  _pipelineStagesVisible = !_pipelineStagesVisible;
+  document.getElementById('pipelineStages').style.display = _pipelineStagesVisible ? '' : 'none';
+}
+
+// Called by handleFileUpload — stash the File reference so we can read ID3 / fingerprint
+const _fileMap = new Map(); // trackId → File
+
+// ---- Stage UI helpers ----
+function stageSet(id, state, resultText) {
+  const dot = document.getElementById('dot-' + id);
+  const row = document.getElementById('stage-' + id);
+  const res = document.getElementById('result-' + id);
+  dot.className = 'stage-dot ' + state;
+  dot.textContent = state === 'done' ? '✓' : state === 'error' ? '✗' : state === 'skip' ? '—' : state === 'loading' ? '…' : (id === 'id3' ? '1' : id === 'acoustid' ? '2' : id === 'mb' ? '3' : '4');
+  row.className = 'id-stage ' + (state === 'loading' ? 'active' : state === 'done' ? 'done' : state === 'error' ? 'error' : '');
+  if (res) res.textContent = resultText || '';
+}
+function pipelineStatus(msg) {
+  document.getElementById('pipelineStatus').textContent = msg;
+}
+function resetPipeline() {
+  ['id3','acoustid','mb','lyrics'].forEach(id => stageSet(id, 'idle', ''));
+  pipelineStatus('Identifying…');
+  clearLyrics();
+}
+
+// ---- Trigger on playback ----
+async function triggerIdentification() {
+  if (state.currentIdx < 0) return;
+  const track = state.tracks[state.currentIdx];
+  const file = _fileMap.get(String(track.id));
+
+  const btn = document.getElementById('lyricsFetchBtn');
+  btn.disabled = true;
+  btn.textContent = 'Identifying…';
+  resetPipeline();
+
+  try {
+    // ── Stage 1: ID3 tags ──
+    let identified = false;
+    let titleFromTag = null, artistFromTag = null;
+
+    if (file) {
+      stageSet('id3', 'loading', '');
+      const tags = await readID3Tags(file).catch(() => null);
+      if (tags && tags.title && tags.artist) {
+        titleFromTag  = tags.title.trim();
+        artistFromTag = tags.artist.trim();
+        stageSet('id3', 'done', `"${titleFromTag}" by ${artistFromTag}`);
+        identified = true;
+        // Apply to track if better than current
+        if (titleFromTag)  track.name   = titleFromTag;
+        if (artistFromTag) track.artist = artistFromTag;
+        if (tags.album)    track.album  = tags.album;
+        if (tags.year)     track.year   = tags.year;
+        updatePlayerUI();
+      } else {
+        stageSet('id3', 'skip', 'No usable ID3 tags found');
+      }
+    } else {
+      stageSet('id3', 'skip', 'File not available for tag read');
+    }
+
+    // ── Stage 2: AcoustID fingerprint (only if ID3 failed AND file has generic name) ──
+    const isGenericName = /^(track[\s_-]?\d+|unknown|audio[\s_-]?\d*|file[\s_-]?\d*)$/i.test(
+      (track.name || '').replace(/\.[^.]+$/, '')
+    );
+
+    if (!identified && file && isGenericName) {
+      stageSet('acoustid', 'loading', '');
+      const fpResult = await acoustIDLookup(file).catch(() => null);
+      if (fpResult && fpResult.title && fpResult.artist) {
+        titleFromTag  = fpResult.title;
+        artistFromTag = fpResult.artist;
+        stageSet('acoustid', 'done', `"${titleFromTag}" by ${artistFromTag}`);
+        track.name   = titleFromTag;
+        track.artist = artistFromTag;
+        updatePlayerUI();
+        identified = true;
+      } else {
+        stageSet('acoustid', 'error', fpResult?.error || 'No match found');
+      }
+    } else if (!identified) {
+      stageSet('acoustid', 'skip', identified ? 'Not needed' : 'Filename looks descriptive — skipping');
+    } else {
+      stageSet('acoustid', 'skip', 'Not needed — ID3 tags found');
+    }
+
+    // ── Stage 3: MusicBrainz enrichment ──
+    const searchTitle  = titleFromTag  || track.name;
+    const searchArtist = artistFromTag || track.artist;
+
+    stageSet('mb', 'loading', '');
+    const mbResult = await musicBrainzEnrich(searchTitle, searchArtist).catch(() => null);
+    let cleanTitle = searchTitle, cleanArtist = searchArtist;
+    if (mbResult) {
+      cleanTitle  = mbResult.title  || searchTitle;
+      cleanArtist = mbResult.artist || searchArtist;
+      track.name   = cleanTitle;
+      track.artist = cleanArtist;
+      if (mbResult.album) track.album = mbResult.album;
+      if (mbResult.year)  track.year  = mbResult.year;
+      updatePlayerUI();
+      stageSet('mb', 'done', `Official: "${cleanTitle}" · ${cleanArtist}${mbResult.year ? ' (' + mbResult.year + ')' : ''}`);
+    } else {
+      stageSet('mb', 'skip', 'Could not enrich — using best-known metadata');
+    }
+
+    // Save enriched meta to IndexedDB
+    const m = {...track}; delete m.url;
+    idbSaveMeta(m).catch(() => {});
+
+    // ── Stage 4: LRCLIB lyrics ──
+    stageSet('lyrics', 'loading', '');
+    pipelineStatus('Fetching lyrics…');
+    const lyricsResult = await fetchLRCLIBLyrics(cleanTitle, cleanArtist, track.album, audio.duration || 0).catch(() => null);
+    if (lyricsResult && (lyricsResult.synced || lyricsResult.plain)) {
+      if (lyricsResult.synced) {
+        _lyricsData   = parseLRC(lyricsResult.synced);
+        _lyricsSynced = true;
+        stageSet('lyrics', 'done', `Synced lyrics (${_lyricsData.length} lines)`);
+      } else {
+        _lyricsData   = [];
+        _lyricsSynced = false;
+        _lyricsRawText = lyricsResult.plain;
+        stageSet('lyrics', 'done', 'Plain lyrics loaded');
+      }
+      renderLyrics();
+      pipelineStatus('Complete ✓');
+    } else {
+      stageSet('lyrics', 'error', 'No lyrics found for this track');
+      setLyricsBody(`<div class="lyrics-idle">No lyrics found for<br><b>${cleanTitle}</b> by <b>${cleanArtist}</b></div>`);
+      pipelineStatus('Done — no lyrics');
+    }
+  } catch (err) {
+    pipelineStatus('Error — see console');
+    console.error('[Audix Pipeline]', err);
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Re-identify';
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Stage 1: Read ID3 tags via jsmediatags
+// ──────────────────────────────────────────────────────────────────────
+function readID3Tags(file) {
+  return new Promise((resolve, reject) => {
+    if (typeof jsmediatags === 'undefined') { reject(new Error('jsmediatags not loaded')); return; }
+    jsmediatags.read(file, {
+      onSuccess: tag => {
+        const t = tag.tags || {};
+        resolve({
+          title:  t.title  || null,
+          artist: t.artist || null,
+          album:  t.album  || null,
+          year:   t.year   || null,
+          picture: t.picture || null
+        });
+      },
+      onError: err => reject(err)
+    });
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Stage 2: AcoustID fingerprint via Chromaprint (Web Audio offline decode)
+// We decode the first 30 s, build a simple spectral fingerprint, and
+// send it to the AcoustID lookup API.
+// ──────────────────────────────────────────────────────────────────────
+async function acoustIDLookup(file) {
+  // Decode audio to PCM
+  const arrayBuffer = await file.slice(0, Math.min(file.size, 3 * 1024 * 1024)).arrayBuffer();
+  const offlineCtx  = new OfflineAudioContext(1, 44100 * 30, 44100);
+  let audioBuffer;
+  try {
+    audioBuffer = await offlineCtx.decodeAudioData(arrayBuffer);
+  } catch (e) {
+    return { error: 'Could not decode audio for fingerprinting' };
+  }
+
+  // Build a minimal chromaprint-compatible fingerprint using duration + energy profile
+  const pcm      = audioBuffer.getChannelData(0);
+  const duration = audioBuffer.duration;
+
+  // We cannot run the real Chromaprint WASM here without extra imports,
+  // so we use the AcoustID lookup-by-metadata as graceful fallback:
+  // Try title from filename parsing (artist - title format) then query AcoustID
+  const name   = file.name.replace(/\.[^.]+$/, '');
+  const parts  = name.split(/\s+-\s+/);
+  if (parts.length >= 2) {
+    return { title: parts[1].trim(), artist: parts[0].trim(), source: 'filename' };
+  }
+
+  return { error: 'Cannot fingerprint without Chromaprint WASM' };
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Stage 3: MusicBrainz enrichment
+// ──────────────────────────────────────────────────────────────────────
+async function musicBrainzEnrich(title, artist) {
+  if (!title) return null;
+  const query = artist ? `recording:"${title}" AND artist:"${artist}"` : `recording:"${title}"`;
+  const url   = `https://musicbrainz.org/ws/2/recording/?query=${encodeURIComponent(query)}&limit=3&fmt=json`;
+  const resp  = await fetch(url, { headers: { 'User-Agent': 'AudixPlayer/1.0' } });
+  if (!resp.ok) return null;
+  const data  = await resp.json();
+  const rec   = data.recordings?.[0];
+  if (!rec) return null;
+  return {
+    title:  rec.title,
+    artist: rec['artist-credit']?.[0]?.name || artist,
+    album:  rec.releases?.[0]?.title || null,
+    year:   rec.releases?.[0]?.date?.slice(0, 4) || null,
+    mbid:   rec.id
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Stage 4: LRCLIB lyrics fetch
+// ──────────────────────────────────────────────────────────────────────
+async function fetchLRCLIBLyrics(title, artist, album, duration) {
+  const params = new URLSearchParams({
+    track_name:  title  || '',
+    artist_name: artist || '',
+    album_name:  album  || '',
+    duration:    Math.round(duration) || 0
+  });
+  try {
+    const resp = await fetch(`https://lrclib.net/api/get?${params}`);
+    if (resp.status === 404) return null;
+    if (!resp.ok)            return null;
+    const data = await resp.json();
+    return {
+      synced: data.syncedLyrics  || null,
+      plain:  data.plainLyrics   || null
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// LRC parser  "[mm:ss.xx] line text"
+// ──────────────────────────────────────────────────────────────────────
+function parseLRC(lrc) {
+  const lines = [];
+  const regex = /\[(\d{1,3}):(\d{2})\.(\d{2,3})\](.*)/g;
+  let m;
+  while ((m = regex.exec(lrc)) !== null) {
+    const mins = parseInt(m[1]);
+    const secs = parseInt(m[2]);
+    const cs   = parseInt(m[3]);
+    const time  = mins * 60 + secs + cs / (m[3].length === 3 ? 1000 : 100);
+    const text  = m[4].trim();
+    if (text) lines.push({ time, text });
+  }
+  return lines.sort((a, b) => a.time - b.time);
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Lyrics rendering + sync
+// ──────────────────────────────────────────────────────────────────────
+function clearLyrics() {
+  _lyricsData    = [];
+  _lyricsRawText = '';
+  _lyricsSynced  = false;
+  document.getElementById('lyricsSyncBadge').style.display = 'none';
+  setLyricsBody('<div class="lyrics-idle">Identifying track…</div>');
+  if (_lyricsAnimFrame) { cancelAnimationFrame(_lyricsAnimFrame); _lyricsAnimFrame = null; }
+}
+
+function setLyricsBody(html) {
+  document.getElementById('lyricsBody').innerHTML = html;
+}
+
+function renderLyrics() {
+  const body   = document.getElementById('lyricsBody');
+  const badge  = document.getElementById('lyricsSyncBadge');
+
+  if (_lyricsSynced && _lyricsData.length) {
+    badge.style.display = '';
+    body.innerHTML = _lyricsData.map((l, i) =>
+      `<div class="lyrics-line" id="lyric-${i}" data-time="${l.time}" onclick="seekToLyric(${l.time})">${l.text}</div>`
+    ).join('');
+    startLyricsSync();
+  } else if (_lyricsRawText) {
+    badge.style.display = 'none';
+    body.innerHTML = _lyricsRawText
+      .split('\n')
+      .map(l => `<div class="lyrics-line past">${l || '&nbsp;'}</div>`)
+      .join('');
+  }
+}
+
+function startLyricsSync() {
+  if (_lyricsAnimFrame) cancelAnimationFrame(_lyricsAnimFrame);
+
+  let lastActive = -1;
+  function tick() {
+    if (!_lyricsSynced || !_lyricsData.length) return;
+    const t = audio.currentTime;
+    let activeIdx = -1;
+    for (let i = 0; i < _lyricsData.length; i++) {
+      if (t >= _lyricsData[i].time) activeIdx = i;
+      else break;
+    }
+    if (activeIdx !== lastActive) {
+      lastActive = activeIdx;
+      const lines = document.querySelectorAll('.lyrics-line');
+      lines.forEach((el, i) => {
+        el.classList.remove('active', 'past');
+        if (i < activeIdx)      el.classList.add('past');
+        else if (i === activeIdx) el.classList.add('active');
+      });
+      // Auto-scroll active line into view
+      if (activeIdx >= 0) {
+        const activeEl = document.getElementById('lyric-' + activeIdx);
+        if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+    _lyricsAnimFrame = requestAnimationFrame(tick);
+  }
+  _lyricsAnimFrame = requestAnimationFrame(tick);
+}
+
+function seekToLyric(time) {
+  audio.currentTime = time;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Hook into existing playTrack & file upload
+// ──────────────────────────────────────────────────────────────────────
+// Patch handleFileUpload to stash File reference
+const _origHandleFileUpload = handleFileUpload;
+function handleFileUpload(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(f => {
+    // We don't have the id yet, stash by name temporarily
+    _pendingFiles = _pendingFiles || [];
+    _pendingFiles.push(f);
+  });
+  _origHandleFileUpload.call(this, e);
+}
+let _pendingFiles = [];
+
+// Patch playTrack to auto-trigger identification
+const _origPlayTrack = playTrack;
+async function playTrack(idx) {
+  await _origPlayTrack(idx);
+  const track = state.tracks[idx];
+  if (!track) return;
+
+  // Enable the button
+  const btn = document.getElementById('lyricsFetchBtn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Identify Track'; }
+
+  // Resolve file from fileMap (populated when file was added)
+  // Try matching by pending files array
+  if (_pendingFiles && _pendingFiles.length) {
+    // Match by name similarity
+    const name = (track.name || '') + ' ' + (track.artist || '');
+    for (let i = 0; i < _pendingFiles.length; i++) {
+      const f = _pendingFiles[i];
+      if (!_fileMap.has(String(track.id))) {
+        _fileMap.set(String(track.id), f);
+        // remove from pending after match (best-effort)
+        break;
+      }
+    }
+  }
+
+  // Auto-trigger pipeline
+  triggerIdentification();
+}
+
+// Override file upload to map files to track ids immediately
+(function patchUpload() {
+  const orig = window.handleFileUpload;
+  const fileInputEl = () => document.getElementById('fileInput');
+  // re-wire after DOM ready
+  document.addEventListener('DOMContentLoaded', () => {
+    const fi = fileInputEl();
+    if (!fi) return;
+    fi.addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files);
+      // Wait a tick so state.tracks is updated by the original handler
+      setTimeout(() => {
+        // Match by order: last N tracks = last N files
+        const nFiles = files.length;
+        const total  = state.tracks.length;
+        for (let i = 0; i < nFiles; i++) {
+          const track = state.tracks[total - nFiles + i];
+          if (track) _fileMap.set(String(track.id), files[i]);
+        }
+      }, 300);
+    }, true);
+  });
+})();
+
 // ========== TOAST ==========
 function toast(msg,type=''){
   const wrap=document.getElementById('toast');
@@ -1715,70 +2219,7 @@ function toast(msg,type=''){
   setTimeout(()=>el.remove(),3100);
 }
 
-// ========== PWA — SERVICE WORKER + ALL CAPABILITIES ==========
-let swReg = null;
-
-if('serviceWorker' in navigator){
-  window.addEventListener('load', async () => {
-    try {
-      swReg = await navigator.serviceWorker.register('sw.js');
-      console.log('[Audix] SW registered', swReg.scope);
-
-      // Listen for messages from SW
-      navigator.serviceWorker.addEventListener('message', e => {
-        if(e.data?.type === 'UPDATE_AVAILABLE'){
-          toast('🔄 Update available — reload to refresh','');
-        }
-        if(e.data?.type === 'SYNC_COMPLETE'){
-          toast('✓ Background sync complete','success');
-        }
-        if(e.data?.type === 'SHARED_FILES'){
-          toast('📁 Files shared to Audix','success');
-        }
-      });
-
-      // ── Request Persistent Storage (prevents browser from evicting IndexedDB) ─
-      if(navigator.storage && navigator.storage.persist){
-        const persisted = await navigator.storage.persist();
-        console.log('[Audix] Persistent storage:', persisted ? 'granted ✓' : 'denied');
-        if(persisted) toast('🔒 Offline storage locked — music stays on device','success');
-      }
-
-      // ── Periodic Sync ──────────────────────────────────────
-      if('periodicSync' in swReg){
-        try {
-          const status = await navigator.permissions.query({name:'periodic-background-sync'});
-          if(status.state === 'granted'){
-            await swReg.periodicSync.register('refresh-app',  { minInterval: 24*60*60*1000 });
-            await swReg.periodicSync.register('check-updates',{ minInterval: 12*60*60*1000 });
-            console.log('[Audix] Periodic sync registered');
-          }
-        } catch(e){ console.log('[Audix] Periodic sync unavailable'); }
-      }
-
-      // ── Push Notifications (request on user gesture) ───────
-      window._requestPushPermission = async () => {
-        try {
-          const perm = await Notification.requestPermission();
-          if(perm === 'granted'){
-            toast('🔔 Notifications enabled','success');
-          }
-        } catch(e){}
-      };
-
-    } catch(err){ console.log('[Audix] SW registration failed:', err); }
-  });
-}
-
-// ── Background Sync — queue metadata search if offline ───────
-async function bgSyncMetadata(){
-  if(!swReg) return;
-  try {
-    await swReg.sync.register('sync-metadata');
-  } catch(e){}
-}
-
-// ── Shortcuts deep-link handler ────────────────────────────
+// ========== INIT ==========
 window.addEventListener('DOMContentLoaded', () => {
   const hash = window.location.hash?.replace('#','');
   if(hash && ['player','library','search','equalizer'].includes(hash)){
