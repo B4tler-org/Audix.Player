@@ -389,15 +389,47 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 @media(max-width:600px){
   .sidebar{display:none}
   .bottom-nav{display:flex}
-  .now-playing-hero{flex-direction:column;text-align:center}
-  .meta-grid{grid-template-columns:1fr}
-  .tab-content{padding:14px 14px 80px}
-  .topbar{padding:10px 14px}
+  /* Full-height scrollable player tab */
+  .tab-content{padding:12px 12px 90px;gap:10px}
+  .topbar{padding:8px 12px}
+
+  /* Compact now-playing hero — horizontal on mobile */
+  .now-playing-hero{flex-direction:row;text-align:left;padding:14px;gap:12px;align-items:center}
+  .album-art{width:72px;height:72px;font-size:2rem;border-radius:12px}
+  .song-title{font-size:1rem}
+  .song-artist{font-size:0.9rem}
+  .song-album{font-size:0.72rem}
+  .song-meta-tags{gap:5px;margin-top:6px}
+  .tag{font-size:0.62rem;padding:2px 6px}
+  .fav-btn{top:10px;right:10px;width:30px;height:30px;font-size:1rem}
+
+  /* Pipeline collapsed by default on mobile — user can expand */
+  #pipelineStages{display:none}
+
+  /* Lyrics smaller */
+  .lyrics-body{max-height:200px}
+  .lyrics-panel{font-size:0.9rem}
+
+  /* Visualizer shorter */
+  #vizCanvas{height:120px}
   .viz-types{flex-wrap:wrap;gap:4px}
-  .controls{gap:10px}
-  .play-btn{width:50px;height:50px}
-  .eq-bars{height:160px}
-  .song-title{font-size:1.1rem}
+  .visualizer-section{font-size:0.85rem}
+
+  /* Progress section tighter */
+  .progress-section{padding:14px 16px}
+  .controls{gap:8px;margin-top:10px}
+  .play-btn{width:52px;height:52px;font-size:1.3rem}
+  .ctrl-btn{font-size:1.1rem;padding:6px}
+  .volume-row{margin-top:10px}
+  .audio-quality-row{gap:5px;flex-wrap:wrap}
+  .aq-btn{padding:3px 8px;font-size:0.65rem}
+
+  /* Meta/search grids */
+  .meta-grid{grid-template-columns:1fr}
+  .eq-bars{height:140px}
+
+  /* Toast bottom margin above nav */
+  #toast{bottom:80px}
 }
 </style>
 </head>
@@ -1059,8 +1091,18 @@ function doLogin() {
 }
 function skipLogin() {
   document.getElementById('loginModal').style.display='none';
-  localStorage.setItem('audix_skip','1'); // remember skip so modal doesn't reappear on refresh
+  localStorage.setItem('audix_skip','1');
   toast('Continuing as guest','');
+}
+function doLogout(){
+  state.user=null;
+  localStorage.removeItem('audix_user');
+  // Keep audix_skip so the modal does NOT reappear on next refresh.
+  // User can sign in again via the avatar button.
+  localStorage.setItem('audix_skip','1');
+  closeAccount();
+  updateUserUI();
+  toast('Signed out','');
 }
 function updateUserUI() {
   const ua = document.getElementById('userAvatar');
@@ -1083,15 +1125,7 @@ function openAccount() {
   document.getElementById('accPlaylists').textContent=state.playlists.length;
   document.getElementById('accountModal').classList.add('active');
 }
-function closeAccount(){document.getElementById('accountModal').classList.remove('active')}
-function doLogout(){
-  state.user=null;
-  localStorage.removeItem('audix_user');
-  localStorage.removeItem('audix_skip'); // clear skip so login modal reappears
-  closeAccount();
-  updateUserUI();
-  toast('Signed out','');
-}
+function closeAccount(){document.getElementById('accountModal').classList.remove('active');}
 
 // ========== AUDIO ENGINE ==========
 function setupAudioContext() {
@@ -1849,8 +1883,9 @@ let _lyricsAnimFrame = null;
 let _currentPipelineFile = null; // the raw File object for the playing track
 
 function togglePipelinePanel() {
-  _pipelineStagesVisible = !_pipelineStagesVisible;
-  document.getElementById('pipelineStages').style.display = _pipelineStagesVisible ? '' : 'none';
+  const stages = document.getElementById('pipelineStages');
+  const isHidden = stages.style.display === 'none' || stages.style.display === '';
+  stages.style.display = isHidden ? 'flex' : 'none';
 }
 
 // Called by handleFileUpload — stash the File reference so we can read ID3 / fingerprint
@@ -1872,6 +1907,8 @@ function pipelineStatus(msg) {
 function resetPipeline() {
   ['id3','acoustid','mb','lyrics'].forEach(id => stageSet(id, 'idle', ''));
   pipelineStatus('Identifying…');
+  // Always show stages while pipeline is running
+  document.getElementById('pipelineStages').style.display = 'flex';
   clearLyrics();
 }
 
@@ -1879,7 +1916,18 @@ function resetPipeline() {
 async function triggerIdentification() {
   if (state.currentIdx < 0) return;
   const track = state.tracks[state.currentIdx];
-  const file = _fileMap.get(String(track.id));
+  // _fileMap is in-memory; after a page reload it's empty.
+  // Rebuild from the IndexedDB blob so ID3/fingerprint still work on every track.
+  let file = _fileMap.get(String(track.id));
+  if (!file) {
+    try {
+      const blob = await idbGetAudio(track.id);
+      if (blob) {
+        file = new File([blob], (track.name||'track')+'.mp3', {type: blob.type||'audio/mpeg'});
+        _fileMap.set(String(track.id), file);
+      }
+    } catch(e) { /* pipeline will show skip */ }
+  }
 
   const btn = document.getElementById('lyricsFetchBtn');
   btn.disabled = true;
@@ -1989,6 +2037,12 @@ async function triggerIdentification() {
 
   btn.disabled = false;
   btn.textContent = 'Re-identify';
+  // On mobile, collapse the pipeline stages after finishing so lyrics are visible
+  if (window.innerWidth <= 600) {
+    setTimeout(() => {
+      document.getElementById('pipelineStages').style.display = 'none';
+    }, 2000);
+  }
 }
 
 // ──────────────────────────────────────────────────────────────────────
