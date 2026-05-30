@@ -1,5 +1,5 @@
 // Audix Service Worker
-const CACHE_NAME    = 'audix-v1';
+const CACHE_NAME    = 'audix-v2';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -37,8 +37,8 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Always go to network for MusicBrainz API calls
-  if (url.hostname === 'musicbrainz.org') {
+  // Always go to network for API calls
+  if (url.hostname === 'musicbrainz.org' || url.hostname === 'lrclib.net') {
     event.respondWith(
       fetch(event.request).catch(() =>
         new Response(JSON.stringify({ error: 'offline' }), {
