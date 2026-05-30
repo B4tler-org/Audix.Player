@@ -2011,7 +2011,22 @@ async function triggerIdentification() {
     // ── Stage 4: LRCLIB lyrics ──
     stageSet('lyrics', 'loading', '');
     pipelineStatus('Fetching lyrics…');
-    const lyricsResult = await fetchLRCLIBLyrics(cleanTitle, cleanArtist, track.album, audio.duration || 0).catch(() => null);
+
+    // Wait up to 4 s for audio.duration to become available (it may still be loading)
+    let audioDur = audio.duration;
+    if (!audioDur || !isFinite(audioDur)) {
+      await new Promise(resolve => {
+        if (audio.readyState >= 1 && isFinite(audio.duration)) { resolve(); return; }
+        const onMeta = () => { audio.removeEventListener('loadedmetadata', onMeta); resolve(); };
+        audio.addEventListener('loadedmetadata', onMeta);
+        setTimeout(resolve, 4000); // don't block forever
+      });
+      audioDur = audio.duration || 0;
+    }
+    // Also try track.duration as stored fallback
+    if (!audioDur || !isFinite(audioDur)) audioDur = track.duration || 0;
+
+    const lyricsResult = await fetchLRCLIBLyrics(cleanTitle, cleanArtist, track.album, audioDur).catch(() => null);
     if (lyricsResult && (lyricsResult.synced || lyricsResult.plain)) {
       if (lyricsResult.synced) {
         _lyricsData   = parseLRC(lyricsResult.synced);
@@ -2026,8 +2041,8 @@ async function triggerIdentification() {
       renderLyrics();
       pipelineStatus('Complete ✓');
     } else {
-      stageSet('lyrics', 'error', 'No lyrics found for this track');
-      setLyricsBody(`<div class="lyrics-idle">No lyrics found for<br><b>${cleanTitle}</b> by <b>${cleanArtist}</b></div>`);
+      stageSet('lyrics', 'error', `No lyrics found — searched: "${cleanTitle}" by ${cleanArtist}`);
+      setLyricsBody(`<div class="lyrics-idle">No lyrics found for<br><b>${cleanTitle}</b> by <b>${cleanArtist}</b><br><span style="font-size:0.75rem;color:var(--text3)">Try correcting the track name in Library</span></div>`);
       pipelineStatus('Done — no lyrics');
     }
   } catch (err) {
@@ -2206,26 +2221,58 @@ async function musicBrainzEnrich(title, artist) {
 
 // ──────────────────────────────────────────────────────────────────────
 // Stage 4: LRCLIB lyrics fetch
+// Strategy:
+//   1. Try /api/get with title+artist+duration (omit album if unknown)
+//   2. If that 404s, retry without duration (LRCLIB is strict on duration)
+//   3. If still nothing, fall back to /api/search which is fuzzy
 // ──────────────────────────────────────────────────────────────────────
 async function fetchLRCLIBLyrics(title, artist, album, duration) {
-  const params = new URLSearchParams({
-    track_name:  title  || '',
-    artist_name: artist || '',
-    album_name:  album  || '',
-    duration:    Math.round(duration) || 0
+  if (!title) return null;
+
+  // Don't send placeholder album strings — they break exact matching
+  const cleanAlbum = (!album || /^unknown/i.test(album.trim())) ? '' : album.trim();
+  // Only send duration if it looks valid (> 10 s)
+  const dur = (duration && duration > 10) ? Math.round(duration) : 0;
+
+  const extractResult = d => ({
+    synced: d.syncedLyrics || null,
+    plain:  d.plainLyrics  || null
   });
-  try {
-    const resp = await fetch(`https://lrclib.net/api/get?${params}`);
-    if (resp.status === 404) return null;
-    if (!resp.ok)            return null;
-    const data = await resp.json();
-    return {
-      synced: data.syncedLyrics  || null,
-      plain:  data.plainLyrics   || null
-    };
-  } catch (e) {
-    return null;
+  const hasLyrics = r => r && (r.synced || r.plain);
+
+  // ── Attempt 1: exact match with duration ──
+  if (dur > 0) {
+    try {
+      const p = new URLSearchParams({ track_name: title, artist_name: artist || '', album_name: cleanAlbum, duration: dur });
+      const r = await fetch(`https://lrclib.net/api/get?${p}`);
+      if (r.ok) { const d = await r.json(); const res = extractResult(d); if (hasLyrics(res)) return res; }
+    } catch(e) {}
   }
+
+  // ── Attempt 2: exact match without duration (LRCLIB is strict on duration) ──
+  try {
+    const p = new URLSearchParams({ track_name: title, artist_name: artist || '', album_name: cleanAlbum });
+    const r = await fetch(`https://lrclib.net/api/get?${p}`);
+    if (r.ok) { const d = await r.json(); const res = extractResult(d); if (hasLyrics(res)) return res; }
+  } catch(e) {}
+
+  // ── Attempt 3: fuzzy search — much more forgiving ──
+  try {
+    const q = artist ? `${title} ${artist}` : title;
+    const p = new URLSearchParams({ q });
+    const r = await fetch(`https://lrclib.net/api/search?${p}`);
+    if (r.ok) {
+      const results = await r.json();
+      if (Array.isArray(results) && results.length) {
+        // Pick the best match: prefer synced lyrics, then closest title match
+        const withLyrics = results.filter(x => x.syncedLyrics || x.plainLyrics);
+        const best = withLyrics[0] || results[0];
+        if (best) return extractResult(best);
+      }
+    }
+  } catch(e) {}
+
+  return null;
 }
 
 // ──────────────────────────────────────────────────────────────────────
