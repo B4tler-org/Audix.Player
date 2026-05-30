@@ -81,7 +81,7 @@ body{background:var(--bg);color:var(--text);transition:background 0.4s,color 0.4
 @keyframes particleFloat{0%{opacity:0;transform:translateY(100vh)}10%{opacity:1}90%{opacity:0.5}100%{opacity:0;transform:translateY(-10vh)}}
 
 /* MAIN APP */
-#app{display:none;height:100vh;display:none;flex-direction:column;background:var(--bg)}
+#app{display:none;height:100vh;flex-direction:column;background:var(--bg)}
 #app.visible{display:flex}
 
 /* TOPBAR */
@@ -415,7 +415,6 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
     <div class="topbar-actions">
       <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
       <button class="icon-btn" onclick="openTab('search')">🔍</button>
-    </div>
     </div>
   </div>
 
@@ -840,20 +839,23 @@ async function idbDeleteMeta(id) {
 async function loadTracksFromDB() {
   try {
     const metas = await idbGetAllMeta();
-    // Rebuild blob URLs for each saved track
     for (const meta of metas) {
-      const blob = await idbGetAudio(meta.id);
-      if (blob) {
-        meta.url = URL.createObjectURL(blob);
-        state.tracks.push(meta);
-      }
+      try {
+        const blob = await idbGetAudio(meta.id);
+        if (blob) {
+          meta.url = URL.createObjectURL(blob);
+          state.tracks.push(meta);
+        }
+      } catch(e) {}
     }
     state.tracks.sort((a, b) => (a._order||0) - (b._order||0));
   } catch(e) {
-    console.warn('[Audix] IndexedDB load failed, falling back to localStorage', e);
-    const saved = JSON.parse(localStorage.getItem('audix_tracks')||'[]');
-    // legacy blob:// URLs won't work after reload — just keep metadata
-    state.tracks = saved.map(t => ({ ...t, url: '' }));
+    // IndexedDB unavailable (e.g. content:// URL or private mode) — start fresh
+    console.warn('[Audix] IndexedDB unavailable:', e.message);
+    try {
+      const saved = JSON.parse(localStorage.getItem('audix_tracks')||'[]');
+      state.tracks = saved.map(t => ({ ...t, url: '' }));
+    } catch(e2) {}
   }
 }
 
@@ -898,30 +900,39 @@ const TIPS = [
 ];
 
 // ========== LOADER ==========
+function showApp() {
+  document.getElementById('loader').style.display = 'none';
+  const app = document.getElementById('app');
+  app.style.display = 'flex';
+  app.classList.add('visible');
+  try { buildEqBars(); } catch(e) {}
+  try { initViz(); } catch(e) {}
+  try { renderTrackList(); } catch(e) {}
+  try { renderPlaylists(); } catch(e) {}
+  try { updateStorageInfo(); } catch(e) {}
+}
+
 async function startLoader() {
   const tipEl = document.getElementById('loaderTip');
   const tip = TIPS[Math.floor(Math.random()*TIPS.length)];
-  tipEl.textContent = tip;
+  if (tipEl) tipEl.textContent = tip;
   animateLoaderParticles();
 
-  // Wait for both the min loader time AND the DB to finish
-  await Promise.all([
-    new Promise(r => setTimeout(r, 2800)),
-    loadTracksFromDB()
-  ]);
+  // Safety net: always show app after 5s no matter what
+  const safetyTimer = setTimeout(showApp, 5000);
+
+  try {
+    await Promise.all([
+      new Promise(r => setTimeout(r, 2000)),
+      loadTracksFromDB().catch(() => {}) // never reject
+    ]);
+  } catch(e) {}
+
+  clearTimeout(safetyTimer);
 
   document.getElementById('loader').style.opacity = '0';
-  document.getElementById('loader').style.transition = 'opacity 0.5s';
-  setTimeout(() => {
-    document.getElementById('loader').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    document.getElementById('app').classList.add('visible');
-    buildEqBars();
-    initViz();
-    renderTrackList();
-    renderPlaylists();
-    updateStorageInfo();
-  }, 500);
+  document.getElementById('loader').style.transition = 'opacity 0.4s';
+  setTimeout(showApp, 400);
 }
 
 function animateLoaderParticles() {
