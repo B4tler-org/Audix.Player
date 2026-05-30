@@ -92,8 +92,6 @@ body{background:var(--bg);color:var(--text);transition:background 0.4s,color 0.4
 .icon-btn{background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:7px 11px;color:var(--text2);cursor:pointer;font-size:1rem;transition:all 0.2s;display:flex;align-items:center;gap:6px;font-family:'Exo 2'}
 .icon-btn:hover{background:rgba(0,212,255,0.1);color:var(--cyan);border-color:rgba(0,212,255,0.4);box-shadow:0 0 12px rgba(0,212,255,0.2)}
 .theme-toggle{font-size:1.1rem}
-.user-avatar{width:34px;height:34px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;cursor:pointer;position:relative;box-shadow:0 2px 8px rgba(139,92,246,0.4)}
-.user-badge{position:absolute;bottom:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:#22c55e;border:2px solid var(--bg2)}
 
 /* CONTENT */
 .content{display:flex;flex:1;overflow:hidden}
@@ -253,43 +251,6 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .meta-item{background:var(--bg4);border-radius:8px;padding:10px}
 .meta-item-label{font-size:0.65rem;letter-spacing:2px;color:var(--text3);font-family:'Share Tech Mono';margin-bottom:4px;text-transform:uppercase}
 .meta-item-value{font-size:0.85rem;font-weight:600;color:var(--text)}
-
-/* LOGIN MODAL */
-#loginModal{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(14px)}
-.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:24px;padding:36px;width:360px;position:relative;animation:modalIn 0.35s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 24px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(139,92,246,0.15)}
-@keyframes modalIn{from{opacity:0;transform:scale(0.88) translateY(24px)}to{opacity:1;transform:none}}
-.login-logo{font-size:2.2rem;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
-.login-sub{color:var(--text3);font-size:0.85rem;margin-bottom:24px;font-family:'Rajdhani';letter-spacing:0.5px}
-.login-tabs{display:flex;gap:0;background:var(--bg3);border-radius:10px;padding:4px;margin-bottom:20px}
-.login-tab{flex:1;padding:7px;border-radius:8px;border:none;background:none;color:var(--text2);cursor:pointer;font-family:'Rajdhani';font-weight:600;font-size:0.9rem;transition:all 0.2s}
-.login-tab.active{background:var(--grad);color:white;box-shadow:0 2px 8px rgba(139,92,246,0.4)}
-.login-field{margin-bottom:14px}
-.login-field label{display:block;font-size:0.75rem;color:var(--text2);margin-bottom:6px;font-family:'Share Tech Mono';letter-spacing:1.5px}
-.login-field input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Exo 2';outline:none;transition:border-color 0.2s,box-shadow 0.2s;font-size:0.9rem}
-.login-field input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,0.1)}
-.login-submit{width:100%;background:var(--grad);border:none;border-radius:10px;padding:13px;color:white;font-family:'Exo 2';font-weight:700;font-size:1rem;cursor:pointer;letter-spacing:1px;transition:transform 0.15s,box-shadow 0.2s;margin-top:4px;box-shadow:0 4px 16px rgba(139,92,246,0.4)}
-.login-submit:hover{transform:scale(1.02);box-shadow:0 6px 24px rgba(139,92,246,0.6)}
-.login-submit:active{transform:scale(0.98)}
-.login-skip{width:100%;background:none;border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--text2);font-family:'Exo 2';font-size:0.9rem;cursor:pointer;margin-top:8px;transition:all 0.2s}
-.login-skip:hover{border-color:var(--text2);color:var(--text);background:var(--glass)}
-.login-error{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.35);border-radius:8px;padding:9px 12px;font-size:0.8rem;color:#f87171;display:none;margin-bottom:10px;font-family:'Rajdhani';font-weight:600}
-
-/* ACCOUNT MODAL */
-#accountModal{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
-#accountModal.active{display:flex}
-.account-box{background:var(--bg2);border:1px solid var(--border);border-radius:24px;padding:32px;width:360px;animation:modalIn 0.3s ease}
-.account-header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
-.account-avatar{width:60px;height:60px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;color:white;position:relative}
-.account-online{position:absolute;bottom:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#22c55e;border:2px solid var(--bg2)}
-.account-name{font-size:1.1rem;font-weight:700}
-.account-email{font-size:0.8rem;color:var(--cyan);font-family:'Share Tech Mono'}
-.account-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px}
-.acc-stat{background:var(--bg3);border-radius:12px;padding:12px;text-align:center;border:1px solid var(--border)}
-.acc-stat-val{font-size:1.3rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.acc-stat-label{font-size:0.65rem;color:var(--text3);font-family:'Rajdhani';letter-spacing:1px}
-.close-modal{position:absolute;top:16px;right:16px;background:var(--bg3);border:none;color:var(--text2);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:0.9rem}
-.logout-btn{width:100%;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px;color:#ef4444;font-family:'Exo 2';font-weight:600;cursor:pointer;transition:all 0.2s}
-.logout-btn:hover{background:rgba(239,68,68,0.2)}
 
 /* QUALITY MODAL */
 #qualityModal{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
@@ -454,9 +415,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
     <div class="topbar-actions">
       <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
       <button class="icon-btn" onclick="openTab('search')">🔍</button>
-      <div class="user-avatar" onclick="openAccount()" id="userAvatar">?
-        <div class="user-badge" id="userBadge" style="display:none"></div>
-      </div>
+    </div>
     </div>
   </div>
 
@@ -504,6 +463,14 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
             <div class="id-pipeline-status" id="pipelineStatus">Waiting for track…</div>
           </div>
           <div id="pipelineStages">
+            <div class="id-stage" id="stage-ai">
+              <div class="stage-dot idle" id="dot-ai">✦</div>
+              <div class="stage-body">
+                <div class="stage-name">AI Title Cleaner</div>
+                <div class="stage-desc">Claude parses raw filename → clean title &amp; artist</div>
+                <div class="stage-result" id="result-ai"></div>
+              </div>
+            </div>
             <div class="id-stage" id="stage-id3">
               <div class="stage-dot idle" id="dot-id3">1</div>
               <div class="stage-body">
@@ -738,43 +705,6 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
   </div>
 </div>
 
-<!-- LOGIN MODAL -->
-<div id="loginModal">
-  <div class="login-box">
-    <div class="login-logo">AUDIX</div>
-    <div class="login-sub">Sign in to sync your library</div>
-    <div class="login-tabs">
-      <button class="login-tab active" onclick="setLoginTab('login',this)">Sign In</button>
-      <button class="login-tab" onclick="setLoginTab('signup',this)">Register</button>
-    </div>
-    <div class="login-error" id="loginError"></div>
-    <div class="login-field"><label>EMAIL</label><input type="email" id="loginEmail" placeholder="your@email.com"></div>
-    <div class="login-field"><label>PASSWORD</label><input type="password" id="loginPass" placeholder="••••••••"></div>
-    <div class="login-field" id="confirmField" style="display:none"><label>CONFIRM PASSWORD</label><input type="password" id="loginConfirm" placeholder="••••••••"></div>
-    <button class="login-submit" onclick="doLogin()" id="loginSubmit">SIGN IN</button>
-    <button class="login-skip" onclick="skipLogin()">Continue without account</button>
-  </div>
-</div>
-
-<!-- ACCOUNT MODAL -->
-<div id="accountModal">
-  <div class="account-box" style="position:relative">
-    <button class="close-modal" onclick="closeAccount()">✕</button>
-    <div class="account-header">
-      <div class="account-avatar" id="accAvatar">?<div class="account-online"></div></div>
-      <div>
-        <div class="account-name" id="accName">Guest</div>
-        <div class="account-email" id="accEmail">—</div>
-      </div>
-    </div>
-    <div class="account-stats">
-      <div class="acc-stat"><div class="acc-stat-val" id="accTracks">0</div><div class="acc-stat-label">Tracks</div></div>
-      <div class="acc-stat"><div class="acc-stat-val" id="accFavs">0</div><div class="acc-stat-label">Favs</div></div>
-      <div class="acc-stat"><div class="acc-stat-val" id="accPlaylists">0</div><div class="acc-stat-label">Playlists</div></div>
-    </div>
-    <button class="logout-btn" onclick="doLogout()">Sign Out</button>
-  </div>
-</div>
 
 <!-- QUALITY MODAL -->
 <div id="qualityModal">
@@ -938,7 +868,6 @@ const state = {
   quality: 'MP3',
   favs: JSON.parse(localStorage.getItem('audix_favs')||'[]'),
   playlists: JSON.parse(localStorage.getItem('audix_playlists')||'[{"name":"Favourites","tracks":[]}]'),
-  user: JSON.parse(localStorage.getItem('audix_user')||'null'),
   currentFilter: 'all',
   vizType: 'bars',
   eqMode: 'manual',
@@ -987,13 +916,10 @@ async function startLoader() {
     document.getElementById('loader').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     document.getElementById('app').classList.add('visible');
-    if(!state.user && !localStorage.getItem('audix_skip'))
-      document.getElementById('loginModal').style.display = 'flex';
     buildEqBars();
     initViz();
     renderTrackList();
     renderPlaylists();
-    updateUserUI();
     updateStorageInfo();
   }, 500);
 }
@@ -1052,80 +978,6 @@ function openTab(tab) {
   if(bnEl) bnEl.classList.add('active');
 }
 
-// ========== LOGIN ==========
-let loginMode = 'login';
-function setLoginTab(mode,btn) {
-  loginMode = mode;
-  document.querySelectorAll('.login-tab').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('confirmField').style.display = mode==='signup'?'block':'none';
-  document.getElementById('loginSubmit').textContent = mode==='signup'?'CREATE ACCOUNT':'SIGN IN';
-  document.getElementById('loginError').style.display='none';
-}
-function doLogin() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass  = document.getElementById('loginPass').value;
-  const errEl = document.getElementById('loginError');
-  const show  = msg => { errEl.textContent=msg; errEl.style.display='block'; };
-  if(!email||!pass){ show('Please fill all fields'); return; }
-  if(!/\S+@\S+\.\S+/.test(email)){ show('Invalid email address'); return; }
-  const accounts = JSON.parse(localStorage.getItem('audix_accounts')||'{}');
-  if(loginMode==='signup'){
-    const confirm = document.getElementById('loginConfirm').value;
-    if(pass!==confirm){ show('Passwords do not match'); return; }
-    if(pass.length<6){ show('Password must be at least 6 characters'); return; }
-    if(accounts[email]){ show('Account already exists — please sign in'); return; }
-    accounts[email] = { password: pass };
-    localStorage.setItem('audix_accounts', JSON.stringify(accounts));
-  } else {
-    // Sign-in: verify stored credentials
-    if(!accounts[email]){ show('No account found — please register first'); return; }
-    if(accounts[email].password !== pass){ show('Incorrect password'); return; }
-  }
-  state.user = {email, name:email.split('@')[0], avatar:email[0].toUpperCase()};
-  localStorage.setItem('audix_user', JSON.stringify(state.user));
-  localStorage.removeItem('audix_skip');
-  document.getElementById('loginModal').style.display='none';
-  updateUserUI();
-  toast('Welcome, '+state.user.name+'! 🎵','success');
-}
-function skipLogin() {
-  document.getElementById('loginModal').style.display='none';
-  localStorage.setItem('audix_skip','1');
-  toast('Continuing as guest','');
-}
-function doLogout(){
-  state.user=null;
-  localStorage.removeItem('audix_user');
-  // Keep audix_skip so the modal does NOT reappear on next refresh.
-  // User can sign in again via the avatar button.
-  localStorage.setItem('audix_skip','1');
-  closeAccount();
-  updateUserUI();
-  toast('Signed out','');
-}
-function updateUserUI() {
-  const ua = document.getElementById('userAvatar');
-  const badge = document.getElementById('userBadge');
-  if(state.user){
-    ua.textContent = state.user.avatar||'U';
-    badge.style.display='block';
-  } else {
-    ua.textContent='?';
-    badge.style.display='none';
-  }
-}
-function openAccount() {
-  if(!state.user){document.getElementById('loginModal').style.display='flex';return;}
-  document.getElementById('accAvatar').childNodes[0].textContent=state.user.avatar||'U';
-  document.getElementById('accName').textContent=state.user.name||'User';
-  document.getElementById('accEmail').textContent=state.user.email||'—';
-  document.getElementById('accTracks').textContent=state.tracks.length;
-  document.getElementById('accFavs').textContent=state.favs.length;
-  document.getElementById('accPlaylists').textContent=state.playlists.length;
-  document.getElementById('accountModal').classList.add('active');
-}
-function closeAccount(){document.getElementById('accountModal').classList.remove('active');}
 
 // ========== AUDIO ENGINE ==========
 function setupAudioContext() {
@@ -1897,7 +1749,7 @@ function stageSet(id, state, resultText) {
   const row = document.getElementById('stage-' + id);
   const res = document.getElementById('result-' + id);
   dot.className = 'stage-dot ' + state;
-  dot.textContent = state === 'done' ? '✓' : state === 'error' ? '✗' : state === 'skip' ? '—' : state === 'loading' ? '…' : (id === 'id3' ? '1' : id === 'acoustid' ? '2' : id === 'mb' ? '3' : '4');
+  dot.textContent = state === 'done' ? '✓' : state === 'error' ? '✗' : state === 'skip' ? '—' : state === 'loading' ? '…' : (id === 'ai' ? '✦' : id === 'id3' ? '1' : id === 'acoustid' ? '2' : id === 'mb' ? '3' : '4');
   row.className = 'id-stage ' + (state === 'loading' ? 'active' : state === 'done' ? 'done' : state === 'error' ? 'error' : '');
   if (res) res.textContent = resultText || '';
 }
@@ -1905,11 +1757,56 @@ function pipelineStatus(msg) {
   document.getElementById('pipelineStatus').textContent = msg;
 }
 function resetPipeline() {
-  ['id3','acoustid','mb','lyrics'].forEach(id => stageSet(id, 'idle', ''));
+  ['ai','id3','acoustid','mb','lyrics'].forEach(id => stageSet(id, 'idle', ''));
   pipelineStatus('Identifying…');
   // Always show stages while pipeline is running
   document.getElementById('pipelineStages').style.display = 'flex';
   clearLyrics();
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Stage 0: AI Title Cleaner — uses Claude API to extract clean title+artist
+// from messy filenames like "Djo_-_End_Of_Beginning__Official_Audio_(0)"
+// ──────────────────────────────────────────────────────────────────────
+async function aiCleanTitle(rawName) {
+  try {
+    const prompt = `You are a music metadata extractor. Given a raw song filename or title string, extract the clean song title and artist name.
+
+Rules:
+- Remove underscores (replace with spaces)
+- Remove quality/format tags: (Official Audio), (Official Video), (Lyrics), (HD), (HQ), (4K), (Audio), (Official), (Music Video), (Official Music Video), (Official Lyric Video), (Lyric Video), (Official Visualizer), (Visualizer), (VEVO), [Official], [Lyrics], [HD] etc.
+- Remove platform tags: YouTube, Vevo, Spotify, etc.
+- Remove track numbers like "01 ", "02 - "
+- Remove file extensions
+- Remove trailing/leading whitespace and punctuation
+- Common separators between artist and title: " - ", " – ", " — ", "_-_"
+- If no artist separator found, put everything in title and leave artist empty
+
+Input: "${rawName}"
+
+Respond with ONLY a JSON object, no explanation:
+{"title": "Clean Song Title", "artist": "Artist Name or empty string"}`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 150,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const text = data.content?.[0]?.text?.trim() || '';
+    // Strip any markdown fences just in case
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    if (parsed.title) return { title: parsed.title.trim(), artist: (parsed.artist || '').trim() };
+    return null;
+  } catch(e) {
+    return null;
+  }
 }
 
 // ---- Trigger on playback ----
@@ -1935,9 +1832,32 @@ async function triggerIdentification() {
   resetPipeline();
 
   try {
+    // ── Stage 0: AI Title Cleaner ──
+    // Takes the raw track name (which may be a messy filename) and asks Claude
+    // to extract a clean title + artist before anything else runs.
+    stageSet('ai', 'loading', '');
+    pipelineStatus('AI cleaning title…');
+    const rawName = file ? file.name.replace(/\.[^.]+$/, '') : track.name;
+    const aiResult = await aiCleanTitle(rawName).catch(() => null);
+    let aiTitle = null, aiArtist = null;
+    if (aiResult && aiResult.title) {
+      aiTitle  = aiResult.title;
+      aiArtist = aiResult.artist || null;
+      stageSet('ai', 'done', aiArtist ? `"${aiTitle}" by ${aiArtist}` : `"${aiTitle}"`);
+      // Pre-seed track name/artist with cleaned values so later stages benefit
+      track.name   = aiTitle;
+      if (aiArtist) track.artist = aiArtist;
+      updatePlayerUI();
+    } else {
+      stageSet('ai', 'skip', 'Could not clean — using existing name');
+    }
+
     // ── Stage 1: ID3 tags ──
     let identified = false;
-    let titleFromTag = null, artistFromTag = null;
+    // Pre-seed with AI-cleaned values; ID3 tags will override if found
+    let titleFromTag = aiTitle || null, artistFromTag = aiArtist || null;
+    // If AI already gave us both title+artist, treat as identified (skip AcoustID)
+    if (aiTitle && aiArtist) identified = true;
 
     if (file) {
       stageSet('id3', 'loading', '');
