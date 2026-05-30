@@ -458,7 +458,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
         <!-- IDENTIFICATION PIPELINE -->
         <div class="id-pipeline" id="idPipeline">
           <div class="id-pipeline-header" onclick="togglePipelinePanel()">
-            <div class="id-pipeline-title">🔬 Smart ID Pipeline</div>
+            <div class="id-pipeline-title">✦ AI Lyrics Pipeline</div>
             <div class="id-pipeline-status" id="pipelineStatus">Waiting for track…</div>
           </div>
           <div id="pipelineStages">
@@ -470,35 +470,11 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
                 <div class="stage-result" id="result-ai"></div>
               </div>
             </div>
-            <div class="id-stage" id="stage-id3">
-              <div class="stage-dot idle" id="dot-id3">1</div>
-              <div class="stage-body">
-                <div class="stage-name">ID3 Tag Reader</div>
-                <div class="stage-desc">Reads embedded metadata (jsmediatags)</div>
-                <div class="stage-result" id="result-id3"></div>
-              </div>
-            </div>
-            <div class="id-stage" id="stage-acoustid">
-              <div class="stage-dot idle" id="dot-acoustid">2</div>
-              <div class="stage-body">
-                <div class="stage-name">AcoustID Fingerprint</div>
-                <div class="stage-desc">Audio fingerprinting fallback for untagged files</div>
-                <div class="stage-result" id="result-acoustid"></div>
-              </div>
-            </div>
-            <div class="id-stage" id="stage-mb">
-              <div class="stage-dot idle" id="dot-mb">3</div>
-              <div class="stage-body">
-                <div class="stage-name">MusicBrainz Enrichment</div>
-                <div class="stage-desc">Official metadata lookup &amp; normalization</div>
-                <div class="stage-result" id="result-mb"></div>
-              </div>
-            </div>
             <div class="id-stage" id="stage-lyrics">
-              <div class="stage-dot idle" id="dot-lyrics">4</div>
+              <div class="stage-dot idle" id="dot-lyrics">2</div>
               <div class="stage-body">
                 <div class="stage-name">LRCLIB Lyrics</div>
-                <div class="stage-desc">Synced lyrics fetch using clean metadata</div>
+                <div class="stage-desc">Synced lyrics fetch using AI-cleaned metadata</div>
                 <div class="stage-result" id="result-lyrics"></div>
               </div>
             </div>
@@ -1760,7 +1736,7 @@ function stageSet(id, state, resultText) {
   const row = document.getElementById('stage-' + id);
   const res = document.getElementById('result-' + id);
   dot.className = 'stage-dot ' + state;
-  dot.textContent = state === 'done' ? '✓' : state === 'error' ? '✗' : state === 'skip' ? '—' : state === 'loading' ? '…' : (id === 'ai' ? '✦' : id === 'id3' ? '1' : id === 'acoustid' ? '2' : id === 'mb' ? '3' : '4');
+  dot.textContent = state === 'done' ? '✓' : state === 'error' ? '✗' : state === 'skip' ? '—' : state === 'loading' ? '…' : (id === 'ai' ? '✦' : '2');
   row.className = 'id-stage ' + (state === 'loading' ? 'active' : state === 'done' ? 'done' : state === 'error' ? 'error' : '');
   if (res) res.textContent = resultText || '';
 }
@@ -1768,7 +1744,7 @@ function pipelineStatus(msg) {
   document.getElementById('pipelineStatus').textContent = msg;
 }
 function resetPipeline() {
-  ['ai','id3','acoustid','mb','lyrics'].forEach(id => stageSet(id, 'idle', ''));
+  ['ai','lyrics'].forEach(id => stageSet(id, 'idle', ''));
   pipelineStatus('Identifying…');
   // Always show stages while pipeline is running
   document.getElementById('pipelineStages').style.display = 'flex';
@@ -1824,18 +1800,6 @@ Respond with ONLY a JSON object, no explanation:
 async function triggerIdentification() {
   if (state.currentIdx < 0) return;
   const track = state.tracks[state.currentIdx];
-  // _fileMap is in-memory; after a page reload it's empty.
-  // Rebuild from the IndexedDB blob so ID3/fingerprint still work on every track.
-  let file = _fileMap.get(String(track.id));
-  if (!file) {
-    try {
-      const blob = await idbGetAudio(track.id);
-      if (blob) {
-        file = new File([blob], (track.name||'track')+'.mp3', {type: blob.type||'audio/mpeg'});
-        _fileMap.set(String(track.id), file);
-      }
-    } catch(e) { /* pipeline will show skip */ }
-  }
 
   const btn = document.getElementById('lyricsFetchBtn');
   btn.disabled = true;
@@ -1843,118 +1807,59 @@ async function triggerIdentification() {
   resetPipeline();
 
   try {
-    // ── Stage 0: AI Title Cleaner ──
-    // Takes the raw track name (which may be a messy filename) and asks Claude
-    // to extract a clean title + artist before anything else runs.
+    // ── Stage 1: AI Title Cleaner ──
     stageSet('ai', 'loading', '');
     pipelineStatus('AI cleaning title…');
+
+    // Use filename if available, otherwise fall back to track name
+    let file = _fileMap.get(String(track.id));
+    if (!file) {
+      try {
+        const blob = await idbGetAudio(track.id);
+        if (blob) {
+          file = new File([blob], (track.name||'track')+'.mp3', {type: blob.type||'audio/mpeg'});
+          _fileMap.set(String(track.id), file);
+        }
+      } catch(e) { /* no file — will use track name */ }
+    }
+
     const rawName = file ? file.name.replace(/\.[^.]+$/, '') : track.name;
     const aiResult = await aiCleanTitle(rawName).catch(() => null);
-    let aiTitle = null, aiArtist = null;
+    let cleanTitle, cleanArtist;
+
     if (aiResult && aiResult.title) {
-      aiTitle  = aiResult.title;
-      aiArtist = aiResult.artist || null;
-      stageSet('ai', 'done', aiArtist ? `"${aiTitle}" by ${aiArtist}` : `"${aiTitle}"`);
-      // Pre-seed track name/artist with cleaned values so later stages benefit
-      track.name   = aiTitle;
-      if (aiArtist) track.artist = aiArtist;
+      cleanTitle  = aiResult.title;
+      cleanArtist = aiResult.artist || track.artist || 'Unknown Artist';
+      stageSet('ai', 'done', aiResult.artist ? `"${cleanTitle}" by ${cleanArtist}` : `"${cleanTitle}"`);
+      track.name   = cleanTitle;
+      track.artist = cleanArtist;
       updatePlayerUI();
     } else {
+      // Fallback: use existing track metadata
+      cleanTitle  = track.name;
+      cleanArtist = track.artist || 'Unknown Artist';
       stageSet('ai', 'skip', 'Could not clean — using existing name');
     }
 
-    // ── Stage 1: ID3 tags ──
-    let identified = false;
-    // Pre-seed with AI-cleaned values; ID3 tags will override if found
-    let titleFromTag = aiTitle || null, artistFromTag = aiArtist || null;
-    // If AI already gave us both title+artist, treat as identified (skip AcoustID)
-    if (aiTitle && aiArtist) identified = true;
-
-    if (file) {
-      stageSet('id3', 'loading', '');
-      const tags = await readID3Tags(file).catch(() => null);
-      if (tags && tags.title && tags.artist) {
-        titleFromTag  = tags.title.trim();
-        artistFromTag = tags.artist.trim();
-        stageSet('id3', 'done', `"${titleFromTag}" by ${artistFromTag}`);
-        identified = true;
-        // Apply to track if better than current
-        if (titleFromTag)  track.name   = titleFromTag;
-        if (artistFromTag) track.artist = artistFromTag;
-        if (tags.album)    track.album  = tags.album;
-        if (tags.year)     track.year   = tags.year;
-        updatePlayerUI();
-      } else {
-        stageSet('id3', 'skip', 'No usable ID3 tags found');
-      }
-    } else {
-      stageSet('id3', 'skip', 'File not available for tag read');
-    }
-
-    // ── Stage 2: AcoustID fingerprint — runs whenever ID3 failed and we have the file ──
-    if (!identified && file) {
-      stageSet('acoustid', 'loading', '');
-      const fpResult = await acoustIDLookup(file).catch(() => null);
-      if (fpResult && fpResult.title && fpResult.artist) {
-        titleFromTag  = fpResult.title;
-        artistFromTag = fpResult.artist;
-        const srcLabel = fpResult.source === 'acoustid'
-          ? `AcoustID match (score ${Math.round((fpResult.score||0)*100)}%)`
-          : 'Parsed from filename';
-        stageSet('acoustid', 'done', `"${titleFromTag}" by ${artistFromTag} · ${srcLabel}`);
-        track.name   = titleFromTag;
-        track.artist = artistFromTag;
-        updatePlayerUI();
-        identified = true;
-      } else {
-        stageSet('acoustid', 'error', fpResult?.error || 'No match found');
-      }
-    } else if (!identified) {
-      stageSet('acoustid', 'skip', 'No file available for fingerprinting');
-    } else {
-      stageSet('acoustid', 'skip', 'Not needed — ID3 tags found');
-    }
-
-    // ── Stage 3: MusicBrainz enrichment ──
-    const searchTitle  = titleFromTag  || track.name;
-    const searchArtist = artistFromTag || track.artist;
-
-    stageSet('mb', 'loading', '');
-    const mbResult = await musicBrainzEnrich(searchTitle, searchArtist).catch(() => null);
-    let cleanTitle = searchTitle, cleanArtist = searchArtist;
-    if (mbResult) {
-      cleanTitle  = mbResult.title  || searchTitle;
-      cleanArtist = mbResult.artist || searchArtist;
-      track.name   = cleanTitle;
-      track.artist = cleanArtist;
-      if (mbResult.album) track.album = mbResult.album;
-      if (mbResult.year)  track.year  = mbResult.year;
-      updatePlayerUI();
-      stageSet('mb', 'done', `Official: "${cleanTitle}" · ${cleanArtist}${mbResult.year ? ' (' + mbResult.year + ')' : ''}`);
-    } else {
-      stageSet('mb', 'skip', 'Could not enrich — using best-known metadata');
-    }
-
-    // Save enriched meta to IndexedDB
+    // Save updated meta to IndexedDB
     const m = {...track}; delete m.url;
     idbSaveMeta(m).catch(() => {});
 
-    // ── Stage 4: LRCLIB lyrics ──
+    // ── Stage 2: LRCLIB Lyrics ──
     stageSet('lyrics', 'loading', '');
     pipelineStatus('Fetching lyrics…');
 
-    // Wait up to 4 s for audio.duration to become available (it may still be loading)
+    // Wait up to 4s for audio.duration to become available
     let audioDur = audio.duration;
     if (!audioDur || !isFinite(audioDur)) {
       await new Promise(resolve => {
         if (audio.readyState >= 1 && isFinite(audio.duration)) { resolve(); return; }
         const onMeta = () => { audio.removeEventListener('loadedmetadata', onMeta); resolve(); };
         audio.addEventListener('loadedmetadata', onMeta);
-        setTimeout(resolve, 4000); // don't block forever
+        setTimeout(resolve, 4000);
       });
       audioDur = audio.duration || 0;
     }
-    // Also try track.duration as stored fallback
     if (!audioDur || !isFinite(audioDur)) audioDur = track.duration || 0;
 
     const lyricsResult = await fetchLRCLIBLyrics(cleanTitle, cleanArtist, track.album, audioDur).catch(() => null);
@@ -1964,8 +1869,8 @@ async function triggerIdentification() {
         _lyricsSynced = true;
         stageSet('lyrics', 'done', `Synced lyrics (${_lyricsData.length} lines)`);
       } else {
-        _lyricsData   = [];
-        _lyricsSynced = false;
+        _lyricsData    = [];
+        _lyricsSynced  = false;
         _lyricsRawText = lyricsResult.plain;
         stageSet('lyrics', 'done', 'Plain lyrics loaded');
       }
@@ -1983,7 +1888,7 @@ async function triggerIdentification() {
 
   btn.disabled = false;
   btn.textContent = 'Re-identify';
-  // On mobile, collapse the pipeline stages after finishing so lyrics are visible
+  // On mobile, collapse stages after finishing so lyrics are visible
   if (window.innerWidth <= 600) {
     setTimeout(() => {
       document.getElementById('pipelineStages').style.display = 'none';
