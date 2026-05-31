@@ -652,6 +652,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
   <div class="topbar">
     <div class="topbar-logo">AUDIX<span>MUSIC PLAYER</span></div>
     <div class="topbar-actions">
+      <button class="icon-btn" onclick="openApiKeyModal()" id="apiKeyBtn" title="Set Groq API Key" style="position:relative">🔑<span id="apiKeyDot" style="display:none;position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:#22c55e"></span></button>
       <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
       <button class="icon-btn" onclick="openTab('search')">🔍</button>
       <div style="display:flex;align-items:center;gap:5px;padding:6px 10px;background:var(--glass);border:1px solid var(--border);border-radius:10px;cursor:pointer" onclick="toggleWakeWord()" title="Always-on wake word: say 'Hey Audix'">
@@ -3172,17 +3173,16 @@ Input: "${rawName}"
 Respond with ONLY a JSON object, no explanation:
 {"title": "Clean Song Title", "artist": "Artist Name or empty string"}`;
 
-    const resp = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + GEMINI_API_KEY,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 150 } })
-      }
-    );
+    const _tkey = getGroqKey();
+    if (!_tkey) return localResult;
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _tkey },
+      body: JSON.stringify({ model: GROQ_MODEL, max_tokens: 150, messages: [{ role: 'user', content: prompt }] })
+    });
     if (!resp.ok) return localResult;
     const data = await resp.json();
-    const text = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+    const text = (data.choices?.[0]?.message?.content || '').trim();
     // Strip any markdown fences just in case
     const clean = text.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
@@ -4195,21 +4195,25 @@ function closeDeviceTransfer() {
 // ── Host: receive data from Phone B ──────────────────────────────────
 function hostOnMessage(data) {
   if (typeof data === 'string' || (data && typeof data === 'object' && data.type)) {
-    // JSON control message (PeerJS sends objects natively)
     const msg = typeof data === 'string' ? JSON.parse(data) : data;
     if (msg.type === 'file-start') {
       _xferCurrentFile = msg.name;
-      _xferReceiving[msg.name] = { meta: msg, chunks: [], received: 0 };
+      _xferReceiving[msg.name] = { meta: msg, chunks: [], received: 0, done: false, expectedSize: msg.size };
       addTransferFileItem(msg.name, '0%');
-      document.getElementById('transferStatus').textContent = `Receiving: ${msg.name}`;
+      document.getElementById('transferStatus').textContent = 'Receiving: ' + msg.name;
       document.getElementById('transferStatus').className = 'transfer-status receiving';
     } else if (msg.type === 'file-end') {
-      finalizeReceivedFile(msg.name);
+      // Mark as done — finalize only when we also have all the bytes
+      const s = _xferReceiving[msg.name];
+      if (s) {
+        s.done = true;
+        tryFinalizeFile(msg.name);
+      }
     } else if (msg.type === 'progress') {
       updateTransferFileItem(msg.name, msg.pct + '%');
       document.getElementById('transferProgressBar').style.width = msg.pct + '%';
     } else if (msg.type === 'all-done') {
-      document.getElementById('transferStatus').textContent = `✓ All files received!`;
+      document.getElementById('transferStatus').textContent = '✓ All files received!';
       document.getElementById('transferStatus').className = 'transfer-status connected';
       toast('📲 Import complete — all files added to library!', 'success');
     }
@@ -4217,20 +4221,71 @@ function hostOnMessage(data) {
     // Binary chunk
     if (!_xferCurrentFile || !_xferReceiving[_xferCurrentFile]) return;
     const s = _xferReceiving[_xferCurrentFile];
-    s.chunks.push(data);
+    s.chunks.push(data instanceof Blob ? data : new Blob([data]));
     s.received += (data.byteLength || data.size || 0);
+    // If file-end already arrived, try to finalize now that we have more data
+    if (s.done) tryFinalizeFile(_xferCurrentFile);
   }
+}
+
+function tryFinalizeFile(name) {
+  const s = _xferReceiving[name];
+  if (!s || !s.done) return;
+  // Wait until we've received all expected bytes (or no size info — just go)
+  if (s.expectedSize && s.received < s.expectedSize) return;
+  finalizeReceivedFile(name);
 }
 
 async function finalizeReceivedFile(name) {
   const s = _xferReceiving[name];
-  if (!s) return;
-  const blob = new Blob(s.chunks, { type: s.meta.mimeType || 'audio/mpeg' });
-  const file  = new File([blob], s.meta.name, { type: blob.type });
-  const fakeEv = { target: { files: [file] } };
-  await handleFileUpload(fakeEv);
+  if (!s || s.finalizing) return;
+  s.finalizing = true; // prevent double-finalize
+
+  const mimeType = s.meta.mimeType || guessMime(name);
+  const blob = new Blob(s.chunks, { type: mimeType });
+
+  // Save directly to IndexedDB — don't rely on File/blob URL staying alive
+  const id = Date.now() + Math.random();
+  const rawName = name.replace(/\.[^.]+$/, '');
+  const cleaned = localCleanTitle(rawName);
+  const track = {
+    id, name: cleaned.title || rawName,
+    artist: cleaned.artist || 'Unknown Artist',
+    album: 'Unknown Album',
+    url: URL.createObjectURL(blob), // valid as long as blob is alive in memory
+    duration: 0, emoji: randomMusicEmoji(),
+    genre: '—', year: '—', bpm: '—',
+    _order: state.tracks.length
+  };
+
+  try {
+    await idbSaveAudio(id, blob);
+    const meta = { ...track }; delete meta.url;
+    await idbSaveMeta(meta);
+  } catch(err) {
+    console.warn('[Audix] IDB save error:', err);
+  }
+
+  state.tracks.push(track);
+  renderTrackList();
+  updateStorageInfo();
   updateTransferFileItem(name, 'Done ✓', true);
   delete _xferReceiving[name];
+  toast('📲 Received: ' + track.name, 'success');
+
+  // Extract art in background
+  const file = new File([blob], name, { type: mimeType });
+  extractArtFromFile(file).then(dataUrl => {
+    if (dataUrl) { idbSaveArt(id, dataUrl).catch(() => {}); applyArt(id, dataUrl); }
+  });
+}
+
+function guessMime(filename) {
+  const ext = (filename.split('.').pop() || '').toLowerCase();
+  const map = { mp3:'audio/mpeg', m4a:'audio/mp4', aac:'audio/aac',
+                flac:'audio/flac', wav:'audio/wav', ogg:'audio/ogg',
+                opus:'audio/opus', weba:'audio/webm' };
+  return map[ext] || 'audio/mpeg';
 }
 
 function addTransferFileItem(name, status) {
@@ -4403,15 +4458,28 @@ function checkSenderMode() {
         const ab = await f.arrayBuffer();
         let offset = 0;
         while (offset < ab.byteLength) {
+          // Throttle if PeerJS buffer is too full — prevents dropped chunks
+          while (conn.dataChannel && conn.dataChannel.bufferedAmount > 1024 * 1024) {
+            await new Promise(function(r) { setTimeout(r, 50); });
+          }
           const chunk = ab.slice(offset, Math.min(offset + chunkSize, ab.byteLength));
           conn.send(chunk);
           offset += chunk.byteLength;
           const pct = Math.round((offset / ab.byteLength) * 100);
           progressBar.style.width = pct + '%';
           stSpan.textContent = pct + '%';
-          conn.send({ type: 'progress', name: f.name, pct: pct });
-          if (offset % (chunkSize * 4) === 0) await new Promise(function(r) { setTimeout(r, 10); });
+          // Small yield every 4 chunks to keep UI responsive
+          if (offset % (chunkSize * 4) === 0) await new Promise(function(r) { setTimeout(r, 5); });
         }
+
+        // Wait for send buffer to drain before sending file-end
+        await new Promise(function(resolve) {
+          function drain() {
+            if (!conn.dataChannel || conn.dataChannel.bufferedAmount === 0) { resolve(); }
+            else { setTimeout(drain, 50); }
+          }
+          drain();
+        });
 
         conn.send({ type: 'file-end', name: f.name });
         stSpan.textContent = '✓ Done';
@@ -4489,42 +4557,29 @@ function drawQR(canvas, text, size) {
 }
 </script>
 <script>
-// ========== GEMINI CONFIG ==========
-const GEMINI_API_KEY = 'AQ.Ab8RN6LScfrwo2bFLpeb00WDuHwPTIQq_Mf3x1tysNf8hgCFXg';
-const GEMINI_MODEL   = 'gemini-1.5-flash';
+// ========== AI CONFIG (Groq — key set by user) ==========
+const GROQ_MODEL = 'llama3-70b-8192';
+function getGroqKey() { return localStorage.getItem('audix_groq_key') || ''; }
 
 // ========== SHARED AI CALL HELPER ==========
-async function callClaude(messages, maxTokens = 300, _retry = 0) {
-  // Convert OpenAI-style messages to Gemini format
-  const geminiContents = messages.map(m => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }]
-  }));
-  const resp = await fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + GEMINI_API_KEY,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: geminiContents, generationConfig: { maxOutputTokens: maxTokens } })
-    }
-  );
+async function callClaude(messages, maxTokens = 300) {
+  const key = getGroqKey();
+  if (!key) throw new Error('No API key — tap the 🔑 button in the top bar to add your Groq key.');
+  const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    body: JSON.stringify({ model: GROQ_MODEL, max_tokens: maxTokens, messages })
+  });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}));
-    const code = err?.error?.code || resp.status;
-    if (resp.status === 400) throw new Error('Invalid request to Gemini API.');
-    if (resp.status === 403) throw new Error('Invalid Gemini API key.');
-    if (resp.status === 429) {
-      if (_retry < 2) {
-        await new Promise(r => setTimeout(r, 2000 * (_retry + 1)));
-        return callClaude(messages, maxTokens, _retry + 1);
-      }
-      throw new Error('Rate limit hit — too many requests. Please wait a moment.');
-    }
-    if (resp.status >= 500) throw new Error('Gemini server error — try again shortly.');
+    const code = err?.error?.type || resp.status;
+    if (resp.status === 401) throw new Error('Invalid Groq API key — check your key in settings.');
+    if (resp.status === 429) throw new Error('Rate limit hit — please wait a moment and try again.');
+    if (resp.status >= 500) throw new Error('Groq server error — try again shortly.');
     throw new Error('API error (' + code + ')');
   }
   const data = await resp.json();
-  const text = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').replace(/```json|```/g, '').trim();
+  const text = (data.choices?.[0]?.message?.content || '').replace(/```json|```/g, '').trim();
   if (!text) throw new Error('Empty response from AI.');
   return text;
 }
@@ -5098,22 +5153,22 @@ async function sendDjMessage() {
       ..._djHistory.slice(1).map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }))
     ];
 
-    // Build Gemini contents from message history
-    const geminiContents = messages.map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }]
-    }));
-    const resp = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + GEMINI_API_KEY,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: geminiContents, generationConfig: { maxOutputTokens: 300 } })
-      }
-    );
+    const _djkey = getGroqKey();
+    if (!_djkey) {
+      hideDjTyping();
+      addDjMessage('ai', 'No API key set — tap the 🔑 button in the top bar to add your Groq key.');
+      _djBusy = false;
+      document.getElementById('djSend').disabled = false;
+      return;
+    }
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _djkey },
+      body: JSON.stringify({ model: GROQ_MODEL, max_tokens: 300, messages })
+    });
 
     const data = await resp.json();
-    const reply = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim() || 'Sorry, I had a momentary silence. Try again? 🎵';
+    const reply = (data.choices?.[0]?.message?.content || '').trim() || 'Sorry, I had a momentary silence. Try again? 🎵';
 
     hideDjTyping();
     addDjMessage('ai', reply);
@@ -5154,6 +5209,80 @@ async function sendDjMessage() {
     document.getElementById('djInput').focus();
   }
 }
+</script>
+
+<!-- API KEY MODAL -->
+<div id="apiKeyModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:28px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:16px;position:relative">
+    <button onclick="closeApiKeyModal()" style="position:absolute;top:14px;right:14px;background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text2);cursor:pointer;font-size:0.85rem">✕</button>
+    <div style="font-size:1.1rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-family:'Exo 2'">🔑 Groq API Key</div>
+    <div style="font-size:0.82rem;color:var(--text2);font-family:'Rajdhani';line-height:1.5">Enter your free Groq API key to enable AI features.<br>Get one free at <a href="https://console.groq.com" target="_blank" style="color:var(--cyan)">console.groq.com</a></div>
+    <input id="apiKeyInput" type="password"
+      placeholder="gsk_..."
+      style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Share Tech Mono';font-size:0.88rem;outline:none;transition:border-color 0.2s"
+      onfocus="this.style.borderColor='var(--cyan)'"
+      onblur="this.style.borderColor='var(--border)'"
+      onkeydown="if(event.key==='Enter')saveApiKey()"
+    >
+    <div style="display:flex;gap:8px">
+      <button onclick="saveApiKey()" style="flex:1;background:var(--grad);border:none;border-radius:10px;padding:11px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.9rem;cursor:pointer">Save Key</button>
+      <button onclick="clearApiKey()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:11px 16px;color:var(--text2);font-family:'Exo 2';font-weight:600;font-size:0.85rem;cursor:pointer">Clear</button>
+    </div>
+    <div id="apiKeyStatus" style="font-size:0.78rem;font-family:'Rajdhani';text-align:center;min-height:18px"></div>
+  </div>
+</div>
+
+<script>
+function openApiKeyModal() {
+  const modal = document.getElementById('apiKeyModal');
+  modal.style.display = 'flex';
+  const existing = getGroqKey();
+  const input = document.getElementById('apiKeyInput');
+  input.value = existing ? existing.slice(0,8) + '••••••••••••••••••••' : '';
+  input.placeholder = existing ? 'Key saved — paste new to replace' : 'gsk_...';
+  document.getElementById('apiKeyStatus').textContent = existing ? '✓ Key is set — AI features active' : '';
+  document.getElementById('apiKeyStatus').style.color = existing ? '#22c55e' : '';
+  setTimeout(() => { if (!existing) input.focus(); }, 100);
+}
+
+function closeApiKeyModal() {
+  document.getElementById('apiKeyModal').style.display = 'none';
+}
+
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val || val.includes('•')) {
+    document.getElementById('apiKeyStatus').textContent = 'Please enter a valid key.';
+    document.getElementById('apiKeyStatus').style.color = '#ef4444';
+    return;
+  }
+  if (!val.startsWith('gsk_')) {
+    document.getElementById('apiKeyStatus').textContent = 'Groq keys start with gsk_ — check your key.';
+    document.getElementById('apiKeyStatus').style.color = '#ef4444';
+    return;
+  }
+  localStorage.setItem('audix_groq_key', val);
+  document.getElementById('apiKeyDot').style.display = 'block';
+  document.getElementById('apiKeyStatus').textContent = '✓ Key saved! AI features are now active.';
+  document.getElementById('apiKeyStatus').style.color = '#22c55e';
+  toast('🔑 Groq API key saved — AI features enabled!', 'success');
+  setTimeout(closeApiKeyModal, 1200);
+}
+
+function clearApiKey() {
+  localStorage.removeItem('audix_groq_key');
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('apiKeyInput').placeholder = 'gsk_...';
+  document.getElementById('apiKeyDot').style.display = 'none';
+  document.getElementById('apiKeyStatus').textContent = 'Key cleared.';
+  document.getElementById('apiKeyStatus').style.color = 'var(--text2)';
+  toast('API key removed', '');
+}
+
+// Show green dot if key already saved
+window.addEventListener('DOMContentLoaded', () => {
+  if (getGroqKey()) document.getElementById('apiKeyDot').style.display = 'block';
+});
 </script>
 </body>
 </html>
