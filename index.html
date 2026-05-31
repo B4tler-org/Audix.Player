@@ -189,16 +189,6 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .genre-card{background:var(--bg4);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all 0.2s;font-size:0.8rem;font-family:'Rajdhani';font-weight:600}
 .genre-card:hover,.genre-card.active{background:var(--grad);color:white;border-color:transparent;transform:scale(1.03)}
 
-/* VISUALIZER */
-.visualizer-section{background:var(--bg3);border:1px solid var(--border);border-radius:16px;overflow:hidden;position:relative}
-.viz-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
-.viz-types{display:flex;gap:6px}
-.viz-type-btn{background:var(--bg4);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:0.75rem;color:var(--text2);cursor:pointer;font-family:'Rajdhani';font-weight:600;transition:all 0.2s}
-.viz-type-btn.active{background:var(--grad);color:white;border-color:transparent}
-#vizCanvas{width:100%;height:200px;display:block;background:var(--bg)}
-.fullscreen-viz-btn{background:var(--grad);border:none;border-radius:8px;padding:6px 14px;color:white;font-size:0.8rem;cursor:pointer;font-family:'Exo 2';font-weight:600;transition:transform 0.2s}
-.fullscreen-viz-btn:hover{transform:scale(1.03)}
-
 /* FULLSCREEN VISUALIZER */
 #vizFullscreen{position:fixed;inset:0;z-index:1000;background:black;display:none;flex-direction:column}
 #vizFullscreen.active{display:flex}
@@ -212,6 +202,35 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .viz-type-chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:16px;border-top:1px solid rgba(255,255,255,0.1)}
 .viz-chip{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:6px 14px;color:rgba(255,255,255,0.7);font-size:0.8rem;cursor:pointer;transition:all 0.2s;font-family:'Rajdhani';font-weight:600}
 .viz-chip.active{background:var(--grad);color:white;border-color:transparent}
+
+/* ===== VISUALIZER TAB ===== */
+.viz-tab-canvas-wrap{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--bg);flex-shrink:0}
+#vizTabCanvas{width:100%;height:340px;display:block;background:#000}
+@media(max-width:600px){#vizTabCanvas{height:220px}}
+.viz-tab-types-scroll{display:flex;gap:10px;overflow-x:auto;padding:6px 2px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-shrink:0}
+.viz-tab-types-scroll::-webkit-scrollbar{display:none}
+.viz-tab-btn{flex-shrink:0;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:10px 16px;color:var(--text2);cursor:pointer;font-family:'Rajdhani';font-weight:700;font-size:0.85rem;letter-spacing:1px;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:80px;text-align:center}
+.viz-tab-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,0.06)}
+.viz-tab-btn.active{background:var(--grad);color:white;border-color:transparent;box-shadow:0 0 16px rgba(139,92,246,0.4)}
+.viz-tab-btn .vt-icon{font-size:1.4rem;line-height:1}
+.viz-tab-btn .vt-name{font-size:0.7rem;letter-spacing:1.5px;text-transform:uppercase}
+.viz-tab-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.viz-tab-title{font-size:1.1rem;font-weight:700;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.viz-tab-nowplaying{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:14px;flex-shrink:0}
+.viz-tab-np-art{width:48px;height:48px;border-radius:10px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;overflow:hidden;border:1px solid var(--border)}
+.viz-tab-np-art img{width:100%;height:100%;object-fit:cover}
+.viz-tab-np-info{flex:1;min-width:0}
+.viz-tab-np-title{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:0.95rem}
+.viz-tab-np-artist{font-size:0.78rem;color:var(--cyan);font-family:'Rajdhani';letter-spacing:1px}
+.viz-tab-fullscreen-btn{background:var(--grad);border:none;border-radius:10px;padding:8px 16px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.8rem;cursor:pointer;transition:transform 0.15s;flex-shrink:0;letter-spacing:0.5px}
+.viz-tab-fullscreen-btn:hover{transform:scale(1.04)}
+.viz-tab-sensitivity{display:flex;align-items:center;gap:10px;font-family:'Share Tech Mono';font-size:0.72rem;color:var(--text2);flex-shrink:0}
+.viz-sensitivity-slider{flex:1;height:4px;background:var(--bg4);border-radius:2px;cursor:pointer;-webkit-appearance:none;appearance:none;outline:none}
+.viz-sensitivity-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--grad);cursor:pointer}
+.viz-color-palette{display:flex;gap:8px;align-items:center;flex-shrink:0;padding:4px 2px}
+.viz-color-swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.2s;flex-shrink:0}
+.viz-color-swatch.active{border-color:white;transform:scale(1.2)}
+.viz-section-label{font-family:'Share Tech Mono';font-size:0.65rem;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:6px;flex-shrink:0}
 
 /* SEARCH */
 .search-wrap{position:relative}
@@ -388,9 +407,6 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
   .topbar{padding:8px 12px}
   #pipelineStages{display:none}
   .lyrics-body{max-height:220px}
-  #vizCanvas{height:120px}
-  .viz-types{flex-wrap:wrap;gap:4px}
-  .visualizer-section{font-size:0.85rem}
   .progress-section{padding:14px 16px}
   .controls{gap:8px;margin-top:10px}
   .play-btn{width:52px;height:52px;font-size:1.3rem}
@@ -437,6 +453,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
       <div class="nav-item" onclick="openTab('history')" id="nav-history"><span class="nav-icon">🕓</span>History</div>
       <div class="nav-item" onclick="openTab('search')" id="nav-search"><span class="nav-icon">🔍</span>Search</div>
       <div class="nav-item" onclick="openTab('equalizer')" id="nav-equalizer"><span class="nav-icon">🎛</span>Equalizer</div>
+      <div class="nav-item" onclick="openTab('visualizer')" id="nav-visualizer"><span class="nav-icon">🌈</span>Visualizer</div>
       <div class="sidebar-bottom">
         <div class="quality-badge" onclick="openQuality()" id="qualityBadge">HI-RES · FLAC</div>
       </div>
@@ -551,19 +568,6 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
           </div>
         </div>
 
-        <div class="visualizer-section section-card">
-          <div class="viz-header">
-            <div class="viz-types" id="vizTypes">
-              <button class="viz-type-btn active" onclick="setVizType('bars',this)">Bars</button>
-              <button class="viz-type-btn" onclick="setVizType('wave',this)">Wave</button>
-              <button class="viz-type-btn" onclick="setVizType('circle',this)">Circle</button>
-              <button class="viz-type-btn" onclick="setVizType('particles',this)">Particles</button>
-              <button class="viz-type-btn" onclick="setVizType('spectrum',this)">Spectrum</button>
-            </div>
-            <button class="fullscreen-viz-btn" onclick="openFullViz()">⛶ Fullscreen</button>
-          </div>
-          <canvas id="vizCanvas"></canvas>
-        </div>
       </div>
 
       <!-- LIBRARY TAB -->
@@ -678,6 +682,50 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
         </div>
       </div>
 
+      <!-- VISUALIZER TAB -->
+      <div class="tab-content" id="tab-visualizer">
+        <div class="viz-tab-header">
+          <div class="viz-tab-title">🌈 Visualizer Studio</div>
+          <button class="viz-tab-fullscreen-btn" onclick="openFullViz()">⛶ Fullscreen</button>
+        </div>
+
+        <!-- Now playing strip -->
+        <div class="viz-tab-nowplaying" id="vizTabNowPlaying">
+          <div class="viz-tab-np-art" id="vizTabArt">🎵</div>
+          <div class="viz-tab-np-info">
+            <div class="viz-tab-np-title" id="vizTabTitle">No Track Playing</div>
+            <div class="viz-tab-np-artist" id="vizTabArtist">Choose a song from Library</div>
+          </div>
+        </div>
+
+        <!-- Canvas -->
+        <div class="viz-tab-canvas-wrap">
+          <canvas id="vizTabCanvas"></canvas>
+        </div>
+
+        <!-- Type picker — horizontally scrollable row of 20 -->
+        <div class="viz-section-label">Choose Visualizer Style</div>
+        <div class="viz-tab-types-scroll" id="vizTabTypes"></div>
+
+        <!-- Color palette -->
+        <div class="viz-section-label">Color Theme</div>
+        <div class="viz-color-palette" id="vizColorPalette">
+          <div class="viz-color-swatch active" style="background:linear-gradient(135deg,#00d4ff,#8b5cf6)" data-palette="default" onclick="setVizPalette('default',this)" title="Cyber"></div>
+          <div class="viz-color-swatch" style="background:linear-gradient(135deg,#ff6b35,#f7931e)" data-palette="fire" onclick="setVizPalette('fire',this)" title="Fire"></div>
+          <div class="viz-color-swatch" style="background:linear-gradient(135deg,#00ff87,#60efff)" data-palette="neon" onclick="setVizPalette('neon',this)" title="Neon"></div>
+          <div class="viz-color-swatch" style="background:linear-gradient(135deg,#ff0080,#ff8c00)" data-palette="sunset" onclick="setVizPalette('sunset',this)" title="Sunset"></div>
+          <div class="viz-color-swatch" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb)" data-palette="pastel" onclick="setVizPalette('pastel',this)" title="Pastel"></div>
+          <div class="viz-color-swatch" style="background:linear-gradient(135deg,#43e97b,#38f9d7)" data-palette="matrix" onclick="setVizPalette('matrix',this)" title="Matrix"></div>
+          <div class="viz-color-swatch" style="background:white" data-palette="mono" onclick="setVizPalette('mono',this)" title="Mono"></div>
+        </div>
+
+        <!-- Sensitivity -->
+        <div class="viz-tab-sensitivity">
+          <span>Sensitivity</span>
+          <input type="range" class="viz-sensitivity-slider" id="vizSensitivity" min="0.5" max="3" step="0.1" value="1" oninput="setVizSensitivity(this.value)">
+          <span id="vizSensLabel">1.0×</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -702,6 +750,10 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
     <div class="bn-item" id="bn-equalizer" onclick="openTab('equalizer')">
       <span class="bn-icon">🎛</span>
       <span>EQ</span>
+    </div>
+    <div class="bn-item" id="bn-visualizer" onclick="openTab('visualizer')">
+      <span class="bn-icon">🌈</span>
+      <span>Viz</span>
     </div>
   </nav>
 </div>
@@ -1005,6 +1057,8 @@ function showApp() {
   app.classList.add('visible');
   try { buildEqBars(); } catch(e) {}
   try { initViz(); } catch(e) {}
+  try { initVizTab(); } catch(e) {}
+  try { startVizTabLoop(); } catch(e) {}
   try { renderTrackList(); } catch(e) {}
   try { renderPlaylists(); } catch(e) {}
   try { updateStorageInfo(); } catch(e) {}
@@ -1089,6 +1143,11 @@ function openTab(tab) {
   const bnEl = document.getElementById('bn-'+tab);
   if(bnEl) bnEl.classList.add('active');
   if (tab === 'history') renderHistory();
+  if (tab === 'visualizer') {
+    updateVizTabNowPlaying();
+    const c = document.getElementById('vizTabCanvas');
+    if (c) { c.width = c.offsetWidth; c.height = c.offsetHeight; }
+  }
 }
 
 
@@ -1470,6 +1529,7 @@ function updatePlayerUI(){
     document.getElementById('vizFullTitle').textContent=track.name||'—';
     document.getElementById('vizFullArtist').textContent=track.artist||'—';
     updateFavBtn();
+    try { updateVizTabNowPlaying(); } catch(e) {}
 
     // Load album art — check cache first, then IDB
     const cached = _artCache.get(String(track.id));
@@ -1709,21 +1769,507 @@ function aiEqGenre(genre,el){
   toast('🤖 AI EQ optimized for '+genre,'success');
 }
 
+// ========== VISUALIZER TAB ==========
+const VIZ_TAB_TYPES = [
+  { id:'bars',      icon:'📊', name:'Bars' },
+  { id:'wave',      icon:'〰️', name:'Wave' },
+  { id:'circle',    icon:'⭕', name:'Circle' },
+  { id:'particles', icon:'✨', name:'Particles' },
+  { id:'spectrum',  icon:'🌈', name:'Spectrum' },
+  { id:'tunnel',    icon:'🌀', name:'Tunnel' },
+  { id:'radial',    icon:'🎆', name:'Radial' },
+  { id:'grid',      icon:'⬛', name:'Grid' },
+  { id:'mirror',    icon:'🪞', name:'Mirror' },
+  { id:'dots',      icon:'⚫', name:'Dots' },
+  { id:'fire',      icon:'🔥', name:'Fire' },
+  { id:'galaxy',    icon:'🌌', name:'Galaxy' },
+  { id:'dna',       icon:'🧬', name:'DNA' },
+  { id:'matrix',    icon:'💻', name:'Matrix' },
+  { id:'fractal',   icon:'❄️', name:'Fractal' },
+  { id:'ripple',    icon:'💧', name:'Ripple' },
+  { id:'lightning', icon:'⚡', name:'Lightning' },
+  { id:'terrain',   icon:'🏔️', name:'Terrain' },
+  { id:'starfield', icon:'⭐', name:'Starfield' },
+  { id:'lissajous', icon:'∞', name:'Lissajous' },
+];
+
+const VIZ_PALETTES = {
+  default: (i,n,v)=>`hsla(${200+i/n*160},90%,${50+v*30}%,0.9)`,
+  fire:    (i,n,v)=>`hsla(${v*60},100%,${40+v*40}%,0.9)`,
+  neon:    (i,n,v)=>`hsla(${150+i/n*80},90%,${55+v*25}%,0.95)`,
+  sunset:  (i,n,v)=>`hsla(${320+i/n*80},90%,${50+v*30}%,0.9)`,
+  pastel:  (i,n,v)=>`hsla(${260+i/n*120},60%,${70+v*20}%,0.85)`,
+  matrix:  (i,n,v)=>`hsla(145,${60+v*40}%,${30+v*50}%,0.95)`,
+  mono:    (i,n,v)=>`hsla(220,${v*15}%,${30+v*70}%,0.9)`,
+};
+
+let _vizPalette = 'default';
+let _vizSensitivity = 1;
+let _vizTabFrame = null;
+let _vizTabParticles = [];
+let _vizTabTime = 0;
+let _vizTabStars = [];
+let _vizTabLightning = [];
+let _vizTabMatrixCols = [];
+let _vizTabFirePixels = null;
+
+function initVizTab() {
+  // Build type buttons
+  const wrap = document.getElementById('vizTabTypes');
+  if (!wrap) return;
+  wrap.innerHTML = VIZ_TAB_TYPES.map((t,i) =>
+    `<button class="viz-tab-btn ${i===0?'active':''}" onclick="setVizTabType('${t.id}',this)">
+      <span class="vt-icon">${t.icon}</span>
+      <span class="vt-name">${t.name}</span>
+    </button>`
+  ).join('');
+  // Resize canvas
+  const c = document.getElementById('vizTabCanvas');
+  if (c) { c.width = c.offsetWidth; c.height = c.offsetHeight; }
+}
+
+function setVizTabType(type, btn) {
+  state.vizType = type;
+  document.querySelectorAll('.viz-tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.viz-type-btn').forEach(b=>b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  // Reset per-type state
+  _vizTabParticles = [];
+  _vizTabStars = [];
+  _vizTabMatrixCols = [];
+  _vizTabFirePixels = null;
+  _vizTabLightning = [];
+}
+
+function setVizPalette(name, el) {
+  _vizPalette = name;
+  document.querySelectorAll('.viz-color-swatch').forEach(s=>s.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
+function setVizSensitivity(val) {
+  _vizSensitivity = parseFloat(val);
+  document.getElementById('vizSensLabel').textContent = parseFloat(val).toFixed(1) + '×';
+}
+
+function updateVizTabNowPlaying() {
+  const t = state.tracks[state.currentIdx];
+  const titleEl = document.getElementById('vizTabTitle');
+  const artistEl = document.getElementById('vizTabArtist');
+  const artEl = document.getElementById('vizTabArt');
+  if (!titleEl) return;
+  if (t) {
+    titleEl.textContent = t.name || 'Unknown Track';
+    artistEl.textContent = t.artist || 'Unknown Artist';
+    const art = _artCache.get(t.id);
+    artEl.innerHTML = art ? `<img src="${art}" style="width:100%;height:100%;object-fit:cover;border-radius:10px">` : '🎵';
+  } else {
+    titleEl.textContent = 'No Track Playing';
+    artistEl.textContent = 'Choose a song from Library';
+    artEl.innerHTML = '🎵';
+  }
+}
+
+function startVizTabLoop() {
+  if (_vizTabFrame) cancelAnimationFrame(_vizTabFrame);
+  const loop = () => {
+    const canvas = document.getElementById('vizTabCanvas');
+    if (!canvas || !document.getElementById('tab-visualizer').classList.contains('active')) {
+      _vizTabFrame = requestAnimationFrame(loop);
+      return;
+    }
+    canvas.width = canvas.offsetWidth;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    _vizTabTime++;
+    const rawData = getFreqData();
+    // Apply sensitivity
+    const data = new Uint8Array(rawData.length);
+    for (let i=0;i<rawData.length;i++) data[i]=Math.min(255,rawData[i]*_vizSensitivity);
+    ctx.clearRect(0,0,W,H);
+    renderVizTabFrame(ctx,W,H,data,state.vizType,_vizTabTime);
+    _vizTabFrame = requestAnimationFrame(loop);
+  };
+  _vizTabFrame = requestAnimationFrame(loop);
+}
+
+function renderVizTabFrame(ctx,W,H,data,type,t) {
+  const pal = VIZ_PALETTES[_vizPalette] || VIZ_PALETTES.default;
+  const avg = data.reduce((a,b)=>a+b,0)/data.length;
+  const pulse = avg/255;
+  const n = data.length;
+
+  if (type==='bars') {
+    const count=80, bw=W/count-1;
+    for(let i=0;i<count;i++){
+      const v=(data[Math.floor(i*n/count)]||0)/255;
+      const h=v*H*0.95;
+      ctx.fillStyle=pal(i,count,v);
+      ctx.fillRect(i*(bw+1),H-h,bw,h);
+      // reflection
+      ctx.fillStyle=pal(i,count,v).replace('0.9','0.2');
+      ctx.fillRect(i*(bw+1),H,bw,Math.min(h*0.3,20));
+    }
+  } else if (type==='wave') {
+    const td=getTimeData();
+    ctx.shadowBlur=8; ctx.shadowColor='rgba(0,212,255,0.6)';
+    ctx.beginPath(); ctx.lineWidth=2.5; ctx.strokeStyle=pal(0,1,pulse);
+    for(let i=0;i<td.length;i++){
+      const x=i/td.length*W; const y=(td[i]/128.0-1)*(H*0.4)+H/2;
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur=0;
+    // fill under wave
+    ctx.globalAlpha=0.12; ctx.fillStyle=pal(0,1,pulse);
+    ctx.lineTo(W,H/2); ctx.lineTo(0,H/2); ctx.fill(); ctx.globalAlpha=1;
+  } else if (type==='circle') {
+    const cx=W/2,cy=H/2,r=Math.min(W,H)*0.28*(1+pulse*0.1);
+    ctx.shadowBlur=12;
+    for(let i=0;i<n/2;i++){
+      const angle=(i/(n/2))*Math.PI*2-Math.PI/2;
+      const v=(data[i]||0)/255;
+      const len=v*r*0.9;
+      ctx.strokeStyle=pal(i,n/2,v); ctx.lineWidth=2; ctx.shadowColor=pal(i,n/2,v);
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(angle)*r,cy+Math.sin(angle)*r);
+      ctx.lineTo(cx+Math.cos(angle)*(r+len),cy+Math.sin(angle)*(r+len));
+      ctx.stroke();
+    }
+    ctx.shadowBlur=0;
+    // inner glow circle
+    ctx.beginPath(); ctx.arc(cx,cy,r*(0.98+pulse*0.02),0,Math.PI*2);
+    ctx.strokeStyle=`rgba(0,212,255,${0.3+pulse*0.4})`; ctx.lineWidth=1.5; ctx.stroke();
+  } else if (type==='particles') {
+    if(_vizTabParticles.length<120){
+      while(_vizTabParticles.length<120)
+        _vizTabParticles.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*1.5,vy:(Math.random()-0.5)*1.5,size:1+Math.random()*3,hue:Math.random()*360,life:Math.random()});
+    }
+    _vizTabParticles.forEach(p=>{
+      p.x+=p.vx*(1+pulse*6); p.y+=p.vy*(1+pulse*6);
+      if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1;
+      const sz=p.size*(1+pulse*2.5);
+      ctx.beginPath(); ctx.arc(p.x,p.y,sz,0,Math.PI*2);
+      ctx.fillStyle=pal(p.hue,360,pulse);
+      ctx.fill();
+      // draw connections
+      _vizTabParticles.forEach(q=>{
+        const dx=p.x-q.x,dy=p.y-q.y,d=Math.sqrt(dx*dx+dy*dy);
+        if(d<80){
+          ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y);
+          ctx.strokeStyle=`rgba(0,212,255,${(1-d/80)*0.15*pulse})`; ctx.lineWidth=0.5; ctx.stroke();
+        }
+      });
+    });
+  } else if (type==='spectrum') {
+    const count=64;
+    for(let i=0;i<count;i++){
+      const v=(data[Math.floor(i*n/count)]||0)/255;
+      const x=i*W/count, w=W/count-1;
+      ctx.fillStyle=pal(i,count,v).replace('0.9',`${0.15+v*0.35}`);
+      ctx.fillRect(x,0,w,H);
+      ctx.fillStyle=pal(i,count,v);
+      ctx.fillRect(x,H*(1-v),w,H*v);
+    }
+  } else if (type==='tunnel') {
+    const cx=W/2,cy=H/2;
+    for(let ring=14;ring>=0;ring--){
+      const progress=(t%120)/120;
+      const r=20+(ring+progress)*Math.min(W,H)*0.035;
+      const v=(data[ring*7]||0)/255;
+      ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+      ctx.strokeStyle=pal(ring,14,v); ctx.lineWidth=2+v*5;
+      ctx.shadowBlur=8+v*12; ctx.shadowColor=pal(ring,14,v);
+      ctx.stroke();
+    }
+    ctx.shadowBlur=0;
+  } else if (type==='radial') {
+    const cx=W/2,cy=H/2;
+    for(let i=0;i<n;i+=2){
+      const angle=(i/n)*Math.PI*4+t*0.015;
+      const r=(data[i]/255)*Math.min(W,H)*0.42;
+      const x=cx+Math.cos(angle)*r, y=cy+Math.sin(angle)*r;
+      ctx.beginPath(); ctx.arc(x,y,1.5+pulse*2,0,Math.PI*2);
+      ctx.fillStyle=pal(i,n,data[i]/255); ctx.fill();
+    }
+  } else if (type==='grid') {
+    const cols=20,rows=10;
+    const cw=W/cols, ch=H/rows;
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+      const idx=Math.floor((r*cols+c)*n/(cols*rows));
+      const v=(data[idx]||0)/255;
+      const pad=2;
+      ctx.fillStyle=pal(c+r,cols+rows,v).replace('0.9',`${v*0.9}`);
+      ctx.fillRect(c*cw+pad,r*ch+pad,cw-pad*2,ch-pad*2);
+      if(v>0.5){
+        ctx.strokeStyle=pal(c,cols,v); ctx.lineWidth=1;
+        ctx.strokeRect(c*cw+pad,r*ch+pad,cw-pad*2,ch-pad*2);
+      }
+    }
+  } else if (type==='mirror') {
+    const count=80, bw=W/2/count;
+    for(let i=0;i<count;i++){
+      const v=(data[Math.floor(i*n/count)]||0)/255;
+      const h=v*H*0.9;
+      ctx.fillStyle=pal(i,count,v);
+      ctx.fillRect(W/2-i*bw-bw,H-h,bw-1,h);
+      ctx.fillRect(W/2+i*bw,H-h,bw-1,h);
+    }
+    // center glow line
+    ctx.fillStyle=`rgba(0,212,255,${0.2+pulse*0.4})`;
+    ctx.fillRect(W/2-1,0,2,H);
+  } else if (type==='dots') {
+    const count=40;
+    for(let i=0;i<count;i++){
+      const v=(data[Math.floor(i*n/count)]||0)/255;
+      const x=(i/(count-1))*W; const y=H/2;
+      const r=4+v*H*0.35;
+      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.fillStyle=pal(i,count,v); ctx.fill();
+    }
+  } else if (type==='fire') {
+    // Fire simulation
+    const cols = Math.floor(W/4), rows = Math.floor(H/4);
+    if(!_vizTabFirePixels || _vizTabFirePixels.length!==cols*rows) {
+      _vizTabFirePixels = new Float32Array(cols*rows).fill(0);
+    }
+    const fp = _vizTabFirePixels;
+    // Seed bottom row from audio
+    for(let x=0;x<cols;x++){
+      const v=(data[Math.floor(x*n/cols)]||0)/255;
+      fp[(rows-1)*cols+x]=v*(1+pulse);
+    }
+    // Propagate upward
+    for(let y=0;y<rows-1;y++) for(let x=0;x<cols;x++){
+      const below=fp[(y+1)*cols+x]||0;
+      const bl=fp[(y+1)*cols+Math.max(0,x-1)]||0;
+      const br=fp[(y+1)*cols+Math.min(cols-1,x+1)]||0;
+      fp[y*cols+x]=Math.max(0,(below+bl+br)/3.03);
+    }
+    // Render
+    for(let y=0;y<rows;y++) for(let x=0;x<cols;x++){
+      const v=fp[y*cols+x];
+      if(v>0.01){
+        const r=Math.min(255,v*500); const g=Math.min(255,v*200); const b=Math.min(255,v*50);
+        ctx.fillStyle=`rgba(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)},${v})`;
+        ctx.fillRect(x*4,y*4,4,4);
+      }
+    }
+  } else if (type==='galaxy') {
+    if(_vizTabStars.length<200){
+      while(_vizTabStars.length<200)
+        _vizTabStars.push({angle:Math.random()*Math.PI*2,r:Math.random()*Math.min(W,H)*0.45,speed:0.003+Math.random()*0.005,size:0.5+Math.random()*2,hue:Math.random()*60+180});
+    }
+    const cx=W/2,cy=H/2;
+    _vizTabStars.forEach((s,i)=>{
+      s.angle+=s.speed*(1+pulse*4);
+      const x=cx+Math.cos(s.angle)*s.r*(1+pulse*0.1);
+      const y=cy+Math.sin(s.angle)*s.r*0.4*(1+pulse*0.1);
+      const v=(data[i%n]||0)/255;
+      ctx.beginPath(); ctx.arc(x,y,s.size*(1+v*2),0,Math.PI*2);
+      ctx.fillStyle=`hsla(${s.hue+v*40},90%,${60+v*30}%,${0.6+v*0.4})`; ctx.fill();
+    });
+  } else if (type==='dna') {
+    const cx=W/2, spacing=H/16;
+    ctx.lineWidth=2;
+    for(let i=0;i<16;i++){
+      const y=i*spacing+spacing/2;
+      const v=(data[Math.floor(i*n/16)]||0)/255;
+      const amp=40+v*60, freq=0.04, phase=t*0.04;
+      const x1=cx+Math.cos(freq*y+phase)*amp;
+      const x2=cx+Math.cos(freq*y+phase+Math.PI)*amp;
+      ctx.strokeStyle=pal(i,16,v); ctx.shadowBlur=6; ctx.shadowColor=pal(i,16,v);
+      ctx.beginPath(); ctx.moveTo(x1,y); ctx.lineTo(x2,y); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x1,y,4+v*6,0,Math.PI*2); ctx.fillStyle=pal(i,16,v); ctx.fill();
+      ctx.beginPath(); ctx.arc(x2,y,4+v*6,0,Math.PI*2); ctx.fill();
+    }
+    // backbone lines
+    ctx.lineWidth=2; ctx.shadowBlur=0;
+    ctx.beginPath();
+    for(let y=0;y<H;y+=2){
+      const v=(data[Math.floor(y/H*n)]||0)/255;
+      const amp=40+v*60; const freq=0.04; const phase=t*0.04;
+      const x=cx+Math.cos(freq*y+phase)*amp;
+      y===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle='rgba(0,212,255,0.4)'; ctx.stroke();
+    ctx.beginPath();
+    for(let y=0;y<H;y+=2){
+      const v=(data[Math.floor(y/H*n)]||0)/255;
+      const amp=40+v*60; const freq=0.04; const phase=t*0.04;
+      const x=cx+Math.cos(freq*y+phase+Math.PI)*amp;
+      y===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle='rgba(139,92,246,0.4)'; ctx.stroke();
+  } else if (type==='matrix') {
+    // Digital rain
+    const charW=14, charH=16;
+    const cols2=Math.floor(W/charW);
+    if(_vizTabMatrixCols.length!==cols2){
+      _vizTabMatrixCols=Array.from({length:cols2},()=>({y:-Math.random()*H,speed:2+Math.random()*4,chars:[]}));
+    }
+    ctx.fillStyle='rgba(0,0,0,0.12)'; ctx.fillRect(0,0,W,H);
+    ctx.font=`${charH}px 'Share Tech Mono'`;
+    _vizTabMatrixCols.forEach((col,c)=>{
+      const v=(data[Math.floor(c*n/cols2)]||0)/255;
+      col.speed=2+v*8;
+      col.y+=col.speed;
+      if(col.y>H) col.y=-charH*5;
+      for(let r=0;r<8;r++){
+        const gy=col.y-r*charH;
+        if(gy<0||gy>H) continue;
+        const alpha=1-r/8;
+        const ch=String.fromCharCode(0x30A0+Math.random()*96|0);
+        ctx.fillStyle=r===0?`rgba(255,255,255,${alpha})`:`rgba(0,255,100,${alpha*(0.4+v*0.5)})`;
+        ctx.fillText(ch,c*charW,gy);
+      }
+    });
+  } else if (type==='fractal') {
+    const cx=W/2,cy=H/2;
+    function drawBranch(x,y,angle,len,depth,v){
+      if(depth<1||len<2) return;
+      const ex=x+Math.cos(angle)*len, ey=y+Math.sin(angle)*len;
+      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(ex,ey);
+      ctx.strokeStyle=pal(depth,6,v); ctx.lineWidth=depth*0.8;
+      ctx.shadowBlur=depth>4?6:0; ctx.shadowColor=pal(depth,6,v);
+      ctx.stroke();
+      const spread=0.4+pulse*0.5;
+      drawBranch(ex,ey,angle-spread,len*0.65,depth-1,v);
+      drawBranch(ex,ey,angle+spread,len*0.65,depth-1,v);
+    }
+    const baseLen=50+pulse*40;
+    const lo=(data[5]||0)/255, hi=(data[50]||0)/255;
+    drawBranch(cx,H-10,-Math.PI/2,baseLen,6,hi);
+    ctx.shadowBlur=0;
+  } else if (type==='ripple') {
+    const cx=W/2,cy=H/2;
+    if(!_vizTabStars.ripples) _vizTabStars.ripples=[];
+    const ripples=_vizTabStars.ripples;
+    if(pulse>0.3 && (t%8===0)) ripples.push({r:10,maxR:Math.min(W,H)*0.45*(0.5+pulse*0.5),alpha:1,hue:200+Math.random()*120,speed:2+pulse*3});
+    for(let i=ripples.length-1;i>=0;i--){
+      const rp=ripples[i];
+      rp.r+=rp.speed; rp.alpha-=0.015;
+      if(rp.alpha<=0){ripples.splice(i,1);continue;}
+      ctx.beginPath(); ctx.arc(cx,cy,rp.r,0,Math.PI*2);
+      ctx.strokeStyle=`hsla(${rp.hue},90%,60%,${rp.alpha})`; ctx.lineWidth=2+rp.alpha*2; ctx.stroke();
+    }
+    // bars in center
+    const count=20,bw=4;
+    for(let i=0;i<count;i++){
+      const v=(data[Math.floor(i*n/count)]||0)/255;
+      const angle=(i/count)*Math.PI*2, r2=30+v*60;
+      const x=cx+Math.cos(angle)*r2,y=cy+Math.sin(angle)*r2;
+      ctx.beginPath(); ctx.arc(x,y,3+v*8,0,Math.PI*2);
+      ctx.fillStyle=pal(i,count,v); ctx.fill();
+    }
+  } else if (type==='lightning') {
+    function bolt(x1,y1,x2,y2,rough,depth){
+      if(depth===0){
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+        ctx.strokeStyle=`rgba(200,220,255,0.9)`; ctx.lineWidth=1; ctx.stroke();
+        return;
+      }
+      const mx=(x1+x2)/2+(Math.random()-0.5)*rough;
+      const my=(y1+y2)/2+(Math.random()-0.5)*rough;
+      bolt(x1,y1,mx,my,rough/2,depth-1);
+      bolt(mx,my,x2,y2,rough/2,depth-1);
+      if(Math.random()<0.3){
+        bolt(mx,my,mx+(Math.random()-0.5)*rough*2,my+rough*(0.5+Math.random()),rough/2,depth-2);
+      }
+    }
+    ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(0,0,W,H);
+    if(t%8===0 || pulse>0.6){
+      _vizTabLightning=[];
+      const count=1+Math.floor(pulse*3);
+      for(let i=0;i<count;i++) _vizTabLightning.push({x:Math.random()*W});
+    }
+    _vizTabLightning.forEach(l=>{
+      ctx.shadowBlur=20+pulse*30; ctx.shadowColor='rgba(140,160,255,0.8)';
+      bolt(l.x,0,l.x+(Math.random()-0.5)*100,H,80+pulse*80,5);
+    });
+    ctx.shadowBlur=0;
+    // spectrum at bottom
+    const count=80,bw=W/count-1;
+    ctx.globalAlpha=0.5;
+    for(let i=0;i<count;i++){
+      const v=(data[Math.floor(i*n/count)]||0)/255;
+      const h=v*H*0.25;
+      ctx.fillStyle=`rgba(140,160,255,${v})`; ctx.fillRect(i*(bw+1),H-h,bw,h);
+    }
+    ctx.globalAlpha=1;
+  } else if (type==='terrain') {
+    const layers=4;
+    for(let l=0;l<layers;l++){
+      const alpha=0.15+l*0.2;
+      const hshift=l*20;
+      ctx.beginPath();
+      for(let x=0;x<=W;x+=4){
+        const idx=Math.floor(x/W*n);
+        const v=(data[idx]||0)/255;
+        const noise=Math.sin(x*0.02+t*0.015*(l+1)+l)*20;
+        const y=H*(0.5+l*0.12)-(v*H*0.4/(l+1))-noise;
+        x===0?ctx.moveTo(0,y):ctx.lineTo(x,y);
+      }
+      ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
+      ctx.fillStyle=pal(l,layers,pulse).replace('0.9',`${alpha}`);
+      ctx.fill();
+    }
+  } else if (type==='starfield') {
+    if(_vizTabStars.length<300){
+      while(_vizTabStars.length<300)
+        _vizTabStars.push({x:(Math.random()-0.5)*W*2,y:(Math.random()-0.5)*H*2,z:Math.random()*W,pz:0,hue:Math.random()*60+180});
+    }
+    ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.fillRect(0,0,W,H);
+    const speed=2+pulse*12;
+    _vizTabStars.forEach(s=>{
+      s.pz=s.z; s.z-=speed;
+      if(s.z<=0){s.z=W;s.x=(Math.random()-0.5)*W*2;s.y=(Math.random()-0.5)*H*2;}
+      const sx=(s.x/s.z)*W+W/2, sy=(s.y/s.z)*H+H/2;
+      const px=(s.x/s.pz)*W+W/2, py=(s.y/s.pz)*H+H/2;
+      const size=Math.max(0.5,(1-s.z/W)*3);
+      ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(sx,sy);
+      ctx.strokeStyle=`hsla(${s.hue},80%,${70+pulse*20}%,${1-s.z/W})`;
+      ctx.lineWidth=size; ctx.stroke();
+    });
+  } else if (type==='lissajous') {
+    const cx=W/2, cy=H/2, r=Math.min(W,H)*0.4;
+    const lo=(data[5]||0)/255, hi=(data[n>>1]||0)/255;
+    const a=2+Math.floor(lo*3), b=3+Math.floor(hi*2);
+    ctx.beginPath(); ctx.lineWidth=2;
+    for(let i=0;i<=360;i++){
+      const theta=i*Math.PI/180;
+      const x=cx+r*Math.sin(a*theta+t*0.02);
+      const y=cy+r*Math.sin(b*theta);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      ctx.strokeStyle=pal(i,360,pulse);
+    }
+    ctx.stroke();
+    // Trail effect
+    ctx.globalAlpha=0.06; ctx.fillStyle='black'; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
+  } else {
+    // fallback bars
+    const count=80,bw=W/count-1;
+    for(let i=0;i<count;i++){
+      const v=(data[Math.floor(i*n/count)]||0)/255;
+      const h=v*H*0.9; ctx.fillStyle=pal(i,count,v);
+      ctx.fillRect(i*(bw+1),H-h,bw,h);
+    }
+  }
+}
+
 // ========== VISUALIZER ==========
 const VIZ_TYPES=['bars','wave','circle','particles','spectrum','tunnel','radial','grid','mirror','dots'];
 let vizParticles=[];
 function initViz(){
-  const canvas=document.getElementById('vizCanvas');
-  resizeViz();
-  window.addEventListener('resize',resizeViz);
-  drawViz();
+  // Mini canvas removed — viz handled by Visualizer tab canvas
+  window.addEventListener('resize', resizeViz);
   buildFullVizChips();
 }
 function resizeViz(){
-  const c=document.getElementById('vizCanvas');
-  c.width=c.offsetWidth;c.height=c.offsetHeight;
   const cf=document.getElementById('vizFull');
-  cf.width=cf.offsetWidth;cf.height=cf.offsetHeight;
+  if(cf){ cf.width=cf.offsetWidth; cf.height=cf.offsetHeight; }
+  const ct=document.getElementById('vizTabCanvas');
+  if(ct){ ct.width=ct.offsetWidth; ct.height=ct.offsetHeight; }
 }
 function setVizType(type,btn){
   state.vizType=type;
@@ -1732,12 +2278,13 @@ function setVizType(type,btn){
 }
 function buildFullVizChips(){
   const wrap=document.getElementById('fullVizChips');
-  const allTypes=['Bars','Wave','Circle','Particles','Spectrum','Tunnel','Radial','Grid','Mirror','Dots','Fire','Galaxy','DNA','Matrix','Fractal'];
+  const allTypes=['Bars','Wave','Circle','Particles','Spectrum','Tunnel','Radial','Grid','Mirror','Dots','Fire','Galaxy','DNA','Matrix','Fractal','Ripple','Lightning','Terrain','Starfield','Lissajous'];
   wrap.innerHTML=allTypes.map((t,i)=>`<div class="viz-chip ${i===0?'active':''}" onclick="setFullVizType('${t.toLowerCase()}',this)">${t}</div>`).join('');
 }
 function setFullVizType(type,el){
   state.vizType=type;
   document.querySelectorAll('.viz-chip').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.viz-tab-btn').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
 }
 function openFullViz(){
@@ -1765,16 +2312,7 @@ function getTimeData(){
 }
 
 let vizTime=0;
-function drawViz(){
-  const canvas=document.getElementById('vizCanvas');
-  const ctx=canvas.getContext('2d');
-  const W=canvas.width,H=canvas.height;
-  vizTime++;
-  const data=getFreqData();
-  ctx.clearRect(0,0,W,H);
-  renderVizFrame(ctx,W,H,data,state.vizType,vizTime);
-  state.animFrame=requestAnimationFrame(drawViz);
-}
+function drawViz(){ /* no-op — mini canvas removed */ }
 function drawFullViz(){
   const canvas=document.getElementById('vizFull');
   const ctx=canvas.getContext('2d');
@@ -2760,8 +3298,8 @@ function fixAutoRotate() {
   // Prevent layout breaks on rotate by recalculating canvas sizes
   window.addEventListener('orientationchange', () => {
     setTimeout(() => {
-      const c = document.getElementById('vizCanvas');
-      if (c) { c.width = c.offsetWidth; c.height = c.offsetHeight; }
+      const ct = document.getElementById('vizTabCanvas');
+      if (ct) { ct.width = ct.offsetWidth; ct.height = ct.offsetHeight; }
       const cf = document.getElementById('vizFull');
       if (cf) { cf.width = cf.offsetWidth; cf.height = cf.offsetHeight; }
     }, 200);
@@ -2788,8 +3326,8 @@ window.addEventListener('DOMContentLoaded',()=>{
   startLoader();
 });
 window.addEventListener('resize',()=>{
-  const c=document.getElementById('vizCanvas');
-  c.width=c.offsetWidth;c.height=c.offsetHeight;
+  const ct=document.getElementById('vizTabCanvas');
+  if(ct){ct.width=ct.offsetWidth;ct.height=ct.offsetHeight;}
 });
 </script>
 </body>
