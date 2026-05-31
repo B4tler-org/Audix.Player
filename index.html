@@ -631,6 +631,83 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .dj-suggest-chip{background:var(--bg4);border:1px solid var(--border);border-radius:12px;padding:5px 10px;font-size:0.72rem;color:var(--cyan);cursor:pointer;font-family:'Rajdhani';font-weight:600;transition:all 0.2s;white-space:nowrap}
 .dj-suggest-chip:hover{background:var(--grad);color:white;border-color:transparent}
 @media(max-width:480px){#djPanel{width:100%;border-radius:20px 20px 0 0}}
+
+/* ===== INTERNET RADIO ===== */
+.radio-station{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;cursor:pointer;transition:all 0.2s;border:1px solid transparent;background:var(--glass)}
+.radio-station:hover{background:var(--bg4);border-color:var(--border)}
+.radio-station.playing{background:linear-gradient(90deg,rgba(0,212,255,0.12),rgba(139,92,246,0.06));border-color:rgba(0,212,255,0.35);box-shadow:0 2px 12px rgba(0,212,255,0.1)}
+.radio-icon{width:42px;height:42px;border-radius:10px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;border:1px solid var(--border)}
+.radio-station.playing .radio-icon{border-color:rgba(0,212,255,0.4);box-shadow:0 0 10px rgba(0,212,255,0.3)}
+.radio-info{flex:1;min-width:0}
+.radio-name{font-size:0.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.radio-genre{font-size:0.72rem;color:var(--text2);font-family:'Rajdhani';letter-spacing:0.5px}
+.radio-bitrate{font-family:'Share Tech Mono';font-size:0.7rem;color:var(--text3);flex-shrink:0}
+.radio-live-badge{background:linear-gradient(135deg,#ef4444,#f97316);border-radius:5px;padding:2px 7px;font-size:0.62rem;font-weight:700;color:white;letter-spacing:1px;flex-shrink:0}
+.radio-add-row{display:flex;gap:8px;margin-top:8px}
+.radio-add-inp{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 13px;color:var(--text);font-family:'Exo 2';font-size:0.85rem;outline:none;transition:border-color 0.2s}
+.radio-add-inp:focus{border-color:var(--cyan)}
+.radio-add-btn{background:var(--grad);border:none;border-radius:10px;padding:9px 16px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.82rem;cursor:pointer;flex-shrink:0}
+
+/* ===== ACHIEVEMENTS ===== */
+.achievement{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:14px;border:1px solid var(--border);background:var(--glass);transition:all 0.3s;position:relative;overflow:hidden}
+.achievement.unlocked{border-color:rgba(245,158,11,0.5);background:linear-gradient(90deg,rgba(245,158,11,0.08),rgba(139,92,246,0.05));box-shadow:0 2px 14px rgba(245,158,11,0.15)}
+.achievement.locked{opacity:0.4;filter:grayscale(0.6)}
+.achievement-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;background:var(--bg4);border:2px solid var(--border)}
+.achievement.unlocked .achievement-icon{border-color:rgba(245,158,11,0.6);box-shadow:0 0 14px rgba(245,158,11,0.35)}
+.achievement-info{flex:1;min-width:0}
+.achievement-name{font-size:0.9rem;font-weight:700;margin-bottom:2px}
+.achievement.unlocked .achievement-name{background:linear-gradient(135deg,#f59e0b,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.achievement-desc{font-size:0.72rem;color:var(--text2);font-family:'Rajdhani';line-height:1.4}
+.achievement-progress{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:6px}
+.achievement-prog-fill{height:100%;border-radius:2px;background:var(--grad);transition:width 0.5s ease}
+.achievement-badge{position:absolute;top:10px;right:12px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:6px;padding:2px 8px;font-size:0.62rem;font-weight:700;color:white;letter-spacing:1px}
+.achievement-unlock-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.8);z-index:9000;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:20px;padding:24px 32px;text-align:center;font-family:'Exo 2';color:white;pointer-events:none;opacity:0;transition:all 0.4s cubic-bezier(.34,1.56,.64,1)}
+.achievement-unlock-toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.achievement-unlock-toast .au-icon{font-size:3rem;margin-bottom:8px}
+.achievement-unlock-toast .au-title{font-size:1.1rem;font-weight:800;letter-spacing:1px}
+.achievement-unlock-toast .au-name{font-size:0.85rem;opacity:0.9;margin-top:4px}
+
+/* ===== VISUALIZER CREATOR ===== */
+.viz-creator-section{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.viz-creator-label{font-family:'Share Tech Mono';font-size:0.65rem;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:4px}
+.viz-creator-slider-row{display:flex;align-items:center;gap:10px}
+.viz-creator-slider{flex:1;height:4px;background:var(--bg4);border-radius:2px;cursor:pointer;-webkit-appearance:none;appearance:none;outline:none}
+.viz-creator-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--grad);cursor:pointer;box-shadow:0 0 8px rgba(0,212,255,0.4)}
+.viz-creator-val{font-family:'Share Tech Mono';font-size:0.72rem;color:var(--cyan);width:36px;text-align:right;flex-shrink:0}
+.viz-shape-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.viz-shape-btn{background:var(--bg4);border:1px solid var(--border);border-radius:10px;padding:8px 6px;text-align:center;cursor:pointer;transition:all 0.2s;font-size:0.72rem;color:var(--text2);font-family:'Rajdhani';font-weight:600}
+.viz-shape-btn:hover,.viz-shape-btn.active{background:var(--grad);color:white;border-color:transparent}
+.viz-color-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.viz-creator-color{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.2s;flex-shrink:0}
+.viz-creator-color.active{border-color:white;transform:scale(1.2);box-shadow:0 0 8px rgba(255,255,255,0.4)}
+.viz-save-preset-row{display:flex;gap:8px}
+.viz-preset-name-inp{flex:1;background:var(--bg4);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--text);font-family:'Exo 2';font-size:0.82rem;outline:none;transition:border-color 0.2s}
+.viz-preset-name-inp:focus{border-color:var(--cyan)}
+.viz-save-btn{background:var(--grad);border:none;border-radius:10px;padding:8px 14px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.8rem;cursor:pointer;flex-shrink:0}
+.viz-saved-presets{display:flex;gap:8px;flex-wrap:wrap}
+.viz-saved-chip{background:var(--bg4);border:1px solid var(--border);border-radius:12px;padding:5px 12px;font-size:0.75rem;color:var(--text2);cursor:pointer;font-family:'Rajdhani';font-weight:600;transition:all 0.2s;display:flex;align-items:center;gap:6px}
+.viz-saved-chip:hover{border-color:var(--cyan);color:var(--cyan)}
+.viz-saved-chip .vsc-del{color:var(--text3);font-size:0.7rem}
+
+/* ===== VOLUME NORMALIZATION ===== */
+.norm-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:12px}
+.norm-toggle-label{font-size:0.9rem;font-weight:600}
+.norm-toggle-sub{font-size:0.72rem;color:var(--text2);font-family:'Rajdhani';margin-top:2px}
+.norm-toggle{position:relative;width:44px;height:24px;cursor:pointer;flex-shrink:0}
+.norm-toggle input{opacity:0;width:0;height:0}
+.norm-toggle-track{position:absolute;inset:0;background:var(--bg4);border-radius:12px;border:1px solid var(--border);transition:background 0.2s}
+.norm-toggle input:checked + .norm-toggle-track{background:var(--grad)}
+.norm-toggle-thumb{position:absolute;top:2px;left:2px;width:18px;height:18px;background:white;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.3)}
+.norm-toggle input:checked ~ .norm-toggle-thumb{transform:translateX(20px)}
+.norm-level-meter{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:12px}
+.norm-meter-bars{display:flex;gap:2px;align-items:flex-end;height:24px;flex:1}
+.norm-meter-bar{width:4px;border-radius:2px;background:var(--grad);transition:height 0.15s}
+.norm-db-label{font-family:'Share Tech Mono';font-size:0.72rem;color:var(--cyan);flex-shrink:0}
+
+/* ===== CROSSFADE (invisible but indicator) ===== */
+.crossfade-indicator{display:flex;align-items:center;gap:8px;font-family:'Share Tech Mono';font-size:0.68rem;color:var(--text3);padding:4px 8px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.1);border-radius:8px}
+.crossfade-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:cfPulse 2s ease-in-out infinite}
+@keyframes cfPulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
 </style>
 </head>
 <body>
@@ -790,6 +867,8 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
       <div class="nav-item" onclick="openTab('equalizer')" id="nav-equalizer"><span class="nav-icon">🎛</span>Equalizer</div>
       <div class="nav-item" onclick="openTab('visualizer')" id="nav-visualizer"><span class="nav-icon">🌈</span>Visualizer</div>
       <div class="nav-item" onclick="openTab('aihub')" id="nav-aihub"><span class="nav-icon">🤖</span>AI Hub</div>
+      <div class="nav-item" onclick="openTab('radio')" id="nav-radio"><span class="nav-icon">📻</span>Radio</div>
+      <div class="nav-item" onclick="openTab('achievements')" id="nav-achievements"><span class="nav-icon">🏆</span>Achievements</div>
       <div class="nav-item" onclick="toggleDjPanel()" id="nav-dj"><span class="nav-icon">🎧</span>DJ Claude</div>
       <div class="sidebar-bottom">
         <div class="quality-badge" onclick="openQuality()" id="qualityBadge">HI-RES · FLAC</div>
@@ -863,6 +942,9 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
                 <button class="aq-btn active" onclick="setQuality('MP3')">MP3</button>
                 <button class="aq-btn" onclick="setQuality('FLAC')">FLAC</button>
                 <button class="aq-btn" onclick="setQuality('HI-RES')">HI-RES</button>
+              </div>
+              <div id="crossfadeHeroIndicator" style="display:none;margin-left:8px" class="crossfade-indicator">
+                <div class="crossfade-dot"></div><span style="font-size:0.6rem">CF</span>
               </div>
             </div>
 
@@ -946,6 +1028,9 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
             </button>
             <button class="upload-btn" onclick="openDeviceTransfer()" style="background:linear-gradient(135deg,#00d4ff,#00a8cc)">
               📲 Import from Device
+            </button>
+            <button class="upload-btn" onclick="runSmartAutoTag()" style="background:linear-gradient(135deg,#10b981,#059669)" id="autoTagBtn" title="Auto-detect missing metadata for all tracks">
+              🧠 Auto Tag
             </button>
           </div>
           <input type="file" id="fileInput" accept="audio/*" multiple style="display:none" onchange="handleFileUpload(event)">
@@ -1096,6 +1181,78 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
           <input type="range" class="viz-sensitivity-slider" id="vizSensitivity" min="0.5" max="3" step="0.1" value="1" oninput="setVizSensitivity(this.value)">
           <span id="vizSensLabel">1.0×</span>
         </div>
+
+        <!-- Visualizer Creator -->
+        <div class="viz-section-label">🎨 Visualizer Creator</div>
+        <div class="viz-creator-section">
+          <div>
+            <div class="viz-creator-label">Particle Count</div>
+            <div class="viz-creator-slider-row">
+              <input type="range" class="viz-creator-slider" id="vizParticleCount" min="20" max="300" step="10" value="120" oninput="updateVizCreator()">
+              <span class="viz-creator-val" id="vizParticleCountVal">120</span>
+            </div>
+          </div>
+          <div>
+            <div class="viz-creator-label">Bar Width</div>
+            <div class="viz-creator-slider-row">
+              <input type="range" class="viz-creator-slider" id="vizBarWidth" min="1" max="12" step="1" value="4" oninput="updateVizCreator()">
+              <span class="viz-creator-val" id="vizBarWidthVal">4</span>
+            </div>
+          </div>
+          <div>
+            <div class="viz-creator-label">Glow Intensity</div>
+            <div class="viz-creator-slider-row">
+              <input type="range" class="viz-creator-slider" id="vizGlowIntensity" min="0" max="40" step="2" value="10" oninput="updateVizCreator()">
+              <span class="viz-creator-val" id="vizGlowIntensityVal">10</span>
+            </div>
+          </div>
+          <div>
+            <div class="viz-creator-label">Shape</div>
+            <div class="viz-shape-grid" id="vizShapeGrid">
+              <div class="viz-shape-btn active" data-shape="round" onclick="setVizShape('round',this)">● Round</div>
+              <div class="viz-shape-btn" data-shape="square" onclick="setVizShape('square',this)">■ Square</div>
+              <div class="viz-shape-btn" data-shape="diamond" onclick="setVizShape('diamond',this)">◆ Diamond</div>
+              <div class="viz-shape-btn" data-shape="spike" onclick="setVizShape('spike',this)">▲ Spike</div>
+            </div>
+          </div>
+          <div>
+            <div class="viz-creator-label">Custom Colors</div>
+            <div class="viz-color-row" id="vizCreatorColors">
+              <div class="viz-creator-color active" style="background:linear-gradient(135deg,#00d4ff,#8b5cf6)" data-cpal="default" onclick="setCreatorPalette('default',this)" title="Cyber"></div>
+              <div class="viz-creator-color" style="background:linear-gradient(135deg,#ff6b35,#f7931e)" data-cpal="fire" onclick="setCreatorPalette('fire',this)" title="Fire"></div>
+              <div class="viz-creator-color" style="background:linear-gradient(135deg,#00ff87,#60efff)" data-cpal="neon" onclick="setCreatorPalette('neon',this)" title="Neon"></div>
+              <div class="viz-creator-color" style="background:linear-gradient(135deg,#ff0080,#ff8c00)" data-cpal="sunset" onclick="setCreatorPalette('sunset',this)" title="Sunset"></div>
+              <div class="viz-creator-color" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb)" data-cpal="pastel" onclick="setCreatorPalette('pastel',this)" title="Pastel"></div>
+              <div class="viz-creator-color" style="background:linear-gradient(135deg,#43e97b,#38f9d7)" data-cpal="matrix" onclick="setCreatorPalette('matrix',this)" title="Matrix"></div>
+              <div class="viz-creator-color" style="background:linear-gradient(135deg,#f53844,#42378f)" data-cpal="aurora" onclick="setCreatorPalette('aurora',this)" title="Aurora"></div>
+              <div class="viz-creator-color" style="background:linear-gradient(135deg,#ffecd2,#fcb69f)" data-cpal="gold" onclick="setCreatorPalette('gold',this)" title="Gold"></div>
+            </div>
+          </div>
+          <div class="viz-save-preset-row">
+            <input class="viz-preset-name-inp" id="vizPresetNameInp" placeholder="Preset name…" maxlength="24">
+            <button class="viz-save-btn" onclick="saveVizPreset()">💾 Save</button>
+          </div>
+          <div class="viz-saved-presets" id="vizSavedPresets"></div>
+        </div>
+
+        <!-- Volume Normalization -->
+        <div class="viz-section-label">🔊 Volume Normalization</div>
+        <div class="norm-toggle-row">
+          <div>
+            <div class="norm-toggle-label">Auto Normalize</div>
+            <div class="norm-toggle-sub">Equalizes loudness across all tracks</div>
+          </div>
+          <label class="norm-toggle">
+            <input type="checkbox" id="normToggle" onchange="toggleNormalization(this.checked)">
+            <div class="norm-toggle-track"></div>
+            <div class="norm-toggle-thumb"></div>
+          </label>
+        </div>
+        <div class="norm-level-meter" id="normMeter" style="display:none">
+          <span style="font-size:0.72rem;color:var(--text2);font-family:'Rajdhani'">Level</span>
+          <div class="norm-meter-bars" id="normMeterBars"></div>
+          <span class="norm-db-label" id="normDbLabel">0 dB</span>
+        </div>
       </div>
       <!-- AI HUB TAB -->
       <div class="tab-content" id="tab-aihub">
@@ -1160,6 +1317,49 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 
       </div>
 
+      <!-- RADIO TAB -->
+      <div class="tab-content" id="tab-radio">
+        <div class="lib-header">
+          <div class="lib-title">📻 Internet Radio</div>
+          <div class="crossfade-indicator" id="crossfadeIndicator" style="display:none">
+            <div class="crossfade-dot"></div>
+            <span>CROSSFADE ON</span>
+          </div>
+        </div>
+        <div style="font-size:0.78rem;color:var(--text2);font-family:'Rajdhani';padding:2px 2px 10px;line-height:1.5">Stream live radio stations alongside your local music. Tap any station to start streaming.</div>
+
+        <div class="section-card">
+          <div class="section-card-title">Add Custom Station</div>
+          <div class="radio-add-row">
+            <input class="radio-add-inp" id="radioNameInp" placeholder="Station name…" maxlength="40">
+            <input class="radio-add-inp" id="radioUrlInp" placeholder="Stream URL (.mp3, .ogg, .aac)…">
+          </div>
+          <div class="radio-add-row" style="margin-top:4px">
+            <input class="radio-add-inp" id="radioGenreInp" placeholder="Genre…" maxlength="20">
+            <button class="radio-add-btn" onclick="addCustomRadioStation()">➕ Add</button>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-card-title">Featured Stations</div>
+          <div class="track-list" id="radioStationList"></div>
+        </div>
+        <div class="section-card" id="customRadioSection" style="display:none">
+          <div class="section-card-title">My Stations</div>
+          <div class="track-list" id="customRadioList"></div>
+        </div>
+      </div>
+
+      <!-- ACHIEVEMENTS TAB -->
+      <div class="tab-content" id="tab-achievements">
+        <div class="lib-header">
+          <div class="lib-title">🏆 Achievements</div>
+          <div id="achieveScore" style="font-family:'Share Tech Mono';font-size:0.8rem;color:var(--cyan)">0 / 0</div>
+        </div>
+        <div style="font-size:0.78rem;color:var(--text2);font-family:'Rajdhani';padding:2px 2px 10px;line-height:1.5">Earn badges by listening and exploring Audix. Keep playing to unlock them all!</div>
+        <div style="display:flex;flex-direction:column;gap:10px" id="achievementsList"></div>
+      </div>
+
     </div>
   </div>
 
@@ -1192,6 +1392,14 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
     <div class="bn-item" id="bn-aihub" onclick="openTab('aihub')">
       <span class="bn-icon">🤖</span>
       <span>AI Hub</span>
+    </div>
+    <div class="bn-item" id="bn-radio" onclick="openTab('radio')">
+      <span class="bn-icon">📻</span>
+      <span>Radio</span>
+    </div>
+    <div class="bn-item" id="bn-achievements" onclick="openTab('achievements')">
+      <span class="bn-icon">🏆</span>
+      <span>Awards</span>
     </div>
     <div class="bn-item" id="bn-dj" onclick="toggleDjPanel()">
       <span class="bn-icon">🎧</span>
@@ -1258,6 +1466,16 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 
 <!-- AI CHAT DJ FAB -->
 <button class="dj-fab" id="djFab" onclick="toggleDjPanel()" title="AI Chat DJ">🎧</button>
+
+<!-- ACHIEVEMENT UNLOCK TOAST -->
+<div class="achievement-unlock-toast" id="achieveUnlockToast">
+  <div class="au-icon" id="achieveUnlockIcon">🏆</div>
+  <div class="au-title">ACHIEVEMENT UNLOCKED!</div>
+  <div class="au-name" id="achieveUnlockName">-</div>
+</div>
+
+<!-- RADIO AUDIO ELEMENT (separate from main player) -->
+<audio id="radioAudio" preload="none"></audio>
 
 <!-- AI CHAT DJ PANEL -->
 <div id="djPanel">
@@ -5298,6 +5516,681 @@ function clearApiKey() {
 // Show green dot if key already saved
 window.addEventListener('DOMContentLoaded', () => {
   if (getGroqKey()) document.getElementById('apiKeyDot').style.display = 'block';
+});
+</script>
+
+<script>
+// ============================================================
+// ===== FEATURE: CROSSFADE & GAPLESS PLAYBACK (hidden UI) ====
+// ============================================================
+let _crossfadeEnabled = JSON.parse(localStorage.getItem('audix_crossfade') || 'true');
+let _crossfadeDuration = 3; // seconds
+let _crossfadeTimer = null;
+let _isCrossfading = false;
+
+function initCrossfade() {
+  // Update indicators
+  const ind1 = document.getElementById('crossfadeIndicator');
+  const ind2 = document.getElementById('crossfadeHeroIndicator');
+  if (ind1) ind1.style.display = _crossfadeEnabled ? '' : 'none';
+  if (ind2) ind2.style.display = _crossfadeEnabled ? '' : 'none';
+}
+
+function setupCrossfadeOnTrackEnd() {
+  // Override the audio.onended to implement crossfade
+  audio.removeEventListener('timeupdate', _crossfadeTimeUpdate);
+  audio.addEventListener('timeupdate', _crossfadeTimeUpdate);
+}
+
+function _crossfadeTimeUpdate() {
+  if (!_crossfadeEnabled || !audio.duration || !state.isPlaying) return;
+  if (state.repeat === 'one') return;
+  const remaining = audio.duration - audio.currentTime;
+  if (remaining <= _crossfadeDuration && remaining > 0 && !_isCrossfading) {
+    _isCrossfading = true;
+    _startCrossfade();
+  }
+}
+
+function _startCrossfade() {
+  if (!state.tracks.length) return;
+  const totalTracks = state.tracks.length;
+  let nextIdx;
+  if (state.repeat === 'all' || state.currentIdx < totalTracks - 1) {
+    nextIdx = state.shuffle
+      ? Math.floor(Math.random() * totalTracks)
+      : (state.currentIdx + 1) % totalTracks;
+  } else {
+    _isCrossfading = false;
+    return;
+  }
+  // Fade out current
+  const startVol = state.volume;
+  const steps = 30;
+  const stepTime = (_crossfadeDuration * 1000) / steps;
+  let step = 0;
+  const fadeOut = setInterval(() => {
+    step++;
+    audio.volume = Math.max(0, startVol * (1 - step / steps));
+    if (step >= steps) {
+      clearInterval(fadeOut);
+      audio.volume = startVol;
+      _isCrossfading = false;
+      playTrack(nextIdx);
+    }
+  }, stepTime);
+}
+
+// Init crossfade on load
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    initCrossfade();
+    setupCrossfadeOnTrackEnd();
+  }, 3000);
+});
+
+// ============================================================
+// ===== FEATURE: SMART AUTO TAGGING ==========================
+// ============================================================
+let _autoTagRunning = false;
+
+async function runSmartAutoTag() {
+  if (_autoTagRunning) { toast('Auto-tagging already in progress…', ''); return; }
+  const missing = state.tracks.filter(t =>
+    !t.artist || t.artist === 'Unknown Artist' ||
+    !t.album || t.album === 'Unknown Album' ||
+    t.year === '—' || !t.year
+  );
+  if (!missing.length) { toast('✓ All tracks already have metadata!', 'success'); return; }
+  if (!getGroqKey()) { toast('Set your Groq API key first (🔑 button)', 'error'); return; }
+
+  _autoTagRunning = true;
+  const btn = document.getElementById('autoTagBtn');
+  if (btn) { btn.textContent = '🧠 Tagging…'; btn.disabled = true; }
+  toast(`🧠 Auto-tagging ${missing.length} track${missing.length > 1 ? 's' : ''}…`, '');
+
+  let fixed = 0;
+  for (let i = 0; i < Math.min(missing.length, 20); i++) {
+    const t = missing[i];
+    try {
+      const text = await callClaude([{ role: 'user', content:
+        `You are a music metadata expert. For the song titled "${t.name}" by artist "${t.artist || 'Unknown'}", fill in missing metadata.
+Reply ONLY with JSON: {"artist":"Artist Name","album":"Album Name","year":"YYYY","genre":"Genre"}.
+If you don't know something, use reasonable guesses based on the song/artist. Never return "Unknown".`
+      }], 150);
+      const data = JSON.parse(text);
+      let changed = false;
+      if (data.artist && (!t.artist || t.artist === 'Unknown Artist')) { t.artist = data.artist; changed = true; }
+      if (data.album && (!t.album || t.album === 'Unknown Album')) { t.album = data.album; changed = true; }
+      if (data.year && (!t.year || t.year === '—')) { t.year = data.year; changed = true; }
+      if (data.genre && (!t.genre || t.genre === '—')) { t.genre = data.genre; changed = true; }
+      if (changed) {
+        fixed++;
+        const m = { ...t }; delete m.url;
+        await idbSaveMeta(m).catch(() => {});
+        renderTrackList();
+        if (state.currentIdx >= 0 && state.tracks[state.currentIdx].id === t.id) updatePlayerUI();
+      }
+      // Also try to fetch album art if missing
+      if (!_artCache.get(String(t.id)) && t.artist && t.album) {
+        await _fetchAndApplyAlbumArt(t);
+      }
+    } catch (e) { /* silent fail per track */ }
+    await new Promise(r => setTimeout(r, 400)); // rate limit
+  }
+
+  _autoTagRunning = false;
+  if (btn) { btn.textContent = '🧠 Auto Tag'; btn.disabled = false; }
+  toast(`✓ Auto-tagged ${fixed} track${fixed !== 1 ? 's' : ''}`, 'success');
+  checkAchievements();
+}
+
+async function _fetchAndApplyAlbumArt(track) {
+  // Try MusicBrainz for cover art
+  try {
+    const q = encodeURIComponent(`"${track.album}" ${track.artist}`);
+    const r = await fetch(`https://musicbrainz.org/ws/2/release/?query=${q}&limit=1&fmt=json`, {
+      headers: { 'User-Agent': 'AudixPlayer/1.0' }
+    });
+    if (!r.ok) return;
+    const d = await r.json();
+    const mbid = d.releases?.[0]?.id;
+    if (!mbid) return;
+    const artR = await fetch(`https://coverartarchive.org/release/${mbid}/front-250`);
+    if (!artR.ok) return;
+    const blob = await artR.blob();
+    const dataUrl = await new Promise(res => {
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result);
+      reader.readAsDataURL(blob);
+    });
+    applyArt(track.id, dataUrl);
+    await idbSaveArt(track.id, dataUrl).catch(() => {});
+  } catch (e) { /* silent */ }
+}
+
+// ============================================================
+// ===== FEATURE: VISUALIZER CREATOR =========================
+// ============================================================
+let _vizCreatorSettings = JSON.parse(localStorage.getItem('audix_viz_creator') || '{"particles":120,"barWidth":4,"glow":10,"shape":"round","palette":"default"}');
+let _vizSavedPresets = JSON.parse(localStorage.getItem('audix_viz_presets') || '[]');
+
+function updateVizCreator() {
+  _vizCreatorSettings.particles = parseInt(document.getElementById('vizParticleCount')?.value || 120);
+  _vizCreatorSettings.barWidth = parseInt(document.getElementById('vizBarWidth')?.value || 4);
+  _vizCreatorSettings.glow = parseInt(document.getElementById('vizGlowIntensity')?.value || 10);
+  document.getElementById('vizParticleCountVal').textContent = _vizCreatorSettings.particles;
+  document.getElementById('vizBarWidthVal').textContent = _vizCreatorSettings.barWidth;
+  document.getElementById('vizGlowIntensityVal').textContent = _vizCreatorSettings.glow;
+  localStorage.setItem('audix_viz_creator', JSON.stringify(_vizCreatorSettings));
+}
+
+function setVizShape(shape, el) {
+  _vizCreatorSettings.shape = shape;
+  document.querySelectorAll('.viz-shape-btn').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  localStorage.setItem('audix_viz_creator', JSON.stringify(_vizCreatorSettings));
+}
+
+function setCreatorPalette(pal, el) {
+  _vizCreatorSettings.palette = pal;
+  document.querySelectorAll('.viz-creator-color').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  // Also set the visualizer palette
+  _vizPalette = pal;
+  document.querySelectorAll('.viz-color-swatch').forEach(s => {
+    s.classList.toggle('active', s.dataset.palette === pal);
+  });
+  localStorage.setItem('audix_viz_creator', JSON.stringify(_vizCreatorSettings));
+  toast('Color theme: ' + pal, '');
+}
+
+function saveVizPreset() {
+  const name = document.getElementById('vizPresetNameInp')?.value?.trim();
+  if (!name) { toast('Enter a preset name', ''); return; }
+  const preset = { name, settings: { ..._vizCreatorSettings }, vizType: state.vizType, ts: Date.now() };
+  _vizSavedPresets = _vizSavedPresets.filter(p => p.name !== name); // replace if same name
+  _vizSavedPresets.unshift(preset);
+  localStorage.setItem('audix_viz_presets', JSON.stringify(_vizSavedPresets));
+  document.getElementById('vizPresetNameInp').value = '';
+  renderVizSavedPresets();
+  toast('✓ Visualizer preset "' + name + '" saved!', 'success');
+}
+
+function loadVizPreset(name) {
+  const preset = _vizSavedPresets.find(p => p.name === name);
+  if (!preset) return;
+  _vizCreatorSettings = { ..._vizCreatorSettings, ...preset.settings };
+  if (preset.vizType) {
+    state.vizType = preset.vizType;
+    document.querySelectorAll('.viz-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.type === preset.vizType));
+  }
+  // Update UI sliders
+  const pc = document.getElementById('vizParticleCount');
+  const bw = document.getElementById('vizBarWidth');
+  const gi = document.getElementById('vizGlowIntensity');
+  if (pc) { pc.value = _vizCreatorSettings.particles; document.getElementById('vizParticleCountVal').textContent = _vizCreatorSettings.particles; }
+  if (bw) { bw.value = _vizCreatorSettings.barWidth; document.getElementById('vizBarWidthVal').textContent = _vizCreatorSettings.barWidth; }
+  if (gi) { gi.value = _vizCreatorSettings.glow; document.getElementById('vizGlowIntensityVal').textContent = _vizCreatorSettings.glow; }
+  if (preset.settings.palette) {
+    _vizPalette = preset.settings.palette;
+    document.querySelectorAll('.viz-creator-color').forEach(c => c.classList.toggle('active', c.dataset.cpal === _vizPalette));
+    document.querySelectorAll('.viz-color-swatch').forEach(s => s.classList.toggle('active', s.dataset.palette === _vizPalette));
+  }
+  toast('✓ Preset "' + name + '" loaded!', 'success');
+}
+
+function deleteVizPreset(name) {
+  _vizSavedPresets = _vizSavedPresets.filter(p => p.name !== name);
+  localStorage.setItem('audix_viz_presets', JSON.stringify(_vizSavedPresets));
+  renderVizSavedPresets();
+}
+
+function renderVizSavedPresets() {
+  const el = document.getElementById('vizSavedPresets');
+  if (!el) return;
+  if (!_vizSavedPresets.length) { el.innerHTML = '<span style="font-size:0.72rem;color:var(--text3);font-family:Rajdhani">No saved presets yet</span>'; return; }
+  el.innerHTML = _vizSavedPresets.map(p =>
+    `<div class="viz-saved-chip" onclick="loadVizPreset('${p.name.replace(/'/g, '')}')">
+      ${p.name}
+      <span class="vsc-del" onclick="event.stopPropagation();deleteVizPreset('${p.name.replace(/'/g, '')}')">✕</span>
+    </div>`
+  ).join('');
+}
+
+// Init viz creator on tab open
+const _origOpenTab = openTab;
+window.openTab = function(tab) {
+  _origOpenTab(tab);
+  if (tab === 'visualizer') {
+    setTimeout(renderVizSavedPresets, 100);
+    // Sync creator palette selection with current palette
+    document.querySelectorAll('.viz-creator-color').forEach(c => {
+      c.classList.toggle('active', c.dataset.cpal === _vizPalette);
+    });
+  }
+  if (tab === 'radio') renderRadioStations();
+  if (tab === 'achievements') renderAchievements();
+};
+
+// ============================================================
+// ===== FEATURE: INTERNET RADIO ==============================
+// ============================================================
+const BUILT_IN_STATIONS = [
+  { name: 'Lofi Hip Hop Radio', genre: 'Lo-Fi / Chill', bitrate: '128k', icon: '🎷', url: 'https://streams.ilovemusic.de/iloveradio17.mp3' },
+  { name: 'Jazz24', genre: 'Jazz', bitrate: '128k', icon: '🎺', url: 'https://live.wostreaming.net/manifest/ppm-jazz24aac256-ibc1.m3u8' },
+  { name: 'SomaFM Groove Salad', genre: 'Ambient / Electronic', bitrate: '128k', icon: '🌿', url: 'https://ice2.somafm.com/groovesalad-128-mp3' },
+  { name: 'SomaFM Deep Space One', genre: 'Ambient / Space', bitrate: '128k', icon: '🚀', url: 'https://ice2.somafm.com/deepspaceone-128-mp3' },
+  { name: 'SomaFM Underground 80s', genre: '80s / New Wave', bitrate: '128k', icon: '🎸', url: 'https://ice2.somafm.com/u80s-128-mp3' },
+  { name: 'Radio Paradise Main Mix', genre: 'Eclectic / Rock', bitrate: '128k', icon: '🌎', url: 'https://stream.radioparadise.com/mp3-128' },
+  { name: 'FIP Radio', genre: 'Eclectic / French', bitrate: '128k', icon: '🗼', url: 'https://icecast.radiofrance.fr/fip-midfi.mp3' },
+  { name: '1.FM Classic Rock', genre: 'Classic Rock', bitrate: '128k', icon: '🤘', url: 'https://strm112.1.fm/classicrock_mobile_mp3' },
+  { name: 'Digitally Imported Chillout', genre: 'Chillout / Ambient', bitrate: '128k', icon: '🌊', url: 'https://prem2.di.fm/chillout?897c6fe5' },
+  { name: 'SomaFM Secret Agent', genre: 'Spy / Jazz / Lounge', bitrate: '128k', icon: '🕵️', url: 'https://ice2.somafm.com/secretagent-128-mp3' },
+];
+
+let _radioPlaying = false;
+let _currentStation = null;
+let _customStations = JSON.parse(localStorage.getItem('audix_radio_stations') || '[]');
+const radioAudio = document.getElementById('radioAudio');
+
+function renderRadioStations() {
+  const list = document.getElementById('radioStationList');
+  if (!list) return;
+  list.innerHTML = BUILT_IN_STATIONS.map((s, i) =>
+    `<div class="radio-station ${_currentStation && _currentStation.url === s.url && _radioPlaying ? 'playing' : ''}" onclick="playRadioStation(${i}, false)">
+      <div class="radio-icon">${s.icon}</div>
+      <div class="radio-info">
+        <div class="radio-name">${s.name}</div>
+        <div class="radio-genre">${s.genre}</div>
+      </div>
+      <span class="radio-live-badge">LIVE</span>
+      <span class="radio-bitrate">${s.bitrate}</span>
+    </div>`
+  ).join('');
+
+  // Custom stations
+  const customSection = document.getElementById('customRadioSection');
+  const customList = document.getElementById('customRadioList');
+  if (!customSection || !customList) return;
+  if (_customStations.length) {
+    customSection.style.display = '';
+    customList.innerHTML = _customStations.map((s, i) =>
+      `<div class="radio-station ${_currentStation && _currentStation.url === s.url && _radioPlaying ? 'playing' : ''}" onclick="playRadioStation(${i}, true)">
+        <div class="radio-icon">📡</div>
+        <div class="radio-info">
+          <div class="radio-name">${s.name}</div>
+          <div class="radio-genre">${s.genre || 'Custom'}</div>
+        </div>
+        <span class="radio-live-badge">LIVE</span>
+        <button class="ta-btn" onclick="event.stopPropagation();removeCustomStation(${i})" style="margin-left:4px" title="Remove">🗑</button>
+      </div>`
+    ).join('');
+  } else {
+    customSection.style.display = 'none';
+  }
+}
+
+function playRadioStation(idx, isCustom) {
+  const station = isCustom ? _customStations[idx] : BUILT_IN_STATIONS[idx];
+  if (!station) return;
+
+  // Stop local music if playing
+  if (state.isPlaying) {
+    audio.pause();
+    state.isPlaying = false;
+    updatePlayerUI();
+  }
+
+  if (_currentStation && _currentStation.url === station.url && _radioPlaying) {
+    // Stop radio
+    radioAudio.pause();
+    radioAudio.src = '';
+    _radioPlaying = false;
+    _currentStation = null;
+    renderRadioStations();
+    updateRadioPlayerUI();
+    toast('Radio stopped', '');
+    return;
+  }
+
+  _currentStation = station;
+  _radioPlaying = true;
+  radioAudio.src = station.url;
+  radioAudio.volume = state.volume;
+  radioAudio.play().then(() => {
+    toast('📻 Now streaming: ' + station.name, 'success');
+    renderRadioStations();
+    updateRadioPlayerUI();
+    checkAchievements();
+  }).catch(e => {
+    _radioPlaying = false;
+    _currentStation = null;
+    toast('Stream failed: ' + e.message + ' — try another station', 'error');
+    renderRadioStations();
+  });
+}
+
+radioAudio.onerror = () => {
+  if (_radioPlaying) {
+    toast('⚠ Stream connection lost — try another station', 'error');
+    _radioPlaying = false;
+    _currentStation = null;
+    updateRadioPlayerUI();
+    renderRadioStations();
+  }
+};
+
+function updateRadioPlayerUI() {
+  // Show station info in player when radio is playing
+  if (_radioPlaying && _currentStation) {
+    document.getElementById('songTitle').textContent = _currentStation.name;
+    document.getElementById('songArtist').textContent = '📻 Live Radio · ' + (_currentStation.genre || '');
+    document.getElementById('songAlbum').textContent = 'Internet Radio';
+    document.getElementById('albumEmoji').textContent = _currentStation.icon || '📻';
+  }
+}
+
+function addCustomRadioStation() {
+  const name = document.getElementById('radioNameInp')?.value?.trim();
+  const url = document.getElementById('radioUrlInp')?.value?.trim();
+  const genre = document.getElementById('radioGenreInp')?.value?.trim();
+  if (!name || !url) { toast('Enter station name and URL', 'error'); return; }
+  if (!url.startsWith('http')) { toast('URL must start with http/https', 'error'); return; }
+  _customStations.push({ name, url, genre: genre || 'Custom' });
+  localStorage.setItem('audix_radio_stations', JSON.stringify(_customStations));
+  if (document.getElementById('radioNameInp')) document.getElementById('radioNameInp').value = '';
+  if (document.getElementById('radioUrlInp')) document.getElementById('radioUrlInp').value = '';
+  if (document.getElementById('radioGenreInp')) document.getElementById('radioGenreInp').value = '';
+  renderRadioStations();
+  toast('Station added!', 'success');
+}
+
+function removeCustomStation(idx) {
+  _customStations.splice(idx, 1);
+  localStorage.setItem('audix_radio_stations', JSON.stringify(_customStations));
+  renderRadioStations();
+}
+
+// Keep radio volume in sync with main volume
+const _origSetVolume = setVolume;
+window.setVolume = function(e) {
+  _origSetVolume(e);
+  if (radioAudio) radioAudio.volume = state.volume;
+};
+
+// ============================================================
+// ===== FEATURE: VOLUME NORMALIZATION ========================
+// ============================================================
+let _normEnabled = JSON.parse(localStorage.getItem('audix_normalize') || 'false');
+let _normGainNode = null;
+let _normAnimFrame = null;
+
+function toggleNormalization(enabled) {
+  _normEnabled = enabled;
+  localStorage.setItem('audix_normalize', JSON.stringify(enabled));
+  const meter = document.getElementById('normMeter');
+  if (meter) meter.style.display = enabled ? '' : 'none';
+  // Build meter bars
+  if (enabled) {
+    const bars = document.getElementById('normMeterBars');
+    if (bars && !bars.children.length) {
+      bars.innerHTML = Array.from({ length: 12 }, (_, i) =>
+        `<div class="norm-meter-bar" id="nmb${i}" style="height:${4 + i * 2}px"></div>`
+      ).join('');
+    }
+    _startNormMeter();
+    applyNormalization();
+    toast('🔊 Volume Normalization ON', 'success');
+  } else {
+    _stopNormMeter();
+    removeNormalization();
+    toast('Volume Normalization OFF', '');
+  }
+}
+
+function applyNormalization() {
+  if (!state.audioCtx) setupAudioContext();
+  if (!state.audioCtx) return;
+  try {
+    if (!_normGainNode) {
+      _normGainNode = state.audioCtx.createDynamicsCompressor();
+      _normGainNode.threshold.value = -24;
+      _normGainNode.knee.value = 30;
+      _normGainNode.ratio.value = 12;
+      _normGainNode.attack.value = 0.003;
+      _normGainNode.release.value = 0.25;
+      // Reconnect: source → compressor → analyser → destination
+      if (state.source) {
+        state.source.disconnect();
+        state.source.connect(_normGainNode);
+        _normGainNode.connect(state.analyser);
+      }
+    }
+  } catch (e) { console.warn('Normalization setup failed:', e); }
+}
+
+function removeNormalization() {
+  if (!_normGainNode || !state.source) return;
+  try {
+    state.source.disconnect();
+    _normGainNode.disconnect();
+    state.source.connect(state.analyser);
+    _normGainNode = null;
+  } catch (e) {}
+}
+
+function _startNormMeter() {
+  if (_normAnimFrame) return;
+  const tick = () => {
+    if (!_normEnabled) return;
+    if (state.analyser) {
+      const data = new Uint8Array(state.analyser.frequencyBinCount);
+      state.analyser.getByteFrequencyData(data);
+      const rms = Math.sqrt(data.reduce((s, v) => s + v * v, 0) / data.length);
+      const db = 20 * Math.log10(rms / 128 + 0.001);
+      const dbLabel = document.getElementById('normDbLabel');
+      if (dbLabel) dbLabel.textContent = db.toFixed(1) + ' dB';
+      // Animate bars
+      for (let i = 0; i < 12; i++) {
+        const bar = document.getElementById('nmb' + i);
+        if (!bar) continue;
+        const v = (data[Math.floor(i * data.length / 12)] || 0) / 255;
+        bar.style.height = (4 + v * 20) + 'px';
+        bar.style.opacity = 0.3 + v * 0.7;
+      }
+    }
+    _normAnimFrame = requestAnimationFrame(tick);
+  };
+  _normAnimFrame = requestAnimationFrame(tick);
+}
+
+function _stopNormMeter() {
+  if (_normAnimFrame) { cancelAnimationFrame(_normAnimFrame); _normAnimFrame = null; }
+}
+
+// Init normalization state on load
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const toggle = document.getElementById('normToggle');
+    if (toggle) toggle.checked = _normEnabled;
+    if (_normEnabled) {
+      const meter = document.getElementById('normMeter');
+      if (meter) meter.style.display = '';
+      const bars = document.getElementById('normMeterBars');
+      if (bars && !bars.children.length) {
+        bars.innerHTML = Array.from({ length: 12 }, (_, i) =>
+          `<div class="norm-meter-bar" id="nmb${i}" style="height:${4 + i * 2}px"></div>`
+        ).join('');
+      }
+      _startNormMeter();
+    }
+  }, 3500);
+});
+
+// ============================================================
+// ===== FEATURE: MUSIC ACHIEVEMENTS ==========================
+// ============================================================
+const ACHIEVEMENTS_DEF = [
+  { id: 'first_play', icon: '🎵', name: 'First Note', desc: 'Play your first song', target: 1, type: 'plays' },
+  { id: 'plays_10', icon: '🎶', name: 'Getting Groovy', desc: 'Play 10 songs', target: 10, type: 'plays' },
+  { id: 'plays_50', icon: '🎤', name: 'Music Lover', desc: 'Play 50 songs', target: 50, type: 'plays' },
+  { id: 'plays_100', icon: '🥇', name: '100 Songs Played', desc: 'Play 100 songs total', target: 100, type: 'plays' },
+  { id: 'plays_500', icon: '🌟', name: 'Audiophile', desc: 'Play 500 songs', target: 500, type: 'plays' },
+  { id: 'night_owl', icon: '🦉', name: 'Night Owl Listener', desc: 'Play music after midnight (12am–4am)', target: 1, type: 'night_plays' },
+  { id: 'rock_master', icon: '🎸', name: 'Rock Master', desc: 'Listen to 20 songs tagged as Rock', target: 20, type: 'genre_rock' },
+  { id: 'playlist_creator', icon: '📋', name: 'Playlist Creator', desc: 'Create your first playlist', target: 1, type: 'playlists' },
+  { id: 'library_builder', icon: '📚', name: 'Library Builder', desc: 'Add 10 songs to your library', target: 10, type: 'library' },
+  { id: 'streak_3', icon: '🔥', name: 'On Fire', desc: 'Maintain a 3-day listening streak', target: 3, type: 'streak' },
+  { id: 'streak_7', icon: '⚡', name: 'Week Warrior', desc: 'Maintain a 7-day listening streak', target: 7, type: 'streak' },
+  { id: 'streak_30', icon: '🏆', name: 'Legendary Streak', desc: 'Maintain a 30-day listening streak', target: 30, type: 'streak' },
+  { id: 'radio_listener', icon: '📻', name: 'Radio Head', desc: 'Stream an internet radio station', target: 1, type: 'radio' },
+  { id: 'eq_user', icon: '🎛', name: 'Sound Engineer', desc: 'Apply 3 different EQ presets', target: 3, type: 'eq_presets' },
+  { id: 'night_10', icon: '🌙', name: 'Midnight Regular', desc: 'Play music after midnight 10 times', target: 10, type: 'night_plays' },
+  { id: 'fav_5', icon: '❤️', name: 'Music Crush', desc: 'Add 5 songs to favourites', target: 5, type: 'favs' },
+  { id: 'viz_explorer', icon: '🌈', name: 'Visualizer Explorer', desc: 'Try 5 different visualizer styles', target: 5, type: 'viz_types' },
+  { id: 'ai_user', icon: '🤖', name: 'AI Enthusiast', desc: 'Use AI features 5 times', target: 5, type: 'ai_uses' },
+];
+
+let _achieveStats = JSON.parse(localStorage.getItem('audix_achieve_stats') || '{}');
+let _unlockedAchievements = JSON.parse(localStorage.getItem('audix_achievements') || '[]');
+
+function getAchieveProgress(def) {
+  const s = _achieveStats;
+  switch (def.type) {
+    case 'plays': return (loadStats().plays || []).length;
+    case 'night_plays': return s.night_plays || 0;
+    case 'genre_rock': return s.genre_rock || 0;
+    case 'playlists': return state.playlists.length;
+    case 'library': return state.tracks.length;
+    case 'streak': return loadStats().streak || 0;
+    case 'radio': return s.radio_played || 0;
+    case 'eq_presets': return s.eq_presets || 0;
+    case 'favs': return state.favs.length;
+    case 'viz_types': return s.viz_types_tried || 0;
+    case 'ai_uses': return s.ai_uses || 0;
+    default: return 0;
+  }
+}
+
+function checkAchievements() {
+  let newUnlock = null;
+  ACHIEVEMENTS_DEF.forEach(def => {
+    if (_unlockedAchievements.includes(def.id)) return;
+    const progress = getAchieveProgress(def);
+    if (progress >= def.target) {
+      _unlockedAchievements.push(def.id);
+      newUnlock = def;
+    }
+  });
+  localStorage.setItem('audix_achievements', JSON.stringify(_unlockedAchievements));
+  if (newUnlock) showAchievementUnlock(newUnlock);
+  // Update badge in nav if achievements tab open
+  updateAchieveScore();
+}
+
+function showAchievementUnlock(def) {
+  const toast = document.getElementById('achieveUnlockToast');
+  const icon = document.getElementById('achieveUnlockIcon');
+  const name = document.getElementById('achieveUnlockName');
+  if (!toast) return;
+  icon.textContent = def.icon;
+  name.textContent = def.name;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function updateAchieveScore() {
+  const el = document.getElementById('achieveScore');
+  if (el) el.textContent = _unlockedAchievements.length + ' / ' + ACHIEVEMENTS_DEF.length;
+}
+
+function renderAchievements() {
+  const list = document.getElementById('achievementsList');
+  if (!list) return;
+  updateAchieveScore();
+  const sorted = [...ACHIEVEMENTS_DEF].sort((a, b) => {
+    const ua = _unlockedAchievements.includes(a.id);
+    const ub = _unlockedAchievements.includes(b.id);
+    if (ua && !ub) return -1;
+    if (!ua && ub) return 1;
+    return 0;
+  });
+  list.innerHTML = sorted.map(def => {
+    const unlocked = _unlockedAchievements.includes(def.id);
+    const progress = getAchieveProgress(def);
+    const pct = Math.min(100, Math.round((progress / def.target) * 100));
+    return `<div class="achievement ${unlocked ? 'unlocked' : 'locked'}">
+      <div class="achievement-icon">${def.icon}</div>
+      <div class="achievement-info">
+        <div class="achievement-name">${def.name}</div>
+        <div class="achievement-desc">${def.desc}</div>
+        <div class="achievement-progress">
+          <div class="achievement-prog-fill" style="width:${pct}%"></div>
+        </div>
+        <div style="font-family:'Share Tech Mono';font-size:0.6rem;color:var(--text3);margin-top:3px">${Math.min(progress, def.target)} / ${def.target}</div>
+      </div>
+      ${unlocked ? '<div class="achievement-badge">✓ DONE</div>' : ''}
+    </div>`;
+  }).join('');
+}
+
+// Hook achievement tracking into various actions
+function _trackAchieveEvent(type) {
+  if (!_achieveStats[type]) _achieveStats[type] = 0;
+  _achieveStats[type]++;
+  localStorage.setItem('audix_achieve_stats', JSON.stringify(_achieveStats));
+  checkAchievements();
+}
+
+// Track night listening
+audio.addEventListener('play', () => {
+  const h = new Date().getHours();
+  if (h >= 0 && h < 4) _trackAchieveEvent('night_plays');
+  checkAchievements();
+});
+
+// Track radio
+radioAudio.addEventListener('play', () => {
+  _trackAchieveEvent('radio_played');
+  checkAchievements();
+});
+
+// Track EQ presets
+const _origApplyPreset = applyPreset;
+window.applyPreset = function(name, btn) {
+  _origApplyPreset(name, btn);
+  _trackAchieveEvent('eq_presets');
+};
+
+// Track visualizer type changes
+const _origSetFullVizType = setFullVizType;
+window.setFullVizType = function(type, el) {
+  _origSetFullVizType(type, el);
+  if (!_achieveStats._vizTypesSeen) _achieveStats._vizTypesSeen = [];
+  if (!_achieveStats._vizTypesSeen.includes(type)) {
+    _achieveStats._vizTypesSeen.push(type);
+    _achieveStats.viz_types_tried = _achieveStats._vizTypesSeen.length;
+    localStorage.setItem('audix_achieve_stats', JSON.stringify(_achieveStats));
+    checkAchievements();
+  }
+};
+
+// Track AI usage
+const _origCallClaude = callClaude;
+window.callClaude = async function(messages, maxTokens) {
+  const result = await _origCallClaude(messages, maxTokens);
+  _trackAchieveEvent('ai_uses');
+  return result;
+};
+
+// Check achievements on boot
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    updateAchieveScore();
+    checkAchievements();
+    initCrossfade();
+  }, 4000);
 });
 </script>
 </body>
