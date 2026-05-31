@@ -4490,11 +4490,11 @@ function drawQR(canvas, text, size) {
 </script>
 <script>
 // ========== GEMINI CONFIG ==========
-const GEMINI_API_KEY = 'AQ.Ab8RN6LScfrwo2bFLpeb00WDuHwPTIQq_Mf3x1tysNf8hgCFXg';
-const GEMINI_MODEL   = 'gemini-2.0-flash';
+const GEMINI_API_KEY = 'AIzaSyD2NtZO24O-PfmqVyahiUnPtV4sVCtE9To';
+const GEMINI_MODEL   = 'gemini-1.5-flash';
 
 // ========== SHARED AI CALL HELPER ==========
-async function callClaude(messages, maxTokens = 300) {
+async function callClaude(messages, maxTokens = 300, _retry = 0) {
   // Convert OpenAI-style messages to Gemini format
   const geminiContents = messages.map(m => ({
     role: m.role === 'assistant' ? 'model' : 'user',
@@ -4513,7 +4513,13 @@ async function callClaude(messages, maxTokens = 300) {
     const code = err?.error?.code || resp.status;
     if (resp.status === 400) throw new Error('Invalid request to Gemini API.');
     if (resp.status === 403) throw new Error('Invalid Gemini API key.');
-    if (resp.status === 429) throw new Error('Rate limit hit — please wait a moment and try again.');
+    if (resp.status === 429) {
+      if (_retry < 2) {
+        await new Promise(r => setTimeout(r, 2000 * (_retry + 1)));
+        return callClaude(messages, maxTokens, _retry + 1);
+      }
+      throw new Error('Rate limit hit — too many requests. Please wait a moment.');
+    }
     if (resp.status >= 500) throw new Error('Gemini server error — try again shortly.');
     throw new Error('API error (' + code + ')');
   }
