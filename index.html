@@ -1029,7 +1029,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
             <button class="upload-btn" onclick="openDeviceTransfer()" style="background:linear-gradient(135deg,#00d4ff,#00a8cc)">
               📲 Import from Device
             </button>
-            <button class="upload-btn" onclick="runSmartAutoTag()" style="background:linear-gradient(135deg,#10b981,#059669)" id="autoTagBtn" title="Auto-detect missing metadata for all tracks">
+            <button class="upload-btn" onclick="runSmartAutoTag()" style="background:linear-gradient(135deg,#10b981,#059669)" id="autoTagBtn" title="Search MusicBrainz for missing metadata (no API key needed)">
               🧠 Auto Tag
             </button>
           </div>
@@ -5594,79 +5594,122 @@ window.addEventListener('DOMContentLoaded', () => {
 // ============================================================
 let _autoTagRunning = false;
 
+// ---- MusicBrainz metadata lookup (no AI, no API key needed) ----
+async function _mbLookupTrack(title, artist) {
+  // Build query: prefer "title AND artist" when artist is known
+  const hasArtist = artist && artist !== 'Unknown Artist';
+  const q = hasArtist
+    ? `recording:"${title.replace(/"/g,'')}" AND artist:"${artist.replace(/"/g,'')}"`
+    : `recording:"${title.replace(/"/g,'')}"`;
+  const url = `https://musicbrainz.org/ws/2/recording/?query=${encodeURIComponent(q)}&limit=3&fmt=json`;
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': 'AudixPlayer/2.0 (audix@example.com)' } });
+    if (!r.ok) return null;
+    const d = await r.json();
+    const rec = d.recordings?.[0];
+    if (!rec) return null;
+    const release = rec.releases?.[0];
+    const foundArtist = rec['artist-credit']?.[0]?.name || null;
+    const foundAlbum  = release?.title || null;
+    const foundYear   = release?.date?.slice(0, 4) || null;
+    // MusicBrainz doesn't have genre directly — grab from tags if present
+    const tags = rec.tags || [];
+    const foundGenre = tags.sort((a,b) => b.count - a.count)[0]?.name || null;
+    return { artist: foundArtist, album: foundAlbum, year: foundYear, genre: foundGenre, mbid: rec.id };
+  } catch (e) { return null; }
+}
+
+// Fetch cover art from Cover Art Archive using MusicBrainz release ID
+async function _mbFetchCoverArt(track, mbid) {
+  if (!mbid) return;
+  try {
+    // Get release list for this recording to find a release with cover art
+    const recUrl = `https://musicbrainz.org/ws/2/recording/${mbid}?inc=releases&fmt=json`;
+    const r = await fetch(recUrl, { headers: { 'User-Agent': 'AudixPlayer/2.0 (audix@example.com)' } });
+    if (!r.ok) return;
+    const d = await r.json();
+    const releases = d.releases || [];
+    for (const rel of releases.slice(0, 3)) {
+      try {
+        const artR = await fetch(`https://coverartarchive.org/release/${rel.id}/front-250`, { redirect: 'follow' });
+        if (!artR.ok) continue;
+        const blob = await artR.blob();
+        if (!blob.type.startsWith('image/')) continue;
+        const dataUrl = await new Promise(res => {
+          const reader = new FileReader();
+          reader.onload = () => res(reader.result);
+          reader.readAsDataURL(blob);
+        });
+        applyArt(track.id, dataUrl);
+        idbSaveArt(track.id, dataUrl).catch(() => {});
+        return; // got art, stop
+      } catch(e) { continue; }
+    }
+  } catch(e) {}
+}
+
 async function runSmartAutoTag() {
-  if (_autoTagRunning) { toast('Auto-tagging already in progress…', ''); return; }
+  if (_autoTagRunning) {
+    _autoTagRunning = false;
+    const btn = document.getElementById('autoTagBtn');
+    if (btn) { btn.textContent = '🧠 Auto Tag'; btn.disabled = false; }
+    toast('Auto-tagging cancelled', '');
+    return;
+  }
+
   const missing = state.tracks.filter(t =>
     !t.artist || t.artist === 'Unknown Artist' ||
-    !t.album || t.album === 'Unknown Album' ||
+    !t.album  || t.album  === 'Unknown Album'  ||
     t.year === '—' || !t.year
   );
   if (!missing.length) { toast('✓ All tracks already have metadata!', 'success'); return; }
-  if (!getGroqKey()) { toast('Set your Groq API key first (🔑 button)', 'error'); return; }
 
   _autoTagRunning = true;
   const btn = document.getElementById('autoTagBtn');
-  if (btn) { btn.textContent = '🧠 Tagging…'; btn.disabled = true; }
-  toast(`🧠 Auto-tagging ${missing.length} track${missing.length > 1 ? 's' : ''}…`, '');
+  const total = missing.length;
+  let fixed = 0, i = 0;
 
-  let fixed = 0;
-  for (let i = 0; i < Math.min(missing.length, 20); i++) {
+  const updateBtn = () => {
+    if (btn) { btn.textContent = `⏹ Stop (${i}/${total}, ${fixed} fixed)`; btn.disabled = false; }
+  };
+
+  if (btn) { btn.textContent = `⏹ Stop (0/${total})…`; btn.disabled = false; }
+  toast(`🔍 Looking up metadata for ${total} track${total > 1 ? 's' : ''} via MusicBrainz…`, '');
+
+  for (i = 0; i < missing.length && _autoTagRunning; i++) {
     const t = missing[i];
-    try {
-      const text = await callClaude([{ role: 'user', content:
-        `You are a music metadata expert. For the song titled "${t.name}" by artist "${t.artist || 'Unknown'}", fill in missing metadata.
-Reply ONLY with JSON: {"artist":"Artist Name","album":"Album Name","year":"YYYY","genre":"Genre"}.
-If you don't know something, use reasonable guesses based on the song/artist. Never return "Unknown".`
-      }], 150);
-      const data = JSON.parse(text);
+    updateBtn();
+
+    const meta = await _mbLookupTrack(t.name, t.artist);
+    if (meta) {
       let changed = false;
-      if (data.artist && (!t.artist || t.artist === 'Unknown Artist')) { t.artist = data.artist; changed = true; }
-      if (data.album && (!t.album || t.album === 'Unknown Album')) { t.album = data.album; changed = true; }
-      if (data.year && (!t.year || t.year === '—')) { t.year = data.year; changed = true; }
-      if (data.genre && (!t.genre || t.genre === '—')) { t.genre = data.genre; changed = true; }
+      if (meta.artist && (!t.artist || t.artist === 'Unknown Artist')) { t.artist = meta.artist; changed = true; }
+      if (meta.album  && (!t.album  || t.album  === 'Unknown Album'))  { t.album  = meta.album;  changed = true; }
+      if (meta.year   && (!t.year   || t.year   === '—'))               { t.year   = meta.year;   changed = true; }
+      if (meta.genre  && (!t.genre  || t.genre  === '—'))               { t.genre  = meta.genre;  changed = true; }
       if (changed) {
         fixed++;
         const m = { ...t }; delete m.url;
-        await idbSaveMeta(m).catch(() => {});
+        idbSaveMeta(m).catch(() => {});
         renderTrackList();
         if (state.currentIdx >= 0 && state.tracks[state.currentIdx].id === t.id) updatePlayerUI();
       }
-      // Also try to fetch album art if missing
-      if (!_artCache.get(String(t.id)) && t.artist && t.album) {
-        await _fetchAndApplyAlbumArt(t);
+      // Fetch cover art in background (non-blocking)
+      if (!_artCache.get(String(t.id)) && meta.mbid) {
+        _mbFetchCoverArt(t, meta.mbid).catch(() => {});
       }
-    } catch (e) { /* silent fail per track */ }
-    await new Promise(r => setTimeout(r, 400)); // rate limit
+    }
+
+    // MusicBrainz rate limit: max 1 req/sec for anonymous, be polite
+    await new Promise(r => setTimeout(r, 1100));
   }
 
+  i = missing.length; // ensure final count is accurate
   _autoTagRunning = false;
   if (btn) { btn.textContent = '🧠 Auto Tag'; btn.disabled = false; }
-  toast(`✓ Auto-tagged ${fixed} track${fixed !== 1 ? 's' : ''}`, 'success');
+  toast(`✓ Found metadata for ${fixed} of ${total} track${total > 1 ? 's' : ''}`, 'success');
+  renderTrackList();
   checkAchievements();
-}
-
-async function _fetchAndApplyAlbumArt(track) {
-  // Try MusicBrainz for cover art
-  try {
-    const q = encodeURIComponent(`"${track.album}" ${track.artist}`);
-    const r = await fetch(`https://musicbrainz.org/ws/2/release/?query=${q}&limit=1&fmt=json`, {
-      headers: { 'User-Agent': 'AudixPlayer/1.0' }
-    });
-    if (!r.ok) return;
-    const d = await r.json();
-    const mbid = d.releases?.[0]?.id;
-    if (!mbid) return;
-    const artR = await fetch(`https://coverartarchive.org/release/${mbid}/front-250`);
-    if (!artR.ok) return;
-    const blob = await artR.blob();
-    const dataUrl = await new Promise(res => {
-      const reader = new FileReader();
-      reader.onload = () => res(reader.result);
-      reader.readAsDataURL(blob);
-    });
-    applyArt(track.id, dataUrl);
-    await idbSaveArt(track.id, dataUrl).catch(() => {});
-  } catch (e) { /* silent */ }
 }
 
 // ============================================================
