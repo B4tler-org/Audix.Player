@@ -480,6 +480,29 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .vc-desc{font-size:0.78rem;color:var(--text2);font-family:'Rajdhani';line-height:1.4}
 .vc-tip{background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:10px;padding:10px 12px;font-size:0.78rem;color:var(--text2);font-family:'Rajdhani';line-height:1.5;margin-bottom:14px}
 .vc-tip strong{color:var(--purple)}
+
+/* ── DEVICE TRANSFER ── */
+#transferModal{position:fixed;inset:0;z-index:3000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);padding:20px}
+#transferModal.active{display:flex}
+.transfer-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:24px;width:100%;max-width:380px;position:relative;display:flex;flex-direction:column;align-items:center;gap:16px;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.transfer-title{font-size:1.1rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-family:'Exo 2'}
+.transfer-close{position:absolute;top:14px;right:14px;background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text2);cursor:pointer;font-size:0.85rem}
+.transfer-close:hover{color:var(--cyan);border-color:var(--cyan)}
+#qrCanvas{border-radius:12px;border:3px solid var(--border);background:white;padding:8px}
+.transfer-url{font-size:0.68rem;font-family:'Share Tech Mono';color:var(--text3);text-align:center;word-break:break-all;padding:0 8px}
+.transfer-status{font-size:0.85rem;font-family:'Rajdhani';font-weight:700;letter-spacing:1px;color:var(--text2);text-align:center}
+.transfer-status.connected{color:#22c55e}
+.transfer-status.receiving{color:var(--cyan)}
+.transfer-progress-wrap{width:100%;background:var(--bg4);border-radius:4px;height:6px;overflow:hidden;display:none}
+.transfer-progress-bar{height:100%;background:var(--grad);border-radius:4px;width:0%;transition:width 0.2s}
+.transfer-file-list{width:100%;max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.transfer-file-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.78rem;display:flex;align-items:center;gap:8px}
+.transfer-file-item .tfi-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Rajdhani';font-weight:600}
+.transfer-file-item .tfi-status{font-family:'Share Tech Mono';font-size:0.65rem;color:var(--cyan);flex-shrink:0}
+.transfer-file-item .tfi-done{color:#22c55e}
+.transfer-steps{display:flex;flex-direction:column;gap:8px;width:100%}
+.transfer-step{display:flex;align-items:center;gap:10px;font-size:0.8rem;font-family:'Rajdhani';font-weight:600;color:var(--text2)}
+.transfer-step .ts-num{width:24px;height:24px;border-radius:50%;background:var(--grad);color:white;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -753,9 +776,14 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
       <div class="tab-content" id="tab-library">
         <div class="lib-header">
           <div class="lib-title">Your Library</div>
-          <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
-            ➕ Add Music
-          </button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+              ➕ Add Music
+            </button>
+            <button class="upload-btn" onclick="openDeviceTransfer()" style="background:linear-gradient(135deg,#00d4ff,#00a8cc)">
+              📲 Import from Device
+            </button>
+          </div>
           <input type="file" id="fileInput" accept="audio/*" multiple style="display:none" onchange="handleFileUpload(event)">
         </div>
         <div id="storageInfo" style="font-size:0.75rem;font-family:'Share Tech Mono';color:var(--text3);padding:2px 2px 6px;display:flex;align-items:center;gap:10px">
@@ -995,9 +1023,33 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 
 <!-- TOAST -->
 <div id="toast"></div>
+
+<!-- DEVICE TRANSFER MODAL -->
+<div id="transferModal">
+  <div class="transfer-box">
+    <button class="transfer-close" onclick="closeDeviceTransfer()">✕</button>
+    <div class="transfer-title">📲 Import from Another Device</div>
+
+    <!-- Steps hint (shown before connection) -->
+    <div class="transfer-steps" id="transferSteps">
+      <div class="transfer-step"><span class="ts-num">1</span>Scan the QR code below with Phone B</div>
+      <div class="transfer-step"><span class="ts-num">2</span>Select your music files on Phone B</div>
+      <div class="transfer-step"><span class="ts-num">3</span>Files transfer directly to this device</div>
+    </div>
+
+    <canvas id="qrCanvas" width="200" height="200"></canvas>
+    <div class="transfer-url" id="transferUrl">Generating link…</div>
+    <div class="transfer-status" id="transferStatus">Waiting for Phone B to connect…</div>
+    <div class="transfer-progress-wrap" id="transferProgressWrap">
+      <div class="transfer-progress-bar" id="transferProgressBar"></div>
+    </div>
+    <div class="transfer-file-list" id="transferFileList"></div>
+  </div>
+</div>
 <audio id="audioEl" style="display:none"></audio>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 // ========== INDEXEDDB — persistent audio storage ==========
 // Stores actual audio Blobs so tracks survive app close/offline
@@ -3780,7 +3832,346 @@ function stopVoice() {
   document.getElementById('voiceBtn').classList.remove('listening');
 }
 
-// ========== NOTES ==========
+// ========== DEVICE TRANSFER (WebRTC + QR) ==========
+// Architecture:
+//   Phone A (host)  → generates session ID → shows QR
+//   Phone B (sender) → scans QR → opens receiver page → selects files
+//   Signaling: wss://uncooperative-sea-urchin.glitch.me (free echo WS relay)
+//   Data: WebRTC DataChannel (peer-to-peer, no server for audio bytes)
+
+const SIGNAL_SERVER = 'wss://uncooperative-sea-urchin.glitch.me';
+const CHUNK_SIZE = 64 * 1024; // 64 KB chunks
+
+let _xferWs        = null;
+let _xferPc        = null;   // RTCPeerConnection (host side)
+let _xferDc        = null;   // RTCDataChannel (host side, receives)
+let _xferSessionId = null;
+let _xferReceiving = {};     // { fileName: { meta, chunks[], received } }
+let _xferCurrentFile = null;
+
+// ── Open modal on Phone A ──────────────────────────────────────────────
+async function openDeviceTransfer() {
+  _xferSessionId = Math.random().toString(36).slice(2, 10).toUpperCase();
+  document.getElementById('transferModal').classList.add('active');
+  document.getElementById('transferStatus').textContent = 'Setting up connection…';
+  document.getElementById('transferStatus').className = 'transfer-status';
+  document.getElementById('transferSteps').style.display = 'flex';
+  document.getElementById('transferProgressWrap').style.display = 'none';
+  document.getElementById('transferFileList').innerHTML = '';
+
+  await hostConnectSignal();
+}
+
+function closeDeviceTransfer() {
+  document.getElementById('transferModal').classList.remove('active');
+  try { _xferWs && _xferWs.close(); } catch(e) {}
+  try { _xferPc && _xferPc.close(); } catch(e) {}
+  _xferWs = null; _xferPc = null; _xferDc = null;
+}
+
+// ── Host: connect to signaling WS, create RTCPeerConnection ──────────
+async function hostConnectSignal() {
+  _xferPc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+  _xferDc = _xferPc.createDataChannel('audix-transfer', { ordered: true });
+  _xferDc.binaryType = 'arraybuffer';
+
+  _xferDc.onopen  = () => {
+    document.getElementById('transferStatus').textContent = '✓ Phone B connected — waiting for files…';
+    document.getElementById('transferStatus').className = 'transfer-status connected';
+    document.getElementById('transferSteps').style.display = 'none';
+    document.getElementById('transferProgressWrap').style.display = 'block';
+  };
+  _xferDc.onmessage = hostOnMessage;
+
+  _xferPc.onicecandidate = e => {
+    if (e.candidate && _xferWs && _xferWs.readyState === WebSocket.OPEN) {
+      _xferWs.send(JSON.stringify({ type: 'ice', to: 'sender-' + _xferSessionId, candidate: e.candidate }));
+    }
+  };
+
+  // Build the offer
+  const offer = await _xferPc.createOffer();
+  await _xferPc.setLocalDescription(offer);
+
+  // Connect signaling WS
+  _xferWs = new WebSocket(SIGNAL_SERVER);
+  _xferWs.onopen = () => {
+    // Register as host
+    _xferWs.send(JSON.stringify({ type: 'register', id: 'host-' + _xferSessionId }));
+    // Send offer for any arriving sender
+    _xferWs.send(JSON.stringify({ type: 'offer', to: 'sender-' + _xferSessionId, offer: _xferPc.localDescription }));
+    // Build receiver URL & QR
+    buildReceiverPage(_xferSessionId);
+  };
+  _xferWs.onmessage = async ev => {
+    const msg = JSON.parse(ev.data);
+    if (msg.type === 'answer') {
+      await _xferPc.setRemoteDescription(new RTCSessionDescription(msg.answer));
+    } else if (msg.type === 'ice' && msg.candidate) {
+      try { await _xferPc.addIceCandidate(new RTCIceCandidate(msg.candidate)); } catch(e) {}
+    }
+  };
+  _xferWs.onerror = () => {
+    document.getElementById('transferStatus').textContent = 'Signaling error — check connection';
+  };
+}
+
+// ── Host: receive data from Phone B ──────────────────────────────────
+function hostOnMessage(ev) {
+  if (typeof ev.data === 'string') {
+    // JSON control message
+    const msg = JSON.parse(ev.data);
+    if (msg.type === 'file-start') {
+      _xferCurrentFile = msg.name;
+      _xferReceiving[msg.name] = { meta: msg, chunks: [], received: 0 };
+      addTransferFileItem(msg.name, '0%');
+      document.getElementById('transferStatus').textContent = `Receiving: ${msg.name}`;
+      document.getElementById('transferStatus').className = 'transfer-status receiving';
+    } else if (msg.type === 'file-end') {
+      finalizeReceivedFile(msg.name);
+    } else if (msg.type === 'all-done') {
+      document.getElementById('transferStatus').textContent = `✓ All files received!`;
+      document.getElementById('transferStatus').className = 'transfer-status connected';
+      toast('📲 Import complete — all files added to library!', 'success');
+    }
+  } else {
+    // Binary chunk for current file
+    if (!_xferCurrentFile || !_xferReceiving[_xferCurrentFile]) return;
+    const state2 = _xferReceiving[_xferCurrentFile];
+    state2.chunks.push(ev.data);
+    state2.received += ev.data.byteLength;
+    const pct = Math.min(100, Math.round((state2.received / state2.meta.size) * 100));
+    updateTransferFileItem(_xferCurrentFile, pct + '%');
+    document.getElementById('transferProgressBar').style.width = pct + '%';
+  }
+}
+
+async function finalizeReceivedFile(name) {
+  const s = _xferReceiving[name];
+  if (!s) return;
+  const blob = new Blob(s.chunks, { type: s.meta.mimeType || 'audio/mpeg' });
+  const file  = new File([blob], s.meta.name, { type: blob.type });
+  // Re-use existing handleFileUpload logic
+  const fakeEv = { target: { files: [file] } };
+  await handleFileUpload(fakeEv);
+  updateTransferFileItem(name, 'Done ✓', true);
+  delete _xferReceiving[name];
+}
+
+function addTransferFileItem(name, status) {
+  const list = document.getElementById('transferFileList');
+  const el = document.createElement('div');
+  el.className = 'transfer-file-item';
+  el.id = 'tfi-' + btoa(name).replace(/=/g,'');
+  el.innerHTML = `<span class="tfi-name">🎵 ${name}</span><span class="tfi-status">${status}</span>`;
+  list.appendChild(el);
+}
+function updateTransferFileItem(name, status, done = false) {
+  const el = document.getElementById('tfi-' + btoa(name).replace(/=/g,''));
+  if (!el) return;
+  const s = el.querySelector('.tfi-status');
+  if (s) { s.textContent = status; if (done) s.classList.add('tfi-done'); }
+}
+
+// ── Build receiver page as a self-contained blob URL ─────────────────
+function buildReceiverPage(sessionId) {
+  const sigServer = SIGNAL_SERVER;
+  const chunkSize = CHUNK_SIZE;
+
+  const receiverHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Audix — Send Files</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#0a0a0f;color:#f0f0ff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:20px}
+.logo{font-size:2rem;font-weight:900;background:linear-gradient(135deg,#00d4ff,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub{font-size:0.85rem;color:#9999bb;letter-spacing:2px;text-transform:uppercase}
+.card{background:#111118;border:1px solid rgba(139,92,246,0.3);border-radius:16px;padding:24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px;align-items:center}
+.status{font-size:0.9rem;color:#9999bb;text-align:center;line-height:1.5}
+.status.ok{color:#22c55e}
+.status.err{color:#ef4444}
+.select-btn{background:linear-gradient(135deg,#00d4ff,#8b5cf6);border:none;border-radius:12px;padding:14px 28px;color:white;font-size:1rem;font-weight:700;cursor:pointer;width:100%;transition:opacity 0.2s}
+.select-btn:disabled{opacity:0.4;cursor:not-allowed}
+.select-btn:not(:disabled):hover{opacity:0.88}
+.file-list{width:100%;display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto}
+.file-row{background:#1a1a25;border:1px solid rgba(139,92,246,0.2);border-radius:8px;padding:8px 12px;font-size:0.8rem;display:flex;align-items:center;gap:8px}
+.file-row .fr-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-row .fr-st{font-size:0.65rem;color:#00d4ff;flex-shrink:0}
+.file-row .fr-done{color:#22c55e}
+.progress{width:100%;height:5px;background:#22223a;border-radius:3px;overflow:hidden;display:none}
+.progress-bar{height:100%;background:linear-gradient(90deg,#00d4ff,#8b5cf6);width:0%;transition:width 0.15s}
+</style>
+</head>
+<body>
+<div class="logo">AUDIX</div>
+<div class="sub">File Sender</div>
+<div class="card">
+  <div class="status" id="st">Connecting to ${location.hostname || 'host'}…</div>
+  <input type="file" id="fi" accept="audio/*,.mp3,.m4a,.flac,.wav,.ogg,.aac,.opus" multiple style="display:none">
+  <button class="select-btn" id="selBtn" disabled onclick="document.getElementById('fi').click()">Select Music Files</button>
+  <div class="progress" id="prog"><div class="progress-bar" id="progBar"></div></div>
+  <div class="file-list" id="fileList"></div>
+</div>
+<script>
+const SESSION = '${sessionId}';
+const SIG = '${sigServer}';
+const CHUNK = ${chunkSize};
+let pc, dc, ws;
+
+function setStatus(msg, cls='') {
+  const el = document.getElementById('st');
+  el.textContent = msg;
+  el.className = 'status' + (cls ? ' '+cls : '');
+}
+
+function init() {
+  ws = new WebSocket(SIG);
+  pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+
+  pc.ondatachannel = e => {
+    dc = e.channel;
+    dc.binaryType = 'arraybuffer';
+    dc.onopen = () => {
+      setStatus('Connected! Select your music files.', 'ok');
+      document.getElementById('selBtn').disabled = false;
+    };
+  };
+
+  pc.onicecandidate = e => {
+    if (e.candidate && ws.readyState === 1) {
+      ws.send(JSON.stringify({ type: 'ice', to: 'host-' + SESSION, candidate: e.candidate }));
+    }
+  };
+
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ type: 'register', id: 'sender-' + SESSION }));
+    setStatus('Waiting for host offer…');
+  };
+
+  ws.onmessage = async ev => {
+    const msg = JSON.parse(ev.data);
+    if (msg.type === 'offer') {
+      await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      ws.send(JSON.stringify({ type: 'answer', to: 'host-' + SESSION, answer: pc.localDescription }));
+      setStatus('Exchanging connection details…');
+    } else if (msg.type === 'ice' && msg.candidate) {
+      try { await pc.addIceCandidate(new RTCIceCandidate(msg.candidate)); } catch(e) {}
+    }
+  };
+
+  ws.onerror = () => setStatus('Signaling error — try refreshing', 'err');
+}
+
+document.getElementById('fi').onchange = async e => {
+  const files = [...e.target.files];
+  if (!files.length || !dc || dc.readyState !== 'open') return;
+  document.getElementById('selBtn').disabled = true;
+  document.getElementById('prog').style.display = 'block';
+  const list = document.getElementById('fileList');
+
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    const rowId = 'fr' + i;
+    list.innerHTML += \`<div class="file-row" id="\${rowId}"><span class="fr-name">🎵 \${f.name}</span><span class="fr-st" id="st\${i}">Queued</span></div>\`;
+    setStatus(\`Sending \${i+1}/\${files.length}: \${f.name}\`);
+    document.getElementById('st'+i).textContent = 'Sending…';
+
+    // Send metadata first
+    dc.send(JSON.stringify({ type: 'file-start', name: f.name, size: f.size, mimeType: f.type }));
+
+    // Stream in chunks
+    const ab = await f.arrayBuffer();
+    let offset = 0;
+    while (offset < ab.byteLength) {
+      // Throttle: wait for buffer to drain
+      while (dc.bufferedAmount > CHUNK * 8) {
+        await new Promise(r => setTimeout(r, 30));
+      }
+      const chunk = ab.slice(offset, offset + CHUNK);
+      dc.send(chunk);
+      offset += chunk.byteLength;
+      const pct = Math.round((offset / ab.byteLength) * 100);
+      document.getElementById('progBar').style.width = pct + '%';
+      document.getElementById('st'+i).textContent = pct + '%';
+    }
+
+    dc.send(JSON.stringify({ type: 'file-end', name: f.name }));
+    document.getElementById('st'+i).textContent = '✓ Done';
+    document.getElementById('st'+i).classList.add('fr-done');
+  }
+
+  dc.send(JSON.stringify({ type: 'all-done' }));
+  setStatus('All files sent! Check Phone A.', 'ok');
+  document.getElementById('prog').style.display = 'none';
+};
+
+init();
+<\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([receiverHTML], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+
+  // Draw QR code
+  const canvas = document.getElementById('qrCanvas');
+  drawQR(canvas, url, 200);
+
+  document.getElementById('transferUrl').textContent = 'Scan QR to open sender page on Phone B';
+  document.getElementById('transferStatus').textContent = 'Waiting for Phone B to connect…';
+}
+
+// ── Minimal QR Code encoder (no library needed for simple URLs) ──────
+// We use the qrcodejs library loaded via CDN
+function drawQR(canvas, text, size) {
+  // Clear canvas first
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, size, size);
+
+  try {
+    // Use qrcodejs to draw into a temp div, then copy to canvas
+    const tmp = document.createElement('div');
+    tmp.style.display = 'none';
+    document.body.appendChild(tmp);
+
+    new QRCode(tmp, {
+      text,
+      width: size - 16,
+      height: size - 16,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+
+    // QRCode renders an img — wait a tick then draw it
+    setTimeout(() => {
+      const img = tmp.querySelector('img') || tmp.querySelector('canvas');
+      if (img) {
+        if (img.tagName === 'IMG') {
+          const i = new Image();
+          i.onload = () => { ctx.drawImage(i, 8, 8, size - 16, size - 16); };
+          i.src = img.src;
+        } else {
+          ctx.drawImage(img, 8, 8, size - 16, size - 16);
+        }
+      }
+      tmp.remove();
+    }, 100);
+  } catch(e) {
+    // Fallback: show text if QR lib fails
+    ctx.fillStyle = '#000';
+    ctx.font = '11px monospace';
+    ctx.fillText('Scan not available', 10, 30);
+    ctx.fillText('Open URL manually', 10, 50);
+  }
+}
+</script>
 let _notes = JSON.parse(localStorage.getItem('audix_notes') || '[]');
 
 function openNotes() {
