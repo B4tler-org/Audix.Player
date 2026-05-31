@@ -1397,23 +1397,38 @@ async function playTrack(idx) {
     audio.addEventListener('error',   onErr,   { once: true });
   });
 
+  // Show title/artist immediately, reset lyrics panel
+  updatePlayerUI();
+  const btn = document.getElementById('lyricsFetchBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+  clearLyrics();
+
   audio.play().then(() => {
     state.isPlaying = true;
     updatePlayerUI();
+    // Enable button and kick off pipeline AFTER play() succeeds so
+    // audio.duration is valid and the sync loop starts from time > 0
+    if (btn) { btn.disabled = false; btn.textContent = 'Identify Track'; }
+    // Small extra delay so loadedmetadata has fired and duration is set
+    const startPipeline = () => {
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        triggerIdentification();
+      } else {
+        audio.addEventListener('loadedmetadata', () => triggerIdentification(), { once: true });
+      }
+    };
+    if (isFinite(audio.duration) && audio.duration > 0) {
+      startPipeline();
+    } else {
+      setTimeout(startPipeline, 400);
+    }
   }).catch(err => {
     console.log('Playback error:', err);
     toast('Playback failed: ' + err.message, 'error');
     state.isPlaying = false;
     updatePlayerUI();
+    if (btn) { btn.disabled = false; btn.textContent = 'Identify Track'; }
   });
-
-  // Show title/artist immediately
-  updatePlayerUI();
-
-  // Trigger identification pipeline after short delay
-  const btn = document.getElementById('lyricsFetchBtn');
-  if (btn) { btn.disabled = false; btn.textContent = 'Identify Track'; }
-  setTimeout(() => triggerIdentification(), 300);
 }
 function togglePlay() {
   if(state.currentIdx<0 && state.tracks.length>0){playTrack(0);return;}
@@ -1476,6 +1491,12 @@ audio.ontimeupdate = ()=>{
 };
 audio.onseeked = ()=>{
   // Force immediate lyrics re-sync after a seek (don't wait for next rAF)
+  if (_lyricsSynced && _lyricsData.length) {
+    startLyricsSync();
+  }
+};
+audio.onplay = () => {
+  // Re-kick sync loop whenever playback resumes (covers pause→play cycles)
   if (_lyricsSynced && _lyricsData.length) {
     startLyricsSync();
   }
@@ -2700,10 +2721,11 @@ async function triggerIdentification() {
     stageSet('lyrics', 'loading', '');
     pipelineStatus('Fetching lyrics…');
 
-    // Audio is already playing so duration is available; fall back to stored track.duration
+    // Audio is playing and duration is guaranteed valid at this point
+    // (triggerIdentification is only called after play() resolves and duration is set)
     const audioDur = (isFinite(audio.duration) && audio.duration > 0)
       ? Math.round(audio.duration)
-      : (track.duration || 0);
+      : (track.duration ? Math.round(track.duration) : 0);
 
     const lyricsArtist = cleanArtist || 'Unknown Artist';
 
@@ -3059,6 +3081,12 @@ function startLyricsSync() {
 
   function tick() {
     if (!_lyricsSynced || !_lyricsData.length) {
+      _lyricsAnimFrame = requestAnimationFrame(tick);
+      return;
+    }
+
+    // Only sync when audio is actually playing and has a valid position
+    if (audio.paused || !isFinite(audio.currentTime) || audio.currentTime <= 0) {
       _lyricsAnimFrame = requestAnimationFrame(tick);
       return;
     }
