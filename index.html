@@ -3916,6 +3916,7 @@ if('serviceWorker' in navigator){
 
 // ========== INIT ==========
 window.addEventListener('DOMContentLoaded',()=>{
+  checkSenderMode(); // intercepts ?send=PEERID — shows sender UI instead of app
   startLoader();
 });
 window.addEventListener('resize',()=>{
@@ -4252,130 +4253,180 @@ function updateTransferFileItem(name, status, done = false) {
 // The receiver page uses PeerJS directly (loaded from CDN), connecting to
 // the host peer ID embedded in the page at QR-generation time.
 function buildReceiverPage(peerId) {
-  const chunkSize = CHUNK_SIZE;
-
-  const receiverHTML = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Audix — Send Files</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',sans-serif;background:#0a0a0f;color:#f0f0ff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:20px}
-.logo{font-size:2rem;font-weight:900;background:linear-gradient(135deg,#00d4ff,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.sub{font-size:0.85rem;color:#9999bb;letter-spacing:2px;text-transform:uppercase}
-.card{background:#111118;border:1px solid rgba(139,92,246,0.3);border-radius:16px;padding:24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px;align-items:center}
-.status{font-size:0.9rem;color:#9999bb;text-align:center;line-height:1.5}
-.status.ok{color:#22c55e}.status.err{color:#ef4444}
-.select-btn{background:linear-gradient(135deg,#00d4ff,#8b5cf6);border:none;border-radius:12px;padding:14px 28px;color:white;font-size:1rem;font-weight:700;cursor:pointer;width:100%;transition:opacity 0.2s}
-.select-btn:disabled{opacity:0.4;cursor:not-allowed}
-.select-btn:not(:disabled):hover{opacity:0.88}
-.file-list{width:100%;display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto}
-.file-row{background:#1a1a25;border:1px solid rgba(139,92,246,0.2);border-radius:8px;padding:8px 12px;font-size:0.8rem;display:flex;align-items:center;gap:8px}
-.fr-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fr-st{font-size:0.65rem;color:#00d4ff;flex-shrink:0}
-.fr-done{color:#22c55e}
-.progress{width:100%;height:5px;background:#22223a;border-radius:3px;overflow:hidden;display:none}
-.progress-bar{height:100%;background:linear-gradient(90deg,#00d4ff,#8b5cf6);width:0%;transition:width 0.15s}
-</style>
-</head>
-<body>
-<div class="logo">AUDIX</div>
-<div class="sub">File Sender</div>
-<div class="card">
-  <div class="status" id="st">Loading connection library…</div>
-  <input type="file" id="fi" accept="audio/*,.mp3,.m4a,.flac,.wav,.ogg,.aac,.opus" multiple style="display:none">
-  <button class="select-btn" id="selBtn" disabled onclick="document.getElementById('fi').click()">Select Music Files</button>
-  <div class="progress" id="prog"><div class="progress-bar" id="progBar"></div></div>
-  <div class="file-list" id="fileList"></div>
-</div>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>
-<script>
-const HOST_PEER_ID = '${peerId}';
-const CHUNK = ${chunkSize};
-let conn;
-
-function setStatus(msg, cls) {
-  const el = document.getElementById('st');
-  el.textContent = msg;
-  el.className = 'status' + (cls ? ' ' + cls : '');
-}
-
-function init() {
-  setStatus('Connecting to Audix on Phone A…');
-  const peer = new Peer({ debug: 0 });
-  peer.on('open', () => {
-    conn = peer.connect(HOST_PEER_ID, { reliable: true });
-    conn.on('open', () => {
-      setStatus('Connected! Select your music files.', 'ok');
-      document.getElementById('selBtn').disabled = false;
-    });
-    conn.on('error', e => setStatus('Connection error: ' + e.message, 'err'));
-  });
-  peer.on('error', e => {
-    if (e.type === 'peer-unavailable') {
-      setStatus('Phone A not found — make sure the import screen is still open on Phone A.', 'err');
-    } else {
-      setStatus('Error: ' + e.message, 'err');
-    }
-  });
-}
-
-document.getElementById('fi').onchange = async e => {
-  const files = [...e.target.files];
-  if (!files.length || !conn || conn.open === false) return;
-  document.getElementById('selBtn').disabled = true;
-  document.getElementById('prog').style.display = 'block';
-  const list = document.getElementById('fileList');
-
-  for (let i = 0; i < files.length; i++) {
-    const f = files[i];
-    const safeId = 'fr' + i;
-    list.innerHTML += \`<div class="file-row" id="\${safeId}"><span class="fr-name">🎵 \${f.name}</span><span class="fr-st" id="fst\${i}">Queued</span></div>\`;
-    setStatus(\`Sending \${i+1}/\${files.length}: \${f.name}\`);
-    document.getElementById('fst' + i).textContent = 'Reading…';
-
-    conn.send({ type: 'file-start', name: f.name, size: f.size, mimeType: f.type });
-
-    const ab = await f.arrayBuffer();
-    let offset = 0;
-    while (offset < ab.byteLength) {
-      const chunk = ab.slice(offset, offset + CHUNK);
-      conn.send(chunk);
-      offset += chunk.byteLength;
-      const pct = Math.round((offset / ab.byteLength) * 100);
-      document.getElementById('progBar').style.width = pct + '%';
-      document.getElementById('fst' + i).textContent = pct + '%';
-      conn.send({ type: 'progress', name: f.name, pct });
-      // Small yield to keep UI responsive
-      if (offset % (CHUNK * 4) === 0) await new Promise(r => setTimeout(r, 10));
-    }
-
-    conn.send({ type: 'file-end', name: f.name });
-    document.getElementById('fst' + i).textContent = '✓ Done';
-    document.getElementById('fst' + i).className = 'fr-st fr-done';
-  }
-
-  conn.send({ type: 'all-done' });
-  setStatus('All files sent! You can close this page.', 'ok');
-  document.getElementById('prog').style.display = 'none';
-};
-
-init();
-<\/script>
-</body>
-</html>`;
-
-  const blob = new Blob([receiverHTML], { type: 'text/html' });
-  const url  = URL.createObjectURL(blob);
+  // Encode just a short URL with the peer ID — the same app handles ?send=ID
+  // This keeps the QR small enough to scan reliably on any phone
+  const senderUrl = window.location.origin + window.location.pathname + '?send=' + encodeURIComponent(peerId);
 
   // Draw QR code
   const canvas = document.getElementById('qrCanvas');
-  drawQR(canvas, url, 200);
+  drawQR(canvas, senderUrl, 200);
 
-  document.getElementById('transferUrl').textContent = 'Scan QR to open sender page on Phone B';
+  // Download fallback — saves a tiny HTML redirector that opens the sender URL
+  const miniHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=${senderUrl}"><title>Audix Sender</title></head><body><p>Opening Audix sender… <a href="${senderUrl}">Click here</a></p></body></html>`;
+  const existingBtn = document.getElementById('transferDownloadBtn');
+  if (!existingBtn) {
+    const btn = document.createElement('a');
+    btn.id = 'transferDownloadBtn';
+    btn.href = 'data:text/html,' + encodeURIComponent(miniHTML);
+    btn.download = 'audix-sender.html';
+    btn.style.cssText = 'display:inline-block;margin-top:8px;background:linear-gradient(135deg,#00d4ff,#8b5cf6);color:white;padding:8px 18px;border-radius:10px;font-family:Exo 2,sans-serif;font-weight:700;font-size:0.8rem;text-decoration:none;letter-spacing:0.5px';
+    btn.textContent = '⬇ Share Link Instead';
+    document.getElementById('transferModal').querySelector('.transfer-box').appendChild(btn);
+  } else {
+    existingBtn.href = 'data:text/html,' + encodeURIComponent(miniHTML);
+  }
+
+  document.getElementById('transferUrl').textContent = senderUrl;
   document.getElementById('transferStatus').textContent = 'Waiting for Phone B to connect…';
+}
+
+// ── Sender mode: detect ?send=PEERID in URL and show sender UI ────────
+function checkSenderMode() {
+  const params = new URLSearchParams(window.location.search);
+  const hostPeerId = params.get('send');
+  if (!hostPeerId) return;
+
+  // Hide loader and app, show sender UI
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('app').style.display = 'none';
+  document.body.style.background = '#0a0a0f';
+
+  const ui = document.createElement('div');
+  ui.style.cssText = 'position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:20px;background:#0a0a0f;color:#f0f0ff;font-family:sans-serif;z-index:99999';
+
+  const logo = document.createElement('div');
+  logo.style.cssText = 'font-size:2rem;font-weight:900;background:linear-gradient(135deg,#00d4ff,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent';
+  logo.textContent = 'AUDIX';
+
+  const sub = document.createElement('div');
+  sub.style.cssText = 'font-size:0.85rem;color:#9999bb;letter-spacing:2px;text-transform:uppercase';
+  sub.textContent = 'File Sender';
+
+  const card = document.createElement('div');
+  card.style.cssText = 'background:#111118;border:1px solid rgba(139,92,246,0.3);border-radius:16px;padding:24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px;align-items:center';
+
+  const statusEl = document.createElement('div');
+  statusEl.id = 'senderStatus';
+  statusEl.style.cssText = 'font-size:0.9rem;color:#9999bb;text-align:center;line-height:1.5';
+  statusEl.textContent = 'Loading connection…';
+
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.id = 'senderFile';
+  fileInput.accept = 'audio/*,.mp3,.m4a,.flac,.wav,.ogg,.aac,.opus';
+  fileInput.multiple = true;
+  fileInput.style.display = 'none';
+
+  const selectBtn = document.createElement('button');
+  selectBtn.id = 'senderBtn';
+  selectBtn.disabled = true;
+  selectBtn.style.cssText = 'background:linear-gradient(135deg,#00d4ff,#8b5cf6);border:none;border-radius:12px;padding:14px 28px;color:white;font-size:1rem;font-weight:700;cursor:pointer;width:100%;opacity:0.4';
+  selectBtn.textContent = 'Select Music Files';
+  selectBtn.onclick = function() { fileInput.click(); };
+
+  const progressWrap = document.createElement('div');
+  progressWrap.id = 'senderProgress';
+  progressWrap.style.cssText = 'width:100%;height:5px;background:#22223a;border-radius:3px;overflow:hidden;display:none';
+  const progressBar = document.createElement('div');
+  progressBar.id = 'senderBar';
+  progressBar.style.cssText = 'height:100%;background:linear-gradient(90deg,#00d4ff,#8b5cf6);width:0%;transition:width 0.15s';
+  progressWrap.appendChild(progressBar);
+
+  const fileList = document.createElement('div');
+  fileList.id = 'senderFileList';
+  fileList.style.cssText = 'width:100%;display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto';
+
+  card.appendChild(statusEl);
+  card.appendChild(fileInput);
+  card.appendChild(selectBtn);
+  card.appendChild(progressWrap);
+  card.appendChild(fileList);
+  ui.appendChild(logo);
+  ui.appendChild(sub);
+  ui.appendChild(card);
+  document.body.appendChild(ui);
+
+  function setSenderStatus(msg, color) {
+    statusEl.textContent = msg;
+    statusEl.style.color = color || '#9999bb';
+  }
+
+  loadPeerJS().then(function() {
+    setSenderStatus('Connecting to Phone A…');
+    const peer = new Peer({ debug: 0 });
+    let conn;
+
+    peer.on('open', function() {
+      conn = peer.connect(hostPeerId, { reliable: true });
+      conn.on('open', function() {
+        setSenderStatus('Connected! Select your music files.', '#22c55e');
+        selectBtn.disabled = false;
+        selectBtn.style.opacity = '1';
+      });
+      conn.on('error', function(e) { setSenderStatus('Connection error: ' + e.message, '#ef4444'); });
+    });
+
+    peer.on('error', function(e) {
+      if (e.type === 'peer-unavailable') {
+        setSenderStatus('Phone A not found — keep the import screen open on Phone A.', '#ef4444');
+      } else {
+        setSenderStatus('Error: ' + e.message, '#ef4444');
+      }
+    });
+
+    fileInput.onchange = async function(e) {
+      const files = Array.from(e.target.files);
+      if (!files.length || !conn) return;
+      selectBtn.disabled = true;
+      progressWrap.style.display = 'block';
+      const chunkSize = 65536;
+
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        const row = document.createElement('div');
+        row.style.cssText = 'background:#1a1a25;border:1px solid rgba(139,92,246,0.2);border-radius:8px;padding:8px 12px;font-size:0.8rem;display:flex;align-items:center;gap:8px';
+        const nameSpan = document.createElement('span');
+        nameSpan.style.cssText = 'flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+        nameSpan.textContent = '🎵 ' + f.name;
+        const stSpan = document.createElement('span');
+        stSpan.id = 'sfst' + i;
+        stSpan.style.cssText = 'font-size:0.65rem;color:#00d4ff;flex-shrink:0';
+        stSpan.textContent = 'Queued';
+        row.appendChild(nameSpan);
+        row.appendChild(stSpan);
+        fileList.appendChild(row);
+
+        setSenderStatus('Sending ' + (i + 1) + '/' + files.length + ': ' + f.name);
+        stSpan.textContent = 'Reading…';
+
+        conn.send({ type: 'file-start', name: f.name, size: f.size, mimeType: f.type });
+
+        const ab = await f.arrayBuffer();
+        let offset = 0;
+        while (offset < ab.byteLength) {
+          const chunk = ab.slice(offset, Math.min(offset + chunkSize, ab.byteLength));
+          conn.send(chunk);
+          offset += chunk.byteLength;
+          const pct = Math.round((offset / ab.byteLength) * 100);
+          progressBar.style.width = pct + '%';
+          stSpan.textContent = pct + '%';
+          conn.send({ type: 'progress', name: f.name, pct: pct });
+          if (offset % (chunkSize * 4) === 0) await new Promise(function(r) { setTimeout(r, 10); });
+        }
+
+        conn.send({ type: 'file-end', name: f.name });
+        stSpan.textContent = '✓ Done';
+        stSpan.style.color = '#22c55e';
+      }
+
+      conn.send({ type: 'all-done' });
+      setSenderStatus('All files sent! You can close this page.', '#22c55e');
+      progressWrap.style.display = 'none';
+    };
+
+  }).catch(function() {
+    setSenderStatus('Failed to load connection library. Check internet.', '#ef4444');
+  });
 }
 
 // ── Minimal QR Code encoder (no library needed for simple URLs) ──────
@@ -4388,9 +4439,14 @@ function drawQR(canvas, text, size) {
 
   try {
     // Use qrcodejs to draw into a temp div, then copy to canvas
+    // Render QR into an off-screen div (must be visible for QRCode.js to work)
     const tmp = document.createElement('div');
-    tmp.style.display = 'none';
+    tmp.style.cssText = 'position:fixed;left:-9999px;top:-9999px;';
     document.body.appendChild(tmp);
+
+    // Set canvas dimensions explicitly
+    canvas.width  = size;
+    canvas.height = size;
 
     new QRCode(tmp, {
       text,
@@ -4401,20 +4457,29 @@ function drawQR(canvas, text, size) {
       correctLevel: QRCode.CorrectLevel.M
     });
 
-    // QRCode renders an img — wait a tick then draw it
+    // QRCode.js needs ~200ms to finish rendering its internal canvas/img
     setTimeout(() => {
-      const img = tmp.querySelector('img') || tmp.querySelector('canvas');
-      if (img) {
-        if (img.tagName === 'IMG') {
-          const i = new Image();
-          i.onload = () => { ctx.drawImage(i, 8, 8, size - 16, size - 16); };
-          i.src = img.src;
-        } else {
-          ctx.drawImage(img, 8, 8, size - 16, size - 16);
-        }
+      const qrCanvas = tmp.querySelector('canvas');
+      const qrImg    = tmp.querySelector('img');
+      if (qrCanvas) {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(qrCanvas, 8, 8, size - 16, size - 16);
+        tmp.remove();
+      } else if (qrImg) {
+        const i = new Image();
+        i.crossOrigin = 'anonymous';
+        i.onload = () => {
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, size, size);
+          ctx.drawImage(i, 8, 8, size - 16, size - 16);
+          tmp.remove();
+        };
+        i.src = qrImg.src;
+      } else {
+        tmp.remove();
       }
-      tmp.remove();
-    }, 100);
+    }, 250);
   } catch(e) {
     // Fallback: show text if QR lib fails
     ctx.fillStyle = '#000';
@@ -4425,9 +4490,13 @@ function drawQR(canvas, text, size) {
 }
 </script>
 <script>
+// ========== GROQ CONFIG ==========
+const GROQ_API_KEY = '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';
+const GROQ_MODEL   = 'llama3-70b-8192';
+
 // ========== SHARED AI CALL HELPER ==========
 async function callClaude(messages, maxTokens = 300) {
-  const resp = await fetch('https://corsproxy.io/?url=https://api.anthropic.com/v1/messages', {
+  const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
     body: JSON.stringify({ model: GROQ_MODEL, max_tokens: maxTokens, messages })
