@@ -345,6 +345,13 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .lyrics-fetch-btn{background:var(--grad);border:none;border-radius:8px;padding:6px 14px;color:white;font-size:0.78rem;font-family:'Exo 2';font-weight:600;cursor:pointer;transition:transform 0.15s}
 .lyrics-fetch-btn:hover{transform:scale(1.04)}
 .lyrics-fetch-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.lyrics-offset-bar{display:flex;align-items:center;gap:5px;padding:8px 14px;border-bottom:1px solid var(--border);background:rgba(0,212,255,0.03);flex-wrap:wrap}
+.offset-label{font-size:0.65rem;font-family:'Share Tech Mono';color:var(--text3);letter-spacing:1px;margin-right:2px;white-space:nowrap}
+.offset-btn{background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:0.7rem;font-family:'Share Tech Mono';color:var(--text2);cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.offset-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,0.08)}
+.offset-btn:active{transform:scale(0.95)}
+.offset-reset{color:var(--text3);font-size:0.85rem;padding:3px 7px}
+.offset-value{font-family:'Share Tech Mono';font-size:0.78rem;color:var(--cyan);min-width:38px;text-align:center;font-weight:700}
 
 /* RESPONSIVE */
 @media(max-width:600px){
@@ -486,6 +493,16 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
           <div class="lyrics-header">
             <div class="lyrics-title">🎤 Lyrics <span class="lyrics-sync-badge" id="lyricsSyncBadge" style="display:none">SYNCED</span></div>
             <button class="lyrics-fetch-btn" id="lyricsFetchBtn" onclick="triggerIdentification()" disabled>Identify Track</button>
+          </div>
+          <!-- Sync offset controls — only shown when synced lyrics are active -->
+          <div class="lyrics-offset-bar" id="lyricsOffsetBar" style="display:none">
+            <span class="offset-label">Sync offset</span>
+            <button class="offset-btn" onclick="adjustLyricsOffset(-0.5)">−0.5s</button>
+            <button class="offset-btn" onclick="adjustLyricsOffset(-0.1)">−0.1s</button>
+            <span class="offset-value" id="offsetValue">0.0s</span>
+            <button class="offset-btn" onclick="adjustLyricsOffset(+0.1)">+0.1s</button>
+            <button class="offset-btn" onclick="adjustLyricsOffset(+0.5)">+0.5s</button>
+            <button class="offset-btn offset-reset" onclick="resetLyricsOffset()">↺</button>
           </div>
           <div class="lyrics-body" id="lyricsBody">
             <div class="lyrics-idle">Load a song and the pipeline will<br>automatically fetch synced lyrics ✨</div>
@@ -729,9 +746,10 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 // ========== INDEXEDDB — persistent audio storage ==========
 // Stores actual audio Blobs so tracks survive app close/offline
 const DB_NAME    = 'audix-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_AUDIO = 'audio-blobs';
 const STORE_META  = 'track-meta';
+const STORE_ART   = 'album-art';
 
 let db = null;
 
@@ -745,6 +763,8 @@ function openDB() {
         d.createObjectStore(STORE_AUDIO, { keyPath: 'id' });
       if (!d.objectStoreNames.contains(STORE_META))
         d.createObjectStore(STORE_META,  { keyPath: 'id' });
+      if (!d.objectStoreNames.contains(STORE_ART))
+        d.createObjectStore(STORE_ART,   { keyPath: 'id' });
     };
     req.onsuccess = e => { db = e.target.result; resolve(db); };
     req.onerror   = e => reject(e.target.error);
@@ -811,6 +831,37 @@ async function idbDeleteMeta(id) {
   });
 }
 
+// ── Album art store ──
+async function idbSaveArt(id, dataUrl) {
+  const d = await openDB();
+  return new Promise((res, rej) => {
+    const tx = d.transaction(STORE_ART, 'readwrite');
+    tx.objectStore(STORE_ART).put({ id, dataUrl });
+    tx.oncomplete = res;
+    tx.onerror    = e => rej(e.target.error);
+  });
+}
+async function idbGetArt(id) {
+  const d = await openDB();
+  return new Promise((res, rej) => {
+    const req = d.transaction(STORE_ART, 'readonly').objectStore(STORE_ART).get(id);
+    req.onsuccess = e => res(e.target.result?.dataUrl || null);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+async function idbDeleteArt(id) {
+  const d = await openDB();
+  return new Promise((res, rej) => {
+    const tx = d.transaction(STORE_ART, 'readwrite');
+    tx.objectStore(STORE_ART).delete(id);
+    tx.oncomplete = res;
+    tx.onerror    = e => rej(e.target.error);
+  });
+}
+
+// In-memory art cache: id → dataUrl string (avoids repeated IDB reads)
+const _artCache = new Map();
+
 // Load saved track metadata from IndexedDB on boot
 async function loadTracksFromDB() {
   try {
@@ -825,6 +876,14 @@ async function loadTracksFromDB() {
       } catch(e) {}
     }
     state.tracks.sort((a, b) => (a._order||0) - (b._order||0));
+
+    // Warm art cache for all tracks so library thumbnails show immediately
+    state.tracks.forEach(t => {
+      idbGetArt(t.id).then(dataUrl => {
+        _artCache.set(String(t.id), dataUrl); // null means no art, still cache it
+        if (dataUrl) renderTrackList(); // re-render once we have art
+      }).catch(() => {});
+    });
   } catch(e) {
     console.warn('[Audix] IndexedDB unavailable:', e.message);
     try {
@@ -1020,7 +1079,63 @@ function setupAudioContext() {
   }
 }
 
-// ========== FILE UPLOAD — saves audio Blob to IndexedDB ==========
+// Extract embedded album art from MP3/FLAC via jsmediatags
+function extractArtFromFile(file) {
+  return new Promise(resolve => {
+    if (typeof jsmediatags === 'undefined') { resolve(null); return; }
+    jsmediatags.read(file, {
+      onSuccess(tag) {
+        const pic = tag.tags?.picture;
+        if (!pic) { resolve(null); return; }
+        try {
+          const bytes = new Uint8Array(pic.data);
+          let binary = '';
+          bytes.forEach(b => binary += String.fromCharCode(b));
+          const b64 = btoa(binary);
+          resolve(`data:${pic.format};base64,${b64}`);
+        } catch(e) { resolve(null); }
+      },
+      onError() { resolve(null); }
+    });
+  });
+}
+
+// Apply art to player and library for a given track id
+function applyArt(trackId, dataUrl) {
+  _artCache.set(String(trackId), dataUrl);
+  // Update player if this is the current track
+  if (state.currentIdx >= 0 && String(state.tracks[state.currentIdx].id) === String(trackId)) {
+    setPlayerArt(dataUrl);
+  }
+  // Re-render library row thumbnail
+  const thumb = document.querySelector(`.track-thumb[data-id="${trackId}"]`);
+  if (thumb) {
+    thumb.innerHTML = dataUrl
+      ? `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`
+      : (state.tracks.find(t => String(t.id) === String(trackId))?.emoji || '🎵');
+  }
+}
+
+function setPlayerArt(dataUrl) {
+  const emoji = document.getElementById('albumEmoji');
+  const art   = document.getElementById('albumArt');
+  if (dataUrl) {
+    emoji.style.display = 'none';
+    // Remove old img if any
+    let img = art.querySelector('img.art-img');
+    if (!img) {
+      img = document.createElement('img');
+      img.className = 'art-img';
+      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:1';
+      art.appendChild(img);
+    }
+    img.src = dataUrl;
+  } else {
+    emoji.style.display = '';
+    const img = art.querySelector('img.art-img');
+    if (img) img.remove();
+  }
+}
 function handleFileUpload(e) {
   const files = Array.from(e.target.files);
   let done = 0;
@@ -1059,6 +1174,15 @@ function handleFileUpload(e) {
       state.tracks.push(track);
       renderTrackList();
       updateStorageInfo();
+
+      // Extract album art in background (non-blocking)
+      extractArtFromFile(file).then(dataUrl => {
+        if (dataUrl) {
+          idbSaveArt(id, dataUrl).catch(() => {});
+          applyArt(id, dataUrl);
+        }
+      });
+
       done++;
       if (done === files.length) {
         toast(`✓ ${done} track${done>1?'s':''} saved — available offline!`, 'success');
@@ -1215,6 +1339,12 @@ audio.ontimeupdate = ()=>{
   document.getElementById('progressFill').style.width=pct+'%';
   document.getElementById('curTime').textContent=fmtTime(audio.currentTime);
 };
+audio.onseeked = ()=>{
+  // Force immediate lyrics re-sync after a seek (don't wait for next rAF)
+  if (_lyricsSynced && _lyricsData.length) {
+    startLyricsSync();
+  }
+};
 audio.onloadedmetadata=()=>{
   document.getElementById('durTime').textContent=fmtTime(audio.duration);
 };
@@ -1264,6 +1394,18 @@ function updatePlayerUI(){
     document.getElementById('vizFullTitle').textContent=track.name||'—';
     document.getElementById('vizFullArtist').textContent=track.artist||'—';
     updateFavBtn();
+
+    // Load album art — check cache first, then IDB
+    const cached = _artCache.get(String(track.id));
+    if (cached !== undefined) {
+      setPlayerArt(cached);
+    } else {
+      setPlayerArt(null); // clear old art immediately
+      idbGetArt(track.id).then(dataUrl => {
+        _artCache.set(String(track.id), dataUrl);
+        setPlayerArt(dataUrl);
+      }).catch(() => setPlayerArt(null));
+    }
   }
   renderTrackList();
 }
@@ -1285,7 +1427,11 @@ function renderTrackList() {
     const isFav=state.favs.includes(t.id);
     return `<div class="track-item ${isActive?'active':''}" onclick="playTrack(${idx})">
       <div class="track-num">${isActive&&state.isPlaying?'<span class="wave-bar" style="animation-delay:0s"></span><span class="wave-bar" style="animation-delay:0.1s"></span><span class="wave-bar" style="animation-delay:0.2s"></span>':(i+1)}</div>
-      <div class="track-thumb">${t.emoji||'🎵'}</div>
+      <div class="track-thumb" data-id="${t.id}">${
+        _artCache.get(String(t.id))
+          ? `<img src="${_artCache.get(String(t.id))}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`
+          : (t.emoji||'🎵')
+      }</div>
       <div class="track-info">
         <div class="track-name">${t.name}</div>
         <div class="track-artist">${t.artist}</div>
@@ -1314,6 +1460,8 @@ function removeTrack(id){
   // Remove from IndexedDB
   idbDeleteAudio(id).catch(()=>{});
   idbDeleteMeta(id).catch(()=>{});
+  idbDeleteArt(id).catch(()=>{});
+  _artCache.delete(String(id));
   toast('Track removed','');
 }
 function filterPlaylist(filter,el){
@@ -1777,7 +1925,30 @@ let _lyricsData = [];       // [{time, text}]
 let _lyricsRawText = '';    // plain text fallback
 let _lyricsSynced = false;
 let _lyricsAnimFrame = null;
-let _currentPipelineFile = null; // the raw File object for the playing track
+let _currentPipelineFile = null;
+let _lyricsOffset = 0;     // user-adjustable sync offset in seconds (+ = lyrics earlier, - = lyrics later)
+
+function adjustLyricsOffset(delta) {
+  _lyricsOffset = Math.round((_lyricsOffset + delta) * 10) / 10;
+  document.getElementById('offsetValue').textContent =
+    (_lyricsOffset >= 0 ? '+' : '') + _lyricsOffset.toFixed(1) + 's';
+  // Save per-track offset
+  if (state.currentIdx >= 0) {
+    state.tracks[state.currentIdx]._lyricsOffset = _lyricsOffset;
+    const m = {...state.tracks[state.currentIdx]}; delete m.url;
+    idbSaveMeta(m).catch(() => {});
+  }
+}
+
+function resetLyricsOffset() {
+  _lyricsOffset = 0;
+  document.getElementById('offsetValue').textContent = '0.0s';
+  if (state.currentIdx >= 0) {
+    delete state.tracks[state.currentIdx]._lyricsOffset;
+    const m = {...state.tracks[state.currentIdx]}; delete m.url;
+    idbSaveMeta(m).catch(() => {});
+  }
+}
 
 function togglePipelinePanel() {
   const stages = document.getElementById('pipelineStages');
@@ -1891,18 +2062,9 @@ async function triggerIdentification() {
     stageSet('ai', 'loading', '');
     pipelineStatus('AI cleaning title…');
 
-    // Use filename if available, otherwise fall back to track name
-    let file = _fileMap.get(String(track.id));
-    if (!file) {
-      try {
-        const blob = await idbGetAudio(track.id);
-        if (blob) {
-          file = new File([blob], (track.name||'track')+'.mp3', {type: blob.type||'audio/mpeg'});
-          _fileMap.set(String(track.id), file);
-        }
-      } catch(e) { /* no file — will use track name */ }
-    }
-
+    // Use the already-in-memory file if available, otherwise just use track.name
+    // Do NOT load the audio blob from IndexedDB just for the filename — it's slow and unnecessary
+    const file = _fileMap.get(String(track.id)) || null;
     const rawName = file ? file.name.replace(/\.[^.]+$/, '') : track.name;
     const aiResult = await aiCleanTitle(rawName).catch(() => localCleanTitle(rawName));
     let cleanTitle, cleanArtist;
@@ -1924,18 +2086,10 @@ async function triggerIdentification() {
     stageSet('lyrics', 'loading', '');
     pipelineStatus('Fetching lyrics…');
 
-    // Wait up to 4s for audio.duration to become available
-    let audioDur = audio.duration;
-    if (!audioDur || !isFinite(audioDur)) {
-      await new Promise(resolve => {
-        if (audio.readyState >= 1 && isFinite(audio.duration)) { resolve(); return; }
-        const onMeta = () => { audio.removeEventListener('loadedmetadata', onMeta); resolve(); };
-        audio.addEventListener('loadedmetadata', onMeta);
-        setTimeout(resolve, 4000);
-      });
-      audioDur = audio.duration || 0;
-    }
-    if (!audioDur || !isFinite(audioDur)) audioDur = track.duration || 0;
+    // Audio is already playing so duration is available; fall back to stored track.duration
+    const audioDur = (isFinite(audio.duration) && audio.duration > 0)
+      ? Math.round(audio.duration)
+      : (track.duration || 0);
 
     const lyricsArtist = cleanArtist || 'Unknown Artist';
 
@@ -2238,6 +2392,7 @@ function clearLyrics() {
   _lyricsRawText = '';
   _lyricsSynced  = false;
   document.getElementById('lyricsSyncBadge').style.display = 'none';
+  document.getElementById('lyricsOffsetBar').style.display = 'none';
   setLyricsBody('<div class="lyrics-idle">Identifying track…</div>');
   if (_lyricsAnimFrame) { cancelAnimationFrame(_lyricsAnimFrame); _lyricsAnimFrame = null; }
 }
@@ -2255,6 +2410,12 @@ function renderLyrics() {
     body.innerHTML = _lyricsData.map((l, i) =>
       `<div class="lyrics-line" id="lyric-${i}" data-time="${l.time}" onclick="seekToLyric(${l.time})">${l.text}</div>`
     ).join('');
+    // Restore per-track offset if saved, else reset
+    const savedOffset = (state.currentIdx >= 0 && state.tracks[state.currentIdx]._lyricsOffset) || 0;
+    _lyricsOffset = savedOffset;
+    document.getElementById('offsetValue').textContent =
+      (savedOffset >= 0 ? '+' : '') + savedOffset.toFixed(1) + 's';
+    document.getElementById('lyricsOffsetBar').style.display = 'flex';
     startLyricsSync();
   } else if (_lyricsRawText) {
     badge.style.display = 'none';
@@ -2268,31 +2429,52 @@ function renderLyrics() {
 function startLyricsSync() {
   if (_lyricsAnimFrame) cancelAnimationFrame(_lyricsAnimFrame);
 
-  let lastActive = -1;
-  function tick() {
-    if (!_lyricsSynced || !_lyricsData.length) return;
-    const t = audio.currentTime;
-    let activeIdx = -1;
-    for (let i = 0; i < _lyricsData.length; i++) {
-      if (t >= _lyricsData[i].time) activeIdx = i;
-      else break;
+  let lastActive = -2; // -2 = "never set" sentinel
+  let scrollTimeout = null;
+
+  function findActiveIdx(t) {
+    // Binary search for the last line whose time <= currentTime
+    let lo = 0, hi = _lyricsData.length - 1, result = -1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (_lyricsData[mid].time <= t) { result = mid; lo = mid + 1; }
+      else hi = mid - 1;
     }
+    return result;
+  }
+
+  function tick() {
+    if (!_lyricsSynced || !_lyricsData.length) {
+      _lyricsAnimFrame = requestAnimationFrame(tick);
+      return;
+    }
+
+    // Small lookahead (0.3s) so the line highlights just before it starts
+    // Plus user-adjustable offset: positive = shift lyrics earlier (lyrics are late)
+    const t = audio.currentTime + 0.3 + _lyricsOffset;
+    const activeIdx = findActiveIdx(t);
+
     if (activeIdx !== lastActive) {
       lastActive = activeIdx;
+
       const lines = document.querySelectorAll('.lyrics-line');
       lines.forEach((el, i) => {
         el.classList.remove('active', 'past');
-        if (i < activeIdx)      el.classList.add('past');
+        if (i < activeIdx)       el.classList.add('past');
         else if (i === activeIdx) el.classList.add('active');
       });
-      // Auto-scroll active line into view
-      if (activeIdx >= 0) {
+
+      // Debounced scroll — avoids competing smooth scrolls on fast line changes
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
         const activeEl = document.getElementById('lyric-' + activeIdx);
         if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      }, 80);
     }
+
     _lyricsAnimFrame = requestAnimationFrame(tick);
   }
+
   _lyricsAnimFrame = requestAnimationFrame(tick);
 }
 
