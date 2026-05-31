@@ -4230,8 +4230,10 @@ function hostOnMessage(data) {
     // Binary chunk
     if (!_xferCurrentFile || !_xferReceiving[_xferCurrentFile]) return;
     const s = _xferReceiving[_xferCurrentFile];
-    s.chunks.push(data instanceof Blob ? data : new Blob([data]));
-    s.received += (data.byteLength || data.size || 0);
+    const chunkBlob = data instanceof Blob ? data : new Blob([data]);
+    s.chunks.push(chunkBlob);
+    s.received += chunkBlob.size;
+    updateTransferFileItem(_xferCurrentFile, Math.round((s.received / (s.expectedSize || s.received)) * 100) + '%');
     // If file-end already arrived, try to finalize now that we have more data
     if (s.done) tryFinalizeFile(_xferCurrentFile);
   }
@@ -4240,8 +4242,8 @@ function hostOnMessage(data) {
 function tryFinalizeFile(name) {
   const s = _xferReceiving[name];
   if (!s || !s.done) return;
-  // Wait until we've received all expected bytes (or no size info — just go)
-  if (s.expectedSize && s.received < s.expectedSize) return;
+  // Allow 1% tolerance for byte count rounding — prevents getting stuck
+  if (s.expectedSize && s.received < s.expectedSize * 0.99) return;
   finalizeReceivedFile(name);
 }
 
