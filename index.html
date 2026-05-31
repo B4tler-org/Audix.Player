@@ -5168,6 +5168,14 @@ async function sendDjMessage() {
     });
 
     const data = await resp.json();
+    if (!resp.ok) {
+      hideDjTyping();
+      const errMsg = data?.error?.message || `API error ${resp.status}`;
+      addDjMessage('ai', `⚠️ Groq API error: ${errMsg}`);
+      _djBusy = false;
+      document.getElementById('djSend').disabled = false;
+      return;
+    }
     const reply = (data.choices?.[0]?.message?.content || '').trim() || 'Sorry, I had a momentary silence. Try again? 🎵';
 
     hideDjTyping();
@@ -5199,8 +5207,8 @@ async function sendDjMessage() {
 
   } catch(e) {
     hideDjTyping();
-    const msg = e?.message?.includes('API key') 
-      ? 'Gemini API error — check that the API key is valid. 🔑'
+    const msg = e?.message?.includes('API key') || e?.message?.includes('401')
+      ? 'Groq API error — check that your API key is valid. 🔑'
       : 'Oops, signal lost! Check your connection and try again. 📡';
     addDjMessage('ai', msg);
   } finally {
