@@ -4203,8 +4203,20 @@ function closeDeviceTransfer() {
 
 // ── Host: receive data from Phone B ──────────────────────────────────
 function hostOnMessage(data) {
-  if (typeof data === 'string' || (data && typeof data === 'object' && data.type)) {
+  // Check for binary chunks FIRST — ArrayBuffer is also typeof 'object'
+  // so it must be handled before the JSON/control-message branch
+  if (data instanceof ArrayBuffer || data instanceof Blob) {
+    if (!_xferCurrentFile || !_xferReceiving[_xferCurrentFile]) return;
+    const s = _xferReceiving[_xferCurrentFile];
+    const chunkBlob = data instanceof Blob ? data : new Blob([data]);
+    s.chunks.push(chunkBlob);
+    s.received += chunkBlob.size;
+    updateTransferFileItem(_xferCurrentFile, Math.round((s.received / (s.expectedSize || s.received)) * 100) + '%');
+    if (s.done) tryFinalizeFile(_xferCurrentFile);
+  } else {
+    // Control message (string JSON or plain object)
     const msg = typeof data === 'string' ? JSON.parse(data) : data;
+    if (!msg || !msg.type) return;
     if (msg.type === 'file-start') {
       _xferCurrentFile = msg.name;
       _xferReceiving[msg.name] = { meta: msg, chunks: [], received: 0, done: false, expectedSize: msg.size };
@@ -4212,12 +4224,8 @@ function hostOnMessage(data) {
       document.getElementById('transferStatus').textContent = 'Receiving: ' + msg.name;
       document.getElementById('transferStatus').className = 'transfer-status receiving';
     } else if (msg.type === 'file-end') {
-      // Mark as done — finalize only when we also have all the bytes
       const s = _xferReceiving[msg.name];
-      if (s) {
-        s.done = true;
-        tryFinalizeFile(msg.name);
-      }
+      if (s) { s.done = true; tryFinalizeFile(msg.name); }
     } else if (msg.type === 'progress') {
       updateTransferFileItem(msg.name, msg.pct + '%');
       document.getElementById('transferProgressBar').style.width = msg.pct + '%';
@@ -4226,16 +4234,6 @@ function hostOnMessage(data) {
       document.getElementById('transferStatus').className = 'transfer-status connected';
       toast('📲 Import complete — all files added to library!', 'success');
     }
-  } else if (data instanceof ArrayBuffer || data instanceof Blob) {
-    // Binary chunk
-    if (!_xferCurrentFile || !_xferReceiving[_xferCurrentFile]) return;
-    const s = _xferReceiving[_xferCurrentFile];
-    const chunkBlob = data instanceof Blob ? data : new Blob([data]);
-    s.chunks.push(chunkBlob);
-    s.received += chunkBlob.size;
-    updateTransferFileItem(_xferCurrentFile, Math.round((s.received / (s.expectedSize || s.received)) * 100) + '%');
-    // If file-end already arrived, try to finalize now that we have more data
-    if (s.done) tryFinalizeFile(_xferCurrentFile);
   }
 }
 
