@@ -29,6 +29,7 @@
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root {
   --cyan: #00d4ff;
@@ -3171,18 +3172,18 @@ Input: "${rawName}"
 Respond with ONLY a JSON object, no explanation:
 {"title": "Clean Song Title", "artist": "Artist Name or empty string"}`;
 
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: GROQ_MODEL,
         max_tokens: 150,
         messages: [{ role: 'user', content: prompt }]
       })
     });
     if (!resp.ok) return localResult;
     const data = await resp.json();
-    const text = data.content?.[0]?.text?.trim() || '';
+    const text = data.choices?.[0]?.message?.content?.trim() || '';
     // Strip any markdown fences just in case
     const clean = text.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
@@ -4426,21 +4427,21 @@ function drawQR(canvas, text, size) {
 <script>
 // ========== SHARED AI CALL HELPER ==========
 async function callClaude(messages, maxTokens = 300) {
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  const resp = await fetch('https://corsproxy.io/?url=https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: maxTokens, messages })
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
+    body: JSON.stringify({ model: GROQ_MODEL, max_tokens: maxTokens, messages })
   });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}));
     const code = err?.error?.type || resp.status;
-    if (resp.status === 401) throw new Error('API key missing — AI features need an Anthropic API key.');
+    if (resp.status === 401) throw new Error('Invalid Groq API key.');
     if (resp.status === 429) throw new Error('Rate limit hit — please wait a moment and try again.');
-    if (resp.status >= 500) throw new Error('Anthropic server error — try again shortly.');
+    if (resp.status >= 500) throw new Error('Groq server error — try again shortly.');
     throw new Error('API error (' + code + ')');
   }
   const data = await resp.json();
-  const text = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+  const text = (data.choices?.[0]?.message?.content || '').replace(/```json|```/g, '').trim();
   if (!text) throw new Error('Empty response from AI.');
   return text;
 }
@@ -4919,7 +4920,7 @@ let _djOpen = false;
 let _djHistory = []; // [{role, content}]
 let _djBusy = false;
 
-const DJ_SYSTEM = `You are DJ Claude, a friendly and knowledgeable AI music assistant embedded inside the Audix music player app. You have personality: enthusiastic, witty, music-obsessed. Keep responses concise (2-4 sentences max) and conversational. You can:
+const DJ_SYSTEM = `You are DJ Groq, a friendly and knowledgeable AI music assistant embedded inside the Audix music player app. You have personality: enthusiastic, witty, music-obsessed. Keep responses concise (2-4 sentences max) and conversational. You can:
 - Answer questions about songs, artists, albums, music history
 - Give recommendations based on what's playing or what the user likes
 - Detect moods, suggest playlists, explain music theory
@@ -5014,18 +5015,21 @@ async function sendDjMessage() {
       ..._djHistory.slice(1).map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }))
     ];
 
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + GROQ_API_KEY
+      },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: GROQ_MODEL,
         max_tokens: 300,
         messages
       })
     });
 
     const data = await resp.json();
-    const reply = data.content?.[0]?.text?.trim() || 'Sorry, I had a momentary silence. Try again? 🎵';
+    const reply = data.choices?.[0]?.message?.content?.trim() || 'Sorry, I had a momentary silence. Try again? 🎵';
 
     hideDjTyping();
     addDjMessage('ai', reply);
@@ -5057,7 +5061,7 @@ async function sendDjMessage() {
   } catch(e) {
     hideDjTyping();
     const msg = e?.message?.includes('API key') 
-      ? 'I need an Anthropic API key to chat! Add yours to enable DJ mode. 🔑'
+      ? 'Groq API error — check that the API key is valid. 🔑'
       : 'Oops, signal lost! Check your connection and try again. 📡';
     addDjMessage('ai', msg);
   } finally {
