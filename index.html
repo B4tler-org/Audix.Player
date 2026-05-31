@@ -503,6 +503,109 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .transfer-steps{display:flex;flex-direction:column;gap:8px;width:100%}
 .transfer-step{display:flex;align-items:center;gap:10px;font-size:0.8rem;font-family:'Rajdhani';font-weight:600;color:var(--text2)}
 .transfer-step .ts-num{width:24px;height:24px;border-radius:50%;background:var(--grad);color:white;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;flex-shrink:0}
+
+/* ===== WAKE WORD INDICATOR ===== */
+.wake-dot{width:8px;height:8px;border-radius:50%;background:#555;transition:all 0.3s;flex-shrink:0}
+.wake-dot.listening{background:#22c55e;box-shadow:0 0 8px #22c55e;animation:wakePulse 1.5s ease-in-out infinite}
+.wake-dot.activated{background:var(--cyan);box-shadow:0 0 12px var(--cyan)}
+@keyframes wakePulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.wake-label{font-size:0.65rem;font-family:'Share Tech Mono';color:var(--text3);letter-spacing:1px}
+
+/* ===== MOOD BADGE ===== */
+.mood-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+.mood-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:0.75rem;font-family:'Rajdhani';font-weight:700;letter-spacing:1px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;transition:all 0.25s}
+.mood-badge.active{border-color:transparent;color:white}
+.mood-badge.happy{background:linear-gradient(135deg,#f59e0b,#ef4444)}
+.mood-badge.sad{background:linear-gradient(135deg,#3b82f6,#8b5cf6)}
+.mood-badge.workout{background:linear-gradient(135deg,#ef4444,#f97316)}
+.mood-badge.relax{background:linear-gradient(135deg,#10b981,#3b82f6)}
+.mood-badge.loading{animation:moodPulse 1s ease-in-out infinite}
+@keyframes moodPulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+/* ===== AI INSIGHTS STRIP ===== */
+.insights-strip{display:flex;gap:10px;flex-wrap:wrap;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;margin-top:4px}
+.insight-chip{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:56px}
+.insight-val{font-family:'Share Tech Mono';font-size:0.85rem;font-weight:700;color:var(--cyan)}
+.insight-lbl{font-size:0.6rem;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;font-family:'Rajdhani'}
+
+/* ===== CROSSFADE TOGGLE ===== */
+.crossfade-row{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:12px}
+.crossfade-label{font-size:0.78rem;font-family:'Rajdhani';font-weight:600;color:var(--text2);flex:1}
+.toggle-switch{position:relative;width:38px;height:22px;cursor:pointer;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-track{position:absolute;inset:0;background:var(--bg4);border-radius:11px;transition:background 0.3s;border:1px solid var(--border)}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:14px;height:14px;background:var(--text3);border-radius:50%;transition:transform 0.3s,background 0.3s}
+.toggle-switch input:checked + .toggle-track{background:linear-gradient(135deg,#00d4ff,#8b5cf6);border-color:transparent}
+.toggle-switch input:checked + .toggle-track + .toggle-thumb{transform:translateX(16px);background:white}
+.crossfade-val{font-family:'Share Tech Mono';font-size:0.72rem;color:var(--cyan);min-width:28px;text-align:right}
+
+/* ===== SMART QUEUE ===== */
+.queue-card{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.queue-header{display:flex;align-items:center;justify-content:space-between}
+.queue-title{font-size:0.9rem;font-weight:700;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:flex;align-items:center;gap:6px}
+.queue-refresh{background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text2);font-size:0.75rem;cursor:pointer;font-family:'Rajdhani';font-weight:600;transition:all 0.2s}
+.queue-refresh:hover{color:var(--cyan);border-color:var(--cyan)}
+.queue-list{display:flex;flex-direction:column;gap:6px}
+.queue-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg4);border-radius:10px;cursor:pointer;transition:all 0.2s;border:1px solid transparent}
+.queue-item:hover{border-color:var(--border);background:var(--bg)}
+.queue-item-num{font-family:'Share Tech Mono';font-size:0.7rem;color:var(--text3);width:16px;text-align:center;flex-shrink:0}
+.queue-item-info{flex:1;min-width:0}
+.queue-item-name{font-size:0.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.queue-item-why{font-size:0.65rem;color:var(--cyan);font-family:'Rajdhani';letter-spacing:0.5px;margin-top:1px}
+.queue-play-btn{background:var(--grad);border:none;border-radius:6px;padding:4px 10px;color:white;font-size:0.7rem;cursor:pointer;flex-shrink:0}
+.queue-empty{text-align:center;padding:16px;color:var(--text3);font-family:'Rajdhani';font-size:0.85rem}
+
+/* ===== AI HUB TAB ===== */
+.aihub-section{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.aihub-section-title{font-size:0.75rem;letter-spacing:2px;color:var(--text3);font-family:'Share Tech Mono';text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.aihub-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Streak */
+.streak-display{display:flex;align-items:center;gap:16px;padding:8px 0}
+.streak-flame{font-size:3rem;line-height:1}
+.streak-info{}
+.streak-count{font-size:2.5rem;font-weight:900;background:linear-gradient(135deg,#f59e0b,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+.streak-label{font-family:'Rajdhani';font-size:0.85rem;color:var(--text2);letter-spacing:1px}
+.streak-best{font-size:0.72rem;font-family:'Share Tech Mono';color:var(--text3);margin-top:4px}
+.streak-calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
+.streak-day{width:100%;aspect-ratio:1;border-radius:4px;background:var(--bg4)}
+.streak-day.active{background:linear-gradient(135deg,#f59e0b,#ef4444)}
+.streak-day.today{box-shadow:0 0 0 2px var(--cyan)}
+
+/* Top Charts */
+.top-list{display:flex;flex-direction:column;gap:6px}
+.top-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg4);border-radius:10px}
+.top-rank{font-family:'Share Tech Mono';font-size:0.9rem;font-weight:700;width:22px;text-align:center;flex-shrink:0}
+.top-rank.gold{color:#f59e0b}
+.top-rank.silver{color:#94a3b8}
+.top-rank.bronze{color:#cd7f32}
+.top-info{flex:1;min-width:0}
+.top-name{font-size:0.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-sub{font-size:0.68rem;color:var(--text2);font-family:'Rajdhani'}
+.top-bar-wrap{width:60px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;flex-shrink:0}
+.top-bar{height:100%;border-radius:2px;background:var(--grad)}
+
+/* Monthly Report */
+.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.report-stat{background:var(--bg4);border-radius:10px;padding:12px;text-align:center}
+.report-stat-val{font-size:1.6rem;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1}
+.report-stat-lbl{font-size:0.65rem;color:var(--text3);font-family:'Share Tech Mono';letter-spacing:1px;margin-top:4px;text-transform:uppercase}
+.report-ai-summary{background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:10px;padding:12px;font-size:0.82rem;color:var(--text2);font-family:'Rajdhani';line-height:1.6}
+.report-generate-btn{background:var(--grad);border:none;border-radius:10px;padding:10px 18px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.85rem;cursor:pointer;width:100%;transition:opacity 0.2s;letter-spacing:0.5px}
+.report-generate-btn:hover{opacity:0.88}
+
+/* AI Playlist Generator */
+.playlist-gen-row{display:flex;gap:8px;flex-wrap:wrap}
+.mood-select-chip{background:var(--bg4);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:0.78rem;color:var(--text2);cursor:pointer;transition:all 0.2s;font-family:'Rajdhani';font-weight:600}
+.mood-select-chip:hover,.mood-select-chip.active{background:var(--grad);color:white;border-color:transparent}
+.gen-btn{background:var(--grad);border:none;border-radius:10px;padding:10px 18px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.85rem;cursor:pointer;width:100%;transition:opacity 0.2s}
+.gen-btn:hover{opacity:0.88}
+.gen-btn:disabled{opacity:0.4;cursor:not-allowed}
+.gen-result{background:var(--bg4);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto}
+.gen-result-item{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg3);border-radius:8px;cursor:pointer;transition:background 0.15s}
+.gen-result-item:hover{background:var(--bg)}
+.gen-result-name{flex:1;font-size:0.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gen-result-why{font-size:0.65rem;color:var(--cyan);font-family:'Rajdhani'}
 </style>
 </head>
 <body>
@@ -526,6 +629,10 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
     <div class="topbar-actions">
       <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
       <button class="icon-btn" onclick="openTab('search')">🔍</button>
+      <div style="display:flex;align-items:center;gap:5px;padding:6px 10px;background:var(--glass);border:1px solid var(--border);border-radius:10px;cursor:pointer" onclick="toggleWakeWord()" title="Always-on wake word: say 'Hey Audix'">
+        <div class="wake-dot" id="wakeDot"></div>
+        <span class="wake-label" id="wakeLabel">WAKE</span>
+      </div>
       <button class="icon-btn" onclick="toggleVoice()" id="voiceBtn" title="Voice Commands">🎙️</button>
       <button class="icon-btn" onclick="openNotes()" id="notesBtn" title="Notes">📝</button>
     </div>
@@ -656,6 +763,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
       <div class="nav-item" onclick="openTab('search')" id="nav-search"><span class="nav-icon">🔍</span>Search</div>
       <div class="nav-item" onclick="openTab('equalizer')" id="nav-equalizer"><span class="nav-icon">🎛</span>Equalizer</div>
       <div class="nav-item" onclick="openTab('visualizer')" id="nav-visualizer"><span class="nav-icon">🌈</span>Visualizer</div>
+      <div class="nav-item" onclick="openTab('aihub')" id="nav-aihub"><span class="nav-icon">🤖</span>AI Hub</div>
       <div class="sidebar-bottom">
         <div class="quality-badge" onclick="openQuality()" id="qualityBadge">HI-RES · FLAC</div>
       </div>
@@ -685,6 +793,10 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
                 <span class="tag" id="tagGenre">Genre: —</span>
                 <span class="tag" id="tagYear">Year: —</span>
                 <span class="tag" id="tagBpm">BPM: —</span>
+              </div>
+              <div class="mood-row" id="moodRow">
+                <div class="mood-badge" id="moodBadge" onclick="detectMood()">🎭 Detect Mood</div>
+                <button onclick="oneTapEQ()" style="background:var(--grad);border:none;border-radius:12px;padding:4px 12px;color:white;font-size:0.72rem;font-family:'Rajdhani';font-weight:700;cursor:pointer;letter-spacing:1px" title="One-tap AI EQ">⚡ AI EQ</button>
               </div>
             </div>
             <button class="fav-btn" id="favBtn" onclick="toggleFav()">♡</button>
@@ -721,6 +833,39 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
             <button class="aq-btn" onclick="setQuality('FLAC')">FLAC</button>
             <button class="aq-btn" onclick="setQuality('HI-RES')">HI-RES</button>
             <button class="aq-btn" onclick="setQuality('LOSSLESS')">LOSSLESS</button>
+          </div>
+
+          <!-- AI INSIGHTS STRIP -->
+          <div class="insights-strip" id="insightsStrip">
+            <div class="insight-chip">
+              <div class="insight-val" id="insBpm">—</div>
+              <div class="insight-lbl">BPM</div>
+            </div>
+            <div class="insight-chip">
+              <div class="insight-val" id="insEnergy">—</div>
+              <div class="insight-lbl">Energy</div>
+            </div>
+            <div class="insight-chip">
+              <div class="insight-val" id="insGenre">—</div>
+              <div class="insight-lbl">Genre</div>
+            </div>
+            <div class="insight-chip">
+              <div class="insight-val" id="insMood">—</div>
+              <div class="insight-lbl">Mood</div>
+            </div>
+            <button onclick="runMusicInsights()" style="margin-left:auto;background:var(--grad);border:none;border-radius:8px;padding:5px 12px;color:white;font-size:0.7rem;font-family:'Rajdhani';font-weight:700;cursor:pointer;letter-spacing:1px">✦ Analyze</button>
+          </div>
+
+          <!-- CROSSFADE TOGGLE -->
+          <div class="crossfade-row">
+            <span class="crossfade-label">🎚 Crossfade</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="crossfadeToggle" onchange="toggleCrossfade(this.checked)">
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+            <input type="range" id="crossfadeDur" min="1" max="10" value="3" step="1" style="width:70px;height:4px;-webkit-appearance:none;appearance:none;background:var(--bg4);border-radius:2px;outline:none;cursor:pointer" oninput="document.getElementById('crossfadeVal').textContent=this.value+'s'">
+            <span class="crossfade-val" id="crossfadeVal">3s</span>
           </div>
         </div>
 
@@ -770,9 +915,18 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
           </div>
         </div>
 
-      </div>
+        <!-- SMART QUEUE -->
+        <div class="queue-card" id="smartQueueCard">
+          <div class="queue-header">
+            <div class="queue-title">🤖 Smart Queue</div>
+            <button class="queue-refresh" onclick="refreshSmartQueue()">↻ Refresh</button>
+          </div>
+          <div class="queue-list" id="smartQueueList">
+            <div class="queue-empty">Play a track to get AI suggestions ✨</div>
+          </div>
+        </div>
 
-      <!-- LIBRARY TAB -->
+      </div>
       <div class="tab-content" id="tab-library">
         <div class="lib-header">
           <div class="lib-title">Your Library</div>
@@ -933,6 +1087,69 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
           <span id="vizSensLabel">1.0×</span>
         </div>
       </div>
+      <!-- AI HUB TAB -->
+      <div class="tab-content" id="tab-aihub">
+
+        <!-- LISTENING STREAK -->
+        <div class="aihub-section">
+          <div class="aihub-section-title">🔥 Listening Streak</div>
+          <div class="streak-display">
+            <div class="streak-flame">🔥</div>
+            <div class="streak-info">
+              <div class="streak-count" id="streakCount">0</div>
+              <div class="streak-label">DAY STREAK</div>
+              <div class="streak-best" id="streakBest">Best: 0 days</div>
+            </div>
+          </div>
+          <div class="streak-calendar" id="streakCalendar"></div>
+        </div>
+
+        <!-- TOP ARTISTS & SONGS -->
+        <div class="aihub-section">
+          <div class="aihub-section-title">🏆 Top Artists</div>
+          <div class="top-list" id="topArtistsList">
+            <div style="text-align:center;padding:12px;color:var(--text3);font-family:'Rajdhani'">Play more music to build your charts!</div>
+          </div>
+        </div>
+
+        <div class="aihub-section">
+          <div class="aihub-section-title">🎵 Top Songs</div>
+          <div class="top-list" id="topSongsList">
+            <div style="text-align:center;padding:12px;color:var(--text3);font-family:'Rajdhani'">Play more music to build your charts!</div>
+          </div>
+        </div>
+
+        <!-- MONTHLY REPORT -->
+        <div class="aihub-section">
+          <div class="aihub-section-title">📊 Monthly Report</div>
+          <div class="report-grid" id="reportGrid">
+            <div class="report-stat"><div class="report-stat-val" id="repTracks">0</div><div class="report-stat-lbl">Tracks Played</div></div>
+            <div class="report-stat"><div class="report-stat-val" id="repMinutes">0</div><div class="report-stat-lbl">Minutes</div></div>
+            <div class="report-stat"><div class="report-stat-val" id="repArtists">0</div><div class="report-stat-lbl">Artists</div></div>
+            <div class="report-stat"><div class="report-stat-val" id="repDays">0</div><div class="report-stat-lbl">Active Days</div></div>
+          </div>
+          <div class="report-ai-summary" id="reportSummary" style="display:none"></div>
+          <button class="report-generate-btn" onclick="generateMonthlyReport()">✦ Generate AI Report</button>
+        </div>
+
+        <!-- AI PLAYLIST GENERATOR -->
+        <div class="aihub-section">
+          <div class="aihub-section-title">🎼 AI Playlist Generator</div>
+          <div style="font-size:0.8rem;color:var(--text2);font-family:'Rajdhani'">Pick a mood and AI will curate a playlist from your library</div>
+          <div class="playlist-gen-row" id="genMoodRow">
+            <div class="mood-select-chip active" data-mood="Happy" onclick="selectGenMood(this)">😊 Happy</div>
+            <div class="mood-select-chip" data-mood="Sad" onclick="selectGenMood(this)">😢 Sad</div>
+            <div class="mood-select-chip" data-mood="Workout" onclick="selectGenMood(this)">💪 Workout</div>
+            <div class="mood-select-chip" data-mood="Relax" onclick="selectGenMood(this)">😌 Relax</div>
+            <div class="mood-select-chip" data-mood="Party" onclick="selectGenMood(this)">🎉 Party</div>
+            <div class="mood-select-chip" data-mood="Focus" onclick="selectGenMood(this)">🧠 Focus</div>
+          </div>
+          <button class="gen-btn" id="genPlaylistBtn" onclick="generateAIPlaylist()">🤖 Generate Playlist</button>
+          <div class="gen-result" id="genResult" style="display:none"></div>
+        </div>
+
+      </div>
+
     </div>
   </div>
 
@@ -961,6 +1178,10 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
     <div class="bn-item" id="bn-visualizer" onclick="openTab('visualizer')">
       <span class="bn-icon">🌈</span>
       <span>Viz</span>
+    </div>
+    <div class="bn-item" id="bn-aihub" onclick="openTab('aihub')">
+      <span class="bn-icon">🤖</span>
+      <span>AI Hub</span>
     </div>
   </nav>
 </div>
@@ -1374,6 +1595,7 @@ function openTab(tab) {
   const bnEl = document.getElementById('bn-'+tab);
   if(bnEl) bnEl.classList.add('active');
   if (tab === 'history') renderHistory();
+  if (tab === 'aihub') { renderStreakCalendar(); renderTopCharts(); renderMonthlyStats(); }
   if (tab === 'visualizer') {
     updateVizTabNowPlaying();
     const c = document.getElementById('vizTabCanvas');
@@ -4172,7 +4394,546 @@ function drawQR(canvas, text, size) {
   }
 }
 </script>
-let _notes = JSON.parse(localStorage.getItem('audix_notes') || '[]');
+<script>
+// ========== LISTENING STATS (for streaks, top charts, report) ==========
+function _statsKey() { return 'audix_stats_v2'; }
+function loadStats() {
+  try { return JSON.parse(localStorage.getItem(_statsKey()) || '{}'); } catch(e) { return {}; }
+}
+function saveStats(s) { localStorage.setItem(_statsKey(), JSON.stringify(s)); }
+
+function recordPlay(track) {
+  if (!track) return;
+  const s = loadStats();
+  const today = new Date().toISOString().slice(0,10);
+  // Plays log
+  if (!s.plays) s.plays = [];
+  s.plays.push({ id: track.id, name: track.name, artist: track.artist || 'Unknown', date: today, ts: Date.now(), dur: track.duration || 0 });
+  if (s.plays.length > 2000) s.plays = s.plays.slice(-2000);
+  // Active days
+  if (!s.days) s.days = {};
+  s.days[today] = (s.days[today] || 0) + 1;
+  saveStats(s);
+  _updateStreak(s);
+}
+
+function _updateStreak(s) {
+  if (!s.days) return;
+  const today = new Date().toISOString().slice(0,10);
+  let streak = 0, d = new Date();
+  while (true) {
+    const key = d.toISOString().slice(0,10);
+    if (s.days[key]) { streak++; d.setDate(d.getDate()-1); }
+    else if (key === today) break; // today not played yet — don't break streak
+    else break;
+  }
+  s.streak = streak;
+  if (!s.bestStreak || streak > s.bestStreak) s.bestStreak = streak;
+  saveStats(s);
+}
+
+// ========== STREAK CALENDAR ==========
+function renderStreakCalendar() {
+  const s = loadStats();
+  const today = new Date();
+  // Current streak
+  const streak = s.streak || 0;
+  const best = s.bestStreak || 0;
+  document.getElementById('streakCount').textContent = streak;
+  document.getElementById('streakBest').textContent = 'Best: ' + best + ' day' + (best !== 1 ? 's' : '');
+
+  // 28-day calendar
+  const cal = document.getElementById('streakCalendar');
+  if (!cal) return;
+  cal.innerHTML = '';
+  for (let i = 27; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    const div = document.createElement('div');
+    div.className = 'streak-day' + (s.days?.[key] ? ' active' : '') + (i === 0 ? ' today' : '');
+    div.title = key;
+    cal.appendChild(div);
+  }
+}
+
+// ========== TOP CHARTS ==========
+function renderTopCharts() {
+  const s = loadStats();
+  if (!s.plays || s.plays.length === 0) return;
+
+  // Top Artists
+  const artistMap = {};
+  s.plays.forEach(p => {
+    const a = p.artist || 'Unknown';
+    artistMap[a] = (artistMap[a] || 0) + 1;
+  });
+  const topArtists = Object.entries(artistMap).sort((a,b) => b[1]-a[1]).slice(0,5);
+  const maxA = topArtists[0]?.[1] || 1;
+  const artistEl = document.getElementById('topArtistsList');
+  if (artistEl && topArtists.length) {
+    artistEl.innerHTML = topArtists.map(([name, count], i) => {
+      const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+      const pct = Math.round((count / maxA) * 100);
+      return `<div class="top-item">
+        <div class="top-rank ${rankClass}">${i+1}</div>
+        <div class="top-info"><div class="top-name">${name}</div><div class="top-sub">${count} play${count>1?'s':''}</div></div>
+        <div class="top-bar-wrap"><div class="top-bar" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // Top Songs
+  const songMap = {};
+  s.plays.forEach(p => {
+    const key = p.name + '||' + p.artist;
+    if (!songMap[key]) songMap[key] = { name: p.name, artist: p.artist, count: 0 };
+    songMap[key].count++;
+  });
+  const topSongs = Object.values(songMap).sort((a,b) => b.count-a.count).slice(0,5);
+  const maxS = topSongs[0]?.count || 1;
+  const songEl = document.getElementById('topSongsList');
+  if (songEl && topSongs.length) {
+    songEl.innerHTML = topSongs.map((t, i) => {
+      const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+      const pct = Math.round((t.count / maxS) * 100);
+      return `<div class="top-item">
+        <div class="top-rank ${rankClass}">${i+1}</div>
+        <div class="top-info"><div class="top-name">${t.name}</div><div class="top-sub">${t.artist} · ${t.count} play${t.count>1?'s':''}</div></div>
+        <div class="top-bar-wrap"><div class="top-bar" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ========== MONTHLY REPORT ==========
+function renderMonthlyStats() {
+  const s = loadStats();
+  if (!s.plays) return;
+  const now = new Date();
+  const ym = now.toISOString().slice(0,7); // "YYYY-MM"
+  const monthPlays = s.plays.filter(p => p.date && p.date.startsWith(ym));
+  const uniqueArtists = new Set(monthPlays.map(p => p.artist)).size;
+  const activeDays = new Set(monthPlays.map(p => p.date)).size;
+  const totalSec = monthPlays.reduce((acc, p) => acc + (p.dur || 0), 0);
+  const minutes = Math.round(totalSec / 60);
+  document.getElementById('repTracks').textContent = monthPlays.length;
+  document.getElementById('repMinutes').textContent = minutes > 999 ? Math.round(minutes/60)+'h' : minutes;
+  document.getElementById('repArtists').textContent = uniqueArtists;
+  document.getElementById('repDays').textContent = activeDays;
+}
+
+async function generateMonthlyReport() {
+  const s = loadStats();
+  const now = new Date();
+  const ym = now.toISOString().slice(0,7);
+  const monthName = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const monthPlays = (s.plays || []).filter(p => p.date?.startsWith(ym));
+
+  if (monthPlays.length === 0) {
+    document.getElementById('reportSummary').style.display = 'block';
+    document.getElementById('reportSummary').textContent = 'No listening data for this month yet. Start playing music!';
+    return;
+  }
+
+  const artistMap = {};
+  monthPlays.forEach(p => { artistMap[p.artist||'Unknown'] = (artistMap[p.artist||'Unknown']||0)+1; });
+  const topArtists = Object.entries(artistMap).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([a,c])=>`${a} (${c}x)`).join(', ');
+  const totalMin = Math.round(monthPlays.reduce((a,p)=>a+(p.dur||0),0)/60);
+  const activeDays = new Set(monthPlays.map(p=>p.date)).size;
+
+  const el = document.getElementById('reportSummary');
+  el.style.display = 'block';
+  el.textContent = '✦ Generating your report…';
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        messages: [{ role: 'user', content:
+          `Write a fun, personal 2-sentence music listening report for ${monthName}. Stats: ${monthPlays.length} tracks played, ${totalMin} minutes, ${activeDays} active days, top artists: ${topArtists}. Be encouraging and music-themed. No bullet points.`
+        }]
+      })
+    });
+    const data = await resp.json();
+    el.textContent = data.content?.[0]?.text?.trim() || 'Great listening month! Keep the music going.';
+  } catch(e) {
+    el.textContent = `You played ${monthPlays.length} tracks for ${totalMin} minutes across ${activeDays} days this month. Keep the rhythm going! 🎵`;
+  }
+}
+
+// ========== AI MOOD DETECTION ==========
+async function detectMood() {
+  if (state.currentIdx < 0) { toast('Play a track first!', ''); return; }
+  const track = state.tracks[state.currentIdx];
+  const badge = document.getElementById('moodBadge');
+  badge.className = 'mood-badge loading';
+  badge.textContent = '🎭 Detecting…';
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 60,
+        messages: [{ role: 'user', content:
+          `Based on the song title "${track.name}" by "${track.artist || 'Unknown'}", classify the mood as exactly ONE of: Happy, Sad, Workout, Relax, Party, Focus, Romantic. Reply with ONLY one word.`
+        }]
+      })
+    });
+    const data = await resp.json();
+    const mood = (data.content?.[0]?.text || '').trim().split(/\s+/)[0];
+    const moods = { Happy:'😊 Happy', Sad:'😢 Sad', Workout:'💪 Workout', Relax:'😌 Relax', Party:'🎉 Party', Focus:'🧠 Focus', Romantic:'💕 Romantic' };
+    const moodClass = { Happy:'happy', Sad:'sad', Workout:'workout', Relax:'relax', Party:'happy', Focus:'relax', Romantic:'sad' };
+    const label = moods[mood] || ('🎭 ' + mood);
+    badge.className = 'mood-badge active ' + (moodClass[mood] || '');
+    badge.textContent = label;
+    document.getElementById('insMood').textContent = mood || '—';
+    toast('Mood: ' + label, 'success');
+  } catch(e) {
+    badge.className = 'mood-badge';
+    badge.textContent = '🎭 Detect Mood';
+    toast('Could not detect mood', 'error');
+  }
+}
+
+// ========== AI MUSIC INSIGHTS ==========
+async function runMusicInsights() {
+  if (state.currentIdx < 0) { toast('Play a track first!', ''); return; }
+  const track = state.tracks[state.currentIdx];
+  const btn = document.querySelector('#insightsStrip button');
+  if (btn) { btn.textContent = '…'; btn.disabled = true; }
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 120,
+        messages: [{ role: 'user', content:
+          `Estimate music stats for the song "${track.name}" by "${track.artist || 'Unknown'}". Reply ONLY with this JSON: {"bpm":120,"energy":"High","genre":"Pop","mood":"Happy"}. energy must be Low/Medium/High. Use realistic values.`
+        }]
+      })
+    });
+    const data = await resp.json();
+    const raw = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
+    const j = JSON.parse(raw);
+    document.getElementById('insBpm').textContent = j.bpm || '—';
+    document.getElementById('insEnergy').textContent = j.energy || '—';
+    document.getElementById('insGenre').textContent = j.genre || '—';
+    document.getElementById('insMood').textContent = j.mood || '—';
+    // Also update the BPM tag in hero
+    if (j.bpm) { const t = document.getElementById('tagBpm'); if(t) t.textContent = 'BPM: ' + j.bpm; }
+    if (j.genre) { const t = document.getElementById('tagGenre'); if(t) t.textContent = 'Genre: ' + j.genre; }
+    toast('✦ Insights updated', 'success');
+  } catch(e) {
+    toast('Could not analyze track', 'error');
+  } finally {
+    if (btn) { btn.textContent = '✦ Analyze'; btn.disabled = false; }
+  }
+}
+
+// ========== ONE-TAP AI EQ ==========
+async function oneTapEQ() {
+  if (state.currentIdx < 0) { toast('Play a track first!', ''); return; }
+  const track = state.tracks[state.currentIdx];
+  toast('🤖 AI EQ analyzing…', '');
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 150,
+        messages: [{ role: 'user', content:
+          `You are an audio engineer. For the song "${track.name}" by "${track.artist || 'Unknown'}", give optimal EQ values for 10 bands: 32Hz, 64Hz, 125Hz, 250Hz, 500Hz, 1kHz, 2kHz, 4kHz, 8kHz, 16kHz. Values must be between -12 and +12 dB. Reply ONLY with JSON array of 10 numbers, e.g. [2,3,1,0,-1,-1,0,1,2,1]`
+        }]
+      })
+    });
+    const data = await resp.json();
+    const raw = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
+    const vals = JSON.parse(raw);
+    if (Array.isArray(vals) && vals.length === 10) {
+      state.eqValues = vals.map(v => Math.max(-12, Math.min(12, Number(v))));
+      applyEqValues(state.eqValues);
+      // Update sliders visually
+      document.querySelectorAll('.eq-slider').forEach((sl, i) => {
+        sl.value = state.eqValues[i];
+        const vEl = sl.closest('.eq-band')?.querySelector('.eq-value');
+        if (vEl) vEl.textContent = (state.eqValues[i] > 0 ? '+' : '') + state.eqValues[i] + 'dB';
+      });
+      toast('⚡ AI EQ applied for "' + track.name + '"', 'success');
+      openTab('equalizer');
+    }
+  } catch(e) {
+    toast('AI EQ failed — try manual EQ', 'error');
+  }
+}
+
+// ========== SMART QUEUE ==========
+async function refreshSmartQueue() {
+  if (state.currentIdx < 0 || state.tracks.length < 2) {
+    document.getElementById('smartQueueList').innerHTML = '<div class="queue-empty">Add more tracks to your library for smart suggestions ✨</div>';
+    return;
+  }
+  const track = state.tracks[state.currentIdx];
+  const listEl = document.getElementById('smartQueueList');
+  listEl.innerHTML = '<div class="queue-empty">🤖 AI is thinking…</div>';
+
+  const others = state.tracks.filter((t,i) => i !== state.currentIdx).map(t => `"${t.name}" by ${t.artist||'Unknown'}`);
+  const pool = others.slice(0, 30).join(', ');
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        messages: [{ role: 'user', content:
+          `Currently playing: "${track.name}" by ${track.artist||'Unknown'}.
+Library tracks: ${pool}.
+Pick the 4 best next songs from the library that flow well after the current track. Reply ONLY with JSON array: [{"name":"Song","reason":"short reason"}]. Use exact names from the library.`
+        }]
+      })
+    });
+    const data = await resp.json();
+    const raw = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
+    const suggestions = JSON.parse(raw);
+
+    if (!Array.isArray(suggestions) || suggestions.length === 0) throw new Error('empty');
+
+    listEl.innerHTML = suggestions.map((s, i) => {
+      const idx = state.tracks.findIndex(t => t.name === s.name);
+      return `<div class="queue-item" onclick="${idx>=0 ? `playTrack(${idx})` : ''}">
+        <span class="queue-item-num">${i+1}</span>
+        <div class="queue-item-info">
+          <div class="queue-item-name">${s.name}</div>
+          <div class="queue-item-why">${s.reason}</div>
+        </div>
+        ${idx>=0 ? `<button class="queue-play-btn" onclick="event.stopPropagation();playTrack(${idx})">▶</button>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    // Fallback: show random tracks
+    const shuffled = state.tracks.filter((_,i)=>i!==state.currentIdx).sort(()=>Math.random()-0.5).slice(0,4);
+    listEl.innerHTML = shuffled.map((t,i) => {
+      const idx = state.tracks.indexOf(t);
+      return `<div class="queue-item" onclick="playTrack(${idx})">
+        <span class="queue-item-num">${i+1}</span>
+        <div class="queue-item-info"><div class="queue-item-name">${t.name}</div><div class="queue-item-why">From your library</div></div>
+        <button class="queue-play-btn" onclick="event.stopPropagation();playTrack(${idx})">▶</button>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ========== AI PLAYLIST GENERATOR ==========
+let _genMood = 'Happy';
+function selectGenMood(el) {
+  document.querySelectorAll('.mood-select-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  _genMood = el.dataset.mood;
+}
+
+async function generateAIPlaylist() {
+  if (state.tracks.length === 0) { toast('Add some music first!', ''); return; }
+  const btn = document.getElementById('genPlaylistBtn');
+  btn.disabled = true;
+  btn.textContent = '🤖 Generating…';
+  const resultEl = document.getElementById('genResult');
+  resultEl.style.display = 'none';
+
+  const trackList = state.tracks.slice(0, 40).map(t => `"${t.name}" by ${t.artist||'Unknown'}`).join(', ');
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        messages: [{ role: 'user', content:
+          `Create a "${_genMood}" mood playlist from these tracks: ${trackList}.
+Pick 6-8 songs that best match a ${_genMood} mood. Reply ONLY with JSON: [{"name":"Song","artist":"Artist","reason":"1 short reason"}]. Use exact track names from the list.`
+        }]
+      })
+    });
+    const data = await resp.json();
+    const raw = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
+    const picks = JSON.parse(raw);
+
+    resultEl.style.display = 'flex';
+    resultEl.innerHTML = picks.map(p => {
+      const idx = state.tracks.findIndex(t => t.name === p.name);
+      return `<div class="gen-result-item" onclick="${idx>=0?`playTrack(${idx})`:''}">
+        <span style="font-size:1rem">${idx>=0?'🎵':'💡'}</span>
+        <div style="flex:1;min-width:0">
+          <div class="gen-result-name">${p.name}</div>
+          <div class="gen-result-why">${p.reason}</div>
+        </div>
+        ${idx>=0 ? `<button onclick="event.stopPropagation();playTrack(${idx})" style="background:var(--grad);border:none;border-radius:6px;padding:3px 8px;color:white;font-size:0.7rem;cursor:pointer;flex-shrink:0">▶</button>` : ''}
+      </div>`;
+    }).join('');
+    toast('✨ ' + _genMood + ' playlist ready!', 'success');
+  } catch(e) {
+    toast('Could not generate playlist', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🤖 Generate Playlist';
+  }
+}
+
+// ========== CROSSFADE ENGINE ==========
+let _crossfadeEnabled = false;
+let _crossfadeAudio = null;
+let _crossfadeTimer = null;
+
+function toggleCrossfade(enabled) {
+  _crossfadeEnabled = enabled;
+  toast(enabled ? '🎚 Crossfade ON' : '🎚 Crossfade OFF', '');
+}
+
+function setupCrossfade() {
+  if (!_crossfadeEnabled) return;
+  const dur = parseInt(document.getElementById('crossfadeDur')?.value || 3);
+  const remaining = audio.duration - audio.currentTime;
+  if (remaining > dur + 1) {
+    _crossfadeTimer = setTimeout(() => startCrossfade(dur), (remaining - dur) * 1000);
+  }
+}
+
+function startCrossfade(dur) {
+  if (!_crossfadeEnabled || state.currentIdx < 0) return;
+  const nextIdx = state.shuffle
+    ? Math.floor(Math.random() * state.tracks.length)
+    : (state.currentIdx + 1) % state.tracks.length;
+  if (nextIdx === state.currentIdx) return;
+
+  const nextTrackObj = state.tracks[nextIdx];
+  if (!nextTrackObj?.url) return;
+
+  // Fade out current
+  const fadeSteps = dur * 10;
+  let step = 0;
+  const origVol = state.volume;
+  const fadeOut = setInterval(() => {
+    step++;
+    audio.volume = Math.max(0, origVol * (1 - step / fadeSteps));
+    if (step >= fadeSteps) { clearInterval(fadeOut); }
+  }, 100);
+
+  // Start next track with fade in
+  _crossfadeAudio = new Audio(nextTrackObj.url);
+  _crossfadeAudio.volume = 0;
+  _crossfadeAudio.play().catch(() => {});
+  let si = 0;
+  const fadeIn = setInterval(() => {
+    si++;
+    if (_crossfadeAudio) _crossfadeAudio.volume = Math.min(origVol, origVol * (si / fadeSteps));
+    if (si >= fadeSteps) {
+      clearInterval(fadeIn);
+      // Hand over to main player
+      audio.pause();
+      audio.volume = origVol;
+      playTrack(nextIdx);
+      _crossfadeAudio = null;
+    }
+  }, 100);
+}
+
+function clearCrossfadeTimer() {
+  if (_crossfadeTimer) { clearTimeout(_crossfadeTimer); _crossfadeTimer = null; }
+  if (_crossfadeAudio) { try { _crossfadeAudio.pause(); } catch(e){} _crossfadeAudio = null; }
+}
+
+// Hook into audio timeupdate to set crossfade timer when track starts
+audio.addEventListener('playing', () => {
+  clearCrossfadeTimer();
+  if (_crossfadeEnabled) setTimeout(setupCrossfade, 1000);
+});
+audio.addEventListener('pause', clearCrossfadeTimer);
+
+// ========== WAKE WORD DETECTION ==========
+let _wakeWordActive = false;
+let _wakeRecognition = null;
+
+function toggleWakeWord() {
+  if (_wakeWordActive) {
+    _stopWakeWord();
+    toast('Wake word OFF', '');
+  } else {
+    _startWakeWord();
+  }
+}
+
+function _startWakeWord() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) { toast('Wake word not supported in this browser', 'error'); return; }
+
+  _wakeWordActive = true;
+  document.getElementById('wakeDot').className = 'wake-dot listening';
+  document.getElementById('wakeLabel').textContent = 'ON';
+  toast('👂 Listening for "Hey Audix"…', 'success');
+
+  const r = new SpeechRecognition();
+  r.continuous = true;
+  r.interimResults = false;
+  r.lang = 'en-US';
+  _wakeRecognition = r;
+
+  r.onresult = e => {
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (!e.results[i].isFinal) continue;
+      const t = e.results[i][0].transcript.toLowerCase().trim();
+      if (/\b(hey\s+audix|audix)\b/.test(t)) {
+        document.getElementById('wakeDot').className = 'wake-dot activated';
+        setTimeout(() => {
+          if (_wakeWordActive) document.getElementById('wakeDot').className = 'wake-dot listening';
+        }, 1500);
+        // Activate voice command mode
+        if (!_voiceActive) toggleVoice();
+        toast('✓ Hey Audix! Listening for command…', 'success');
+      }
+    }
+  };
+  r.onerror = e => {
+    if (e.error === 'not-allowed') { _stopWakeWord(); toast('Microphone permission denied', 'error'); return; }
+    if (_wakeWordActive) setTimeout(() => { try { r.start(); } catch(ex){} }, 500);
+  };
+  r.onend = () => { if (_wakeWordActive) setTimeout(() => { try { r.start(); } catch(ex){} }, 300); };
+  try { r.start(); } catch(e) {}
+}
+
+function _stopWakeWord() {
+  _wakeWordActive = false;
+  document.getElementById('wakeDot').className = 'wake-dot';
+  document.getElementById('wakeLabel').textContent = 'WAKE';
+  try { _wakeRecognition && _wakeRecognition.stop(); } catch(e) {}
+  _wakeRecognition = null;
+}
+
+// ========== HOOK recordPlay into playTrack ==========
+const _origPlayTrack = playTrack;
+// Override playTrack to record stats
+const _playTrackHooked = async function(idx) {
+  await _origPlayTrack(idx);
+  if (idx >= 0 && idx < state.tracks.length) recordPlay(state.tracks[idx]);
+  // Refresh smart queue after a short delay
+  setTimeout(() => {
+    if (document.getElementById('smartQueueList')?.querySelector('.queue-empty')) {
+      refreshSmartQueue();
+    }
+  }, 600);
+};
+// Replace global
+window.playTrack = _playTrackHooked;
 
 function openNotes() {
   document.getElementById('notesPanel').classList.add('open');
