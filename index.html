@@ -4565,18 +4565,22 @@ function getGroqKey() { return localStorage.getItem('audix_groq_key') || ''; }
 async function callClaude(messages, maxTokens = 300) {
   const key = getGroqKey();
   if (!key) throw new Error('No API key — tap the 🔑 button in the top bar to add your Groq key.');
+  const safeMessages = messages.map(m => ({
+    role: m.role,
+    content: String(m.content).replace(/[\u0000-\u001F\u007F]/g, ' ')
+  }));
   const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-    body: JSON.stringify({ model: GROQ_MODEL, max_tokens: maxTokens, messages })
+    body: JSON.stringify({ model: GROQ_MODEL, max_tokens: maxTokens, messages: safeMessages, temperature: 0.7 })
   });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}));
-    const code = err?.error?.type || resp.status;
+    const detail = err?.error?.message || err?.error?.type || resp.status;
     if (resp.status === 401) throw new Error('Invalid Groq API key — check your key in settings.');
     if (resp.status === 429) throw new Error('Rate limit hit — please wait a moment and try again.');
     if (resp.status >= 500) throw new Error('Groq server error — try again shortly.');
-    throw new Error('API error (' + code + ')');
+    throw new Error('API error (' + detail + ')');
   }
   const data = await resp.json();
   const text = (data.choices?.[0]?.message?.content || '').replace(/```json|```/g, '').trim();
@@ -5164,7 +5168,7 @@ async function sendDjMessage() {
     const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _djkey },
-      body: JSON.stringify({ model: GROQ_MODEL, max_tokens: 300, messages })
+      body: JSON.stringify({ model: GROQ_MODEL, max_tokens: 300, messages, temperature: 0.7 })
     });
 
     const data = await resp.json();
