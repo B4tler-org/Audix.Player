@@ -2627,6 +2627,9 @@ function localCleanTitle(rawName) {
   s = s.replace(/\(?\b(official\s*(audio|video|music\s*video|lyric\s*video|visualizer|hd|4k|hq))\b\)?/gi, '');
   s = s.replace(/\b(youtube|vevo|spotify|soundcloud)\b/gi, '');
   s = s.replace(/^\d{1,3}[\s.\-_]+/, ''); // leading track numbers
+  // Remove bare junk words at end of title even without brackets
+  // e.g. "it will rain lyrics" → "it will rain", "song title audio hd" → "song title"
+  s = s.replace(/\s+\b(lyrics?|lyric\s*video|official\s*audio|official\s*video|official|audio|video|hd|hq|4k|vevo|visualizer|remaster(ed)?|slowed|reverb|nightcore|explicit|clean)\b(\s+\b(lyrics?|audio|video|hd|hq|4k|official)\b)*\s*$/gi, '');
   // Clean up leftover empty parens/brackets
   s = s.replace(/[\[(]\s*[\])]/g, '');
   s = s.replace(/\s{2,}/g, ' ').trim().replace(/[\s\-]+$/, '').trim();
@@ -2646,14 +2649,22 @@ async function aiCleanTitle(rawName) {
     const prompt = `You are a music metadata extractor. Given a raw song filename or title string, extract the clean song title and artist name.
 
 Rules:
-- Remove underscores (replace with spaces)
-- Remove quality/format tags: (Official Audio), (Official Video), (Lyrics), (HD), (HQ), (4K), (Audio), (Official), (Music Video), (Official Music Video), (Official Lyric Video), (Lyric Video), (Official Visualizer), (Visualizer), (VEVO), [Official], [Lyrics], [HD] etc.
-- Remove platform tags: YouTube, Vevo, Spotify, etc.
-- Remove track numbers like "01 ", "02 - "
+- Replace underscores with spaces
+- Remove ALL descriptor/junk words whether inside brackets or bare at the end of the string. This includes: lyrics, lyric video, audio, video, official, official audio, official video, official music video, music video, hd, hq, 4k, vevo, visualizer, remastered, slowed, reverb, nightcore, explicit, clean, radio edit, extended, instrumental
+- IMPORTANT: "song title lyrics" → title is "song title" (strip bare "lyrics" even without brackets)
+- IMPORTANT: "song title audio" → title is "song title" (strip bare "audio" even without brackets)
+- Remove platform tags: YouTube, Vevo, Spotify, SoundCloud
+- Remove leading track numbers like "01 ", "02 - "
 - Remove download counter suffixes like (0), (1), (2) at the end
 - Remove trailing/leading whitespace and punctuation
-- Common separators between artist and title: " - ", " – ", " — ", "_-_"
-- If no artist separator found, put everything in title and leave artist empty
+- Common artist-title separators: " - ", " – ", " — ", "_-_"
+- If no artist separator is found, put everything cleaned in title and leave artist empty
+
+Examples:
+- "it will rain lyrics" → {"title": "It Will Rain", "artist": ""}
+- "Bruno Mars - it will rain lyrics" → {"title": "It Will Rain", "artist": "Bruno Mars"}
+- "01 Shape Of You Official Audio" → {"title": "Shape Of You", "artist": ""}
+- "Ed Sheeran - Shape Of You (Official Music Video)" → {"title": "Shape Of You", "artist": "Ed Sheeran"}
 
 Input: "${rawName}"
 
@@ -2697,8 +2708,9 @@ async function triggerIdentification() {
     stageSet('ai', 'loading', '');
     pipelineStatus('AI cleaning title…');
 
-    // Use the already-in-memory file if available, otherwise just use track.name
-    // Do NOT load the audio blob from IndexedDB just for the filename — it's slow and unnecessary
+    // Use the original file reference if available (has the raw filename with junk words).
+    // If not (e.g. re-identify after page reload), use track.name but run it through
+    // localCleanTitle first so stored junk like "lyrics" at the end is stripped before AI sees it.
     const file = _fileMap.get(String(track.id)) || null;
     const rawName = file ? file.name.replace(/\.[^.]+$/, '') : track.name;
     const aiResult = await aiCleanTitle(rawName).catch(() => localCleanTitle(rawName));
