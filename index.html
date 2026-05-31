@@ -114,29 +114,7 @@ body{background:var(--bg);color:var(--text);transition:background 0.4s,color 0.4
 .tab-content::-webkit-scrollbar-track{background:transparent}
 .tab-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
-/* PLAYER TAB — controls */
-.progress-section{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:20px 22px}
-.progress-times{display:flex;justify-content:space-between;font-family:'Share Tech Mono';font-size:0.78rem;color:var(--text2);margin-bottom:10px}
-.progress-bar{width:100%;height:5px;background:var(--bg4);border-radius:3px;cursor:pointer;position:relative;margin-bottom:2px}
-.progress-bar:hover{height:7px}
-.progress-bar:hover .progress-fill::after{opacity:1}
-.progress-fill{height:100%;background:var(--grad);border-radius:3px;width:0%;transition:width 0.1s;position:relative}
-.progress-fill::after{content:'';position:absolute;right:-7px;top:50%;transform:translateY(-50%);width:14px;height:14px;border-radius:50%;background:white;box-shadow:0 0 8px rgba(0,212,255,0.8);opacity:0;transition:opacity 0.15s}
-.controls{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:16px}
-.ctrl-btn{background:none;border:none;color:var(--text2);cursor:pointer;font-size:1.25rem;transition:all 0.2s;padding:8px;border-radius:10px}
-.ctrl-btn:hover{color:var(--cyan);background:rgba(0,212,255,0.1)}
-.ctrl-btn.active{color:var(--cyan)}
-.play-btn{width:58px;height:58px;border-radius:50%;background:var(--grad);border:none;color:white;font-size:1.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(139,92,246,0.5),0 4px 16px rgba(0,0,0,0.3);transition:transform 0.15s,box-shadow 0.2s}
-.play-btn:hover{transform:scale(1.1);box-shadow:0 0 40px rgba(139,92,246,0.7),0 4px 20px rgba(0,0,0,0.4)}
-.play-btn:active{transform:scale(0.96)}
-.volume-row{display:flex;align-items:center;gap:10px;margin-top:14px}
-.volume-icon{color:var(--text2);font-size:1rem}
-.volume-bar{flex:1;height:4px;background:var(--bg4);border-radius:2px;cursor:pointer;position:relative}
-.volume-bar:hover{height:6px}
-.volume-fill{height:100%;background:var(--grad);border-radius:2px;width:70%;transition:width 0.05s}
-.audio-quality-row{display:flex;align-items:center;gap:8px;margin-top:8px}
-.aq-btn{background:var(--bg4);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:0.7rem;font-family:'Share Tech Mono';color:var(--text2);cursor:pointer;transition:all 0.2s}
-.aq-btn.active{background:var(--grad);color:white;border-color:transparent}
+/* PLAYER TAB — legacy stub (layout moved into hero) */
 
 /* LIBRARY */
 .lib-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
@@ -283,26 +261,48 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 #toast{position:fixed;bottom:24px;right:24px;z-index:9000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 
 /* ── REDESIGNED NOW-PLAYING HERO ── */
-.now-playing-hero{position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--border);min-height:200px;transition:border-color 0.6s}
+.now-playing-hero{position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--border);transition:border-color 0.6s}
 .hero-bg-blur{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(32px) brightness(0.35) saturate(1.6);transform:scale(1.1);transition:background-image 0.8s ease, opacity 0.6s;opacity:0.9;z-index:0}
-.hero-inner{position:relative;z-index:1;display:flex;gap:18px;align-items:center;padding:20px;background:linear-gradient(135deg,rgba(10,10,15,0.55),rgba(10,10,15,0.2))}
+.hero-inner{position:relative;z-index:1;display:flex;flex-direction:column;gap:14px;padding:18px 20px;background:linear-gradient(135deg,rgba(10,10,15,0.6),rgba(10,10,15,0.25))}
+.hero-top-row{display:flex;gap:16px;align-items:center}
 .album-art-wrap{position:relative;flex-shrink:0}
-.album-art{width:120px;height:120px;border-radius:18px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 0 2px rgba(255,255,255,0.08);transition:box-shadow 0.6s}
-.album-art img.art-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:18px;z-index:1}
-.album-art .spin-ring{position:absolute;inset:-3px;border-radius:22px;border:2px solid transparent;border-top-color:var(--cyan);border-right-color:rgba(0,212,255,0.3);animation:spin 2s linear infinite;pointer-events:none;opacity:0;z-index:2}
+.album-art{width:100px;height:100px;border-radius:16px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:2.6rem;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 0 2px rgba(255,255,255,0.08);transition:box-shadow 0.6s}
+.album-art img.art-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:16px;z-index:1}
+.album-art .spin-ring{position:absolute;inset:-3px;border-radius:20px;border:2px solid transparent;border-top-color:var(--cyan);border-right-color:rgba(0,212,255,0.3);animation:spin 2s linear infinite;pointer-events:none;opacity:0;z-index:2}
 .album-art.playing .spin-ring{opacity:1}
 .album-art.playing{box-shadow:0 0 0 2px rgba(0,212,255,0.5),0 8px 40px rgba(0,212,255,0.25),0 0 60px rgba(139,92,246,0.2)}
-/* Reflection below art */
-.art-reflection{width:120px;height:30px;margin-top:6px;border-radius:0 0 18px 18px;background:linear-gradient(to bottom,rgba(255,255,255,0.08),transparent);filter:blur(4px);transform:scaleY(-0.4);opacity:0.4;pointer-events:none}
+.hero-progress-wrap{display:flex;flex-direction:column;gap:6px}
+.progress-times{display:flex;justify-content:space-between;font-family:'Share Tech Mono';font-size:0.72rem;color:rgba(255,255,255,0.55)}
+.progress-bar{width:100%;height:5px;background:rgba(255,255,255,0.15);border-radius:3px;cursor:pointer;position:relative}
+.progress-bar:hover{height:7px}
+.progress-bar:hover .progress-fill::after{opacity:1}
+.progress-fill{height:100%;background:var(--grad);border-radius:3px;width:0%;transition:width 0.1s;position:relative}
+.progress-fill::after{content:'';position:absolute;right:-7px;top:50%;transform:translateY(-50%);width:14px;height:14px;border-radius:50%;background:white;box-shadow:0 0 8px rgba(0,212,255,0.8);opacity:0;transition:opacity 0.15s}
+.hero-controls{display:flex;align-items:center;justify-content:center;gap:16px}
+.hero-bottom-row{display:flex;align-items:center;gap:8px;padding-top:2px}
+.volume-icon{color:rgba(255,255,255,0.6);font-size:0.95rem}
+.volume-bar{flex:1;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;cursor:pointer;position:relative}
+.volume-bar:hover{height:6px}
+.volume-fill{height:100%;background:var(--grad);border-radius:2px;width:70%;transition:width 0.05s}
+.ctrl-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.8);cursor:pointer;font-size:1.15rem;transition:all 0.2s;padding:9px 13px;border-radius:12px}
+.ctrl-btn:hover{color:var(--cyan);background:rgba(0,212,255,0.15);border-color:rgba(0,212,255,0.4)}
+.ctrl-btn.active{color:var(--cyan)}
+.play-btn{width:56px;height:56px;border-radius:50%;background:var(--grad);border:none;color:white;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(139,92,246,0.5),0 4px 16px rgba(0,0,0,0.3);transition:transform 0.15s,box-shadow 0.2s}
+.play-btn:hover{transform:scale(1.1);box-shadow:0 0 40px rgba(139,92,246,0.7),0 4px 20px rgba(0,0,0,0.4)}
+.play-btn:active{transform:scale(0.96)}
+.audio-quality-row{display:flex;align-items:center;gap:4px}
+.aq-btn{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:7px;padding:3px 8px;font-size:0.65rem;font-family:'Share Tech Mono';color:rgba(255,255,255,0.5);cursor:pointer;transition:all 0.2s}
+.aq-btn.active{background:var(--grad);color:white;border-color:transparent}
+.album-art-wrap{position:relative;flex-shrink:0}
+.art-reflection{width:100px;height:24px;margin-top:4px;border-radius:0 0 16px 16px;background:linear-gradient(to bottom,rgba(255,255,255,0.08),transparent);filter:blur(4px);transform:scaleY(-0.4);opacity:0.4;pointer-events:none}
 .song-info{flex:1;min-width:0}
-.song-title{font-size:1.25rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;text-shadow:0 2px 8px rgba(0,0,0,0.5)}
-.song-artist{color:var(--cyan);font-family:'Rajdhani';font-size:1rem;letter-spacing:1px;margin-top:4px;font-weight:600;text-shadow:0 0 12px rgba(0,212,255,0.4)}
-.song-album{color:rgba(255,255,255,0.5);font-size:0.75rem;margin-top:3px;font-family:'Share Tech Mono'}
-.song-meta-tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.tag{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:2px 8px;font-size:0.68rem;color:rgba(255,255,255,0.7);font-family:'Share Tech Mono';backdrop-filter:blur(4px)}
+.song-title{font-size:1.15rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;text-shadow:0 2px 8px rgba(0,0,0,0.5)}
+.song-artist{color:var(--cyan);font-family:'Rajdhani';font-size:0.95rem;letter-spacing:1px;margin-top:3px;font-weight:600;text-shadow:0 0 12px rgba(0,212,255,0.4)}
+.song-album{color:rgba(255,255,255,0.5);font-size:0.72rem;margin-top:2px;font-family:'Share Tech Mono'}
+.song-meta-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.tag{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:2px 8px;font-size:0.65rem;color:rgba(255,255,255,0.7);font-family:'Share Tech Mono';backdrop-filter:blur(4px)}
 .fav-btn{position:absolute;top:14px;right:14px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:rgba(255,255,255,0.6);font-size:1.2rem;cursor:pointer;transition:all 0.2s;width:34px;height:34px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);z-index:2}
 .fav-btn.active,.fav-btn:hover{color:#ef4444;border-color:rgba(239,68,68,0.5);background:rgba(239,68,68,0.15)}
-
 /* Dynamic theme accent from album art */
 .now-playing-hero.themed{border-color:var(--accent-color, var(--border))}
 
@@ -321,10 +321,9 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .history-num{font-size:0.65rem;color:var(--text3);font-family:'Share Tech Mono';width:20px;text-align:center;flex-shrink:0}
 
 @media(max-width:600px){
-  .album-art{width:100px;height:100px;font-size:2.5rem}
-  .art-reflection{width:100px}
-  .song-title{font-size:1.1rem}
-  .hero-inner{padding:14px;gap:14px}
+  .hero-inner{padding:14px;gap:12px}
+  .song-title{font-size:1rem}
+  .hero-controls{gap:10px}
 }
 .toast-item{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 18px;font-size:0.85rem;color:var(--text);box-shadow:var(--glow2);animation:toastIn 0.3s ease,toastOut 0.3s ease 2.7s forwards;display:flex;align-items:center;gap:10px;font-family:'Rajdhani';font-weight:600;letter-spacing:0.5px}
 .toast-item.success{border-color:rgba(34,197,94,0.4)}
@@ -407,13 +406,11 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
   .topbar{padding:8px 12px}
   #pipelineStages{display:none}
   .lyrics-body{max-height:220px}
-  .progress-section{padding:14px 16px}
-  .controls{gap:8px;margin-top:10px}
-  .play-btn{width:52px;height:52px;font-size:1.3rem}
-  .ctrl-btn{font-size:1.1rem;padding:6px}
-  .volume-row{margin-top:10px}
-  .audio-quality-row{gap:5px;flex-wrap:wrap}
-  .aq-btn{padding:3px 8px;font-size:0.65rem}
+  .hero-controls{gap:8px}
+  .play-btn{width:52px;height:52px;font-size:1.25rem}
+  .ctrl-btn{font-size:1rem;padding:7px 10px}
+  .audio-quality-row{gap:4px}
+  .aq-btn{padding:2px 6px;font-size:0.6rem}
   .meta-grid{grid-template-columns:1fr}
   .eq-bars{height:140px}
   #toast{bottom:80px}
@@ -527,17 +524,6 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .insight-chip{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:56px}
 .insight-val{font-family:'Share Tech Mono';font-size:0.85rem;font-weight:700;color:var(--cyan)}
 .insight-lbl{font-size:0.6rem;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;font-family:'Rajdhani'}
-
-/* ===== CROSSFADE TOGGLE ===== */
-.crossfade-row{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:12px}
-.crossfade-label{font-size:0.78rem;font-family:'Rajdhani';font-weight:600;color:var(--text2);flex:1}
-.toggle-switch{position:relative;width:38px;height:22px;cursor:pointer;flex-shrink:0}
-.toggle-switch input{opacity:0;width:0;height:0}
-.toggle-track{position:absolute;inset:0;background:var(--bg4);border-radius:11px;transition:background 0.3s;border:1px solid var(--border)}
-.toggle-thumb{position:absolute;top:3px;left:3px;width:14px;height:14px;background:var(--text3);border-radius:50%;transition:transform 0.3s,background 0.3s}
-.toggle-switch input:checked + .toggle-track{background:linear-gradient(135deg,#00d4ff,#8b5cf6);border-color:transparent}
-.toggle-switch input:checked + .toggle-track + .toggle-thumb{transform:translateX(16px);background:white}
-.crossfade-val{font-family:'Share Tech Mono';font-size:0.72rem;color:var(--cyan);min-width:28px;text-align:right}
 
 /* ===== SMART QUEUE ===== */
 .queue-card{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px}
@@ -813,99 +799,93 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
       <!-- PLAYER TAB -->
       <div class="tab-content active" id="tab-player">
 
-        <!-- HERO: full-width art + dynamic background -->
+        <!-- HERO: art + song info + controls all in one block -->
         <div class="now-playing-hero" id="nowPlayingHero">
           <div class="hero-bg-blur" id="heroBgBlur"></div>
           <div class="hero-inner">
-            <div class="album-art-wrap">
-              <div class="album-art" id="albumArt">
-                <div class="spin-ring"></div>
-                <span id="albumEmoji">🎵</span>
+
+            <!-- Top row: art + title/artist + fav -->
+            <div class="hero-top-row">
+              <div class="album-art-wrap">
+                <div class="album-art" id="albumArt">
+                  <div class="spin-ring"></div>
+                  <span id="albumEmoji">🎵</span>
+                </div>
+                <div class="art-reflection" id="artReflection"></div>
               </div>
-              <div class="art-reflection" id="artReflection"></div>
+              <div class="song-info">
+                <div class="song-title" id="songTitle">No Track Selected</div>
+                <div class="song-artist" id="songArtist">Choose a song from Library</div>
+                <div class="song-album" id="songAlbum">—</div>
+                <div class="song-meta-tags">
+                  <span class="tag" id="tagGenre">Genre: —</span>
+                  <span class="tag" id="tagYear">Year: —</span>
+                  <span class="tag" id="tagBpm">BPM: —</span>
+                </div>
+                <div class="mood-row" id="moodRow">
+                  <div class="mood-badge" id="moodBadge" onclick="detectMood()">🎭 Detect Mood</div>
+                  <button onclick="oneTapEQ()" style="background:var(--grad);border:none;border-radius:12px;padding:4px 12px;color:white;font-size:0.72rem;font-family:'Rajdhani';font-weight:700;cursor:pointer;letter-spacing:1px" title="One-tap AI EQ">⚡ AI EQ</button>
+                </div>
+              </div>
+              <button class="fav-btn" id="favBtn" onclick="toggleFav()">♡</button>
             </div>
-            <div class="song-info">
-              <div class="song-title" id="songTitle">No Track Selected</div>
-              <div class="song-artist" id="songArtist">Choose a song from Library</div>
-              <div class="song-album" id="songAlbum">—</div>
-              <div class="song-meta-tags">
-                <span class="tag" id="tagGenre">Genre: —</span>
-                <span class="tag" id="tagYear">Year: —</span>
-                <span class="tag" id="tagBpm">BPM: —</span>
+
+            <!-- Progress bar inside hero -->
+            <div class="hero-progress-wrap">
+              <div class="progress-times">
+                <span id="curTime">0:00</span>
+                <span id="durTime">0:00</span>
               </div>
-              <div class="mood-row" id="moodRow">
-                <div class="mood-badge" id="moodBadge" onclick="detectMood()">🎭 Detect Mood</div>
-                <button onclick="oneTapEQ()" style="background:var(--grad);border:none;border-radius:12px;padding:4px 12px;color:white;font-size:0.72rem;font-family:'Rajdhani';font-weight:700;cursor:pointer;letter-spacing:1px" title="One-tap AI EQ">⚡ AI EQ</button>
+              <div class="progress-bar" id="progressBar" onclick="seekTrack(event)">
+                <div class="progress-fill" id="progressFill"></div>
               </div>
             </div>
-            <button class="fav-btn" id="favBtn" onclick="toggleFav()">♡</button>
+
+            <!-- Controls inside hero -->
+            <div class="hero-controls">
+              <button class="ctrl-btn" onclick="toggleShuffle()" id="shuffleBtn" title="Shuffle">🔀</button>
+              <button class="ctrl-btn" onclick="prevTrack()" title="Previous">⏮</button>
+              <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+              <button class="ctrl-btn" onclick="nextTrack()" title="Next">⏭</button>
+              <button class="ctrl-btn" onclick="toggleRepeat()" id="repeatBtn" title="Repeat">🔁</button>
+            </div>
+
+            <!-- Volume + quality row inside hero -->
+            <div class="hero-bottom-row">
+              <span class="volume-icon" id="volIcon">🔊</span>
+              <div class="volume-bar" id="volumeBar" onclick="setVolume(event)">
+                <div class="volume-fill" id="volumeFill"></div>
+              </div>
+              <span style="font-size:0.72rem;font-family:'Share Tech Mono';color:rgba(255,255,255,0.6)" id="volPct">70%</span>
+              <div class="audio-quality-row" style="margin-left:8px">
+                <button class="aq-btn active" onclick="setQuality('MP3')">MP3</button>
+                <button class="aq-btn" onclick="setQuality('FLAC')">FLAC</button>
+                <button class="aq-btn" onclick="setQuality('HI-RES')">HI-RES</button>
+              </div>
+            </div>
+
           </div>
         </div>
 
-        <!-- PROGRESS + CONTROLS (sticky at readable position) -->
-        <div class="progress-section">
-          <div class="progress-times">
-            <span id="curTime">0:00</span>
-            <span id="durTime">0:00</span>
+        <!-- AI INSIGHTS STRIP (compact, below hero) -->
+        <div class="insights-strip" id="insightsStrip">
+          <div class="insight-chip">
+            <div class="insight-val" id="insBpm">—</div>
+            <div class="insight-lbl">BPM</div>
           </div>
-          <div class="progress-bar" id="progressBar" onclick="seekTrack(event)">
-            <div class="progress-fill" id="progressFill"></div>
+          <div class="insight-chip">
+            <div class="insight-val" id="insEnergy">—</div>
+            <div class="insight-lbl">Energy</div>
           </div>
-          <div class="controls">
-            <button class="ctrl-btn" onclick="toggleShuffle()" id="shuffleBtn" title="Shuffle">🔀</button>
-            <button class="ctrl-btn" onclick="prevTrack()" title="Previous">⏮</button>
-            <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
-            <button class="ctrl-btn" onclick="nextTrack()" title="Next">⏭</button>
-            <button class="ctrl-btn" onclick="toggleRepeat()" id="repeatBtn" title="Repeat">🔁</button>
+          <div class="insight-chip">
+            <div class="insight-val" id="insGenre">—</div>
+            <div class="insight-lbl">Genre</div>
           </div>
-          <div class="volume-row">
-            <span class="volume-icon" id="volIcon">🔊</span>
-            <div class="volume-bar" id="volumeBar" onclick="setVolume(event)">
-              <div class="volume-fill" id="volumeFill"></div>
-            </div>
-            <span style="font-size:0.75rem;font-family:'Share Tech Mono';color:var(--text2)" id="volPct">70%</span>
+          <div class="insight-chip">
+            <div class="insight-val" id="insMood">—</div>
+            <div class="insight-lbl">Mood</div>
           </div>
-          <div class="audio-quality-row">
-            <span style="font-size:0.75rem;font-family:'Share Tech Mono';color:var(--text3)">Quality:</span>
-            <button class="aq-btn active" onclick="setQuality('MP3')">MP3</button>
-            <button class="aq-btn" onclick="setQuality('AAC')">AAC</button>
-            <button class="aq-btn" onclick="setQuality('FLAC')">FLAC</button>
-            <button class="aq-btn" onclick="setQuality('HI-RES')">HI-RES</button>
-            <button class="aq-btn" onclick="setQuality('LOSSLESS')">LOSSLESS</button>
-          </div>
-
-          <!-- AI INSIGHTS STRIP -->
-          <div class="insights-strip" id="insightsStrip">
-            <div class="insight-chip">
-              <div class="insight-val" id="insBpm">—</div>
-              <div class="insight-lbl">BPM</div>
-            </div>
-            <div class="insight-chip">
-              <div class="insight-val" id="insEnergy">—</div>
-              <div class="insight-lbl">Energy</div>
-            </div>
-            <div class="insight-chip">
-              <div class="insight-val" id="insGenre">—</div>
-              <div class="insight-lbl">Genre</div>
-            </div>
-            <div class="insight-chip">
-              <div class="insight-val" id="insMood">—</div>
-              <div class="insight-lbl">Mood</div>
-            </div>
-            <button onclick="runMusicInsights()" style="margin-left:auto;background:var(--grad);border:none;border-radius:8px;padding:5px 12px;color:white;font-size:0.7rem;font-family:'Rajdhani';font-weight:700;cursor:pointer;letter-spacing:1px">✦ Analyze</button>
-          </div>
-
-          <!-- CROSSFADE TOGGLE -->
-          <div class="crossfade-row">
-            <span class="crossfade-label">🎚 Crossfade</span>
-            <label class="toggle-switch">
-              <input type="checkbox" id="crossfadeToggle" onchange="toggleCrossfade(this.checked)">
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div>
-            </label>
-            <input type="range" id="crossfadeDur" min="1" max="10" value="3" step="1" style="width:70px;height:4px;-webkit-appearance:none;appearance:none;background:var(--bg4);border-radius:2px;outline:none;cursor:pointer" oninput="document.getElementById('crossfadeVal').textContent=this.value+'s'">
-            <span class="crossfade-val" id="crossfadeVal">3s</span>
-          </div>
+          <button onclick="runMusicInsights()" style="margin-left:auto;background:var(--grad);border:none;border-radius:8px;padding:5px 12px;color:white;font-size:0.7rem;font-family:'Rajdhani';font-weight:700;cursor:pointer;letter-spacing:1px">✦ Analyze</button>
         </div>
 
         <!-- IDENTIFICATION PIPELINE -->
@@ -4117,95 +4097,105 @@ function stopVoice() {
   document.getElementById('voiceBtn').classList.remove('listening');
 }
 
-// ========== DEVICE TRANSFER (WebRTC + QR) ==========
+// ========== DEVICE TRANSFER (PeerJS WebRTC) ==========
 // Architecture:
-//   Phone A (host)  → generates session ID → shows QR
-//   Phone B (sender) → scans QR → opens receiver page → selects files
-//   Signaling: wss://uncooperative-sea-urchin.glitch.me (free echo WS relay)
-//   Data: WebRTC DataChannel (peer-to-peer, no server for audio bytes)
+//   Phone A (host)  → creates PeerJS peer → gets peer ID → shows QR with ID embedded
+//   Phone B (sender) → scans QR → opens self-contained sender page → connects via PeerJS
+//   Signaling: PeerJS Cloud (0.peerjs.com) — actively maintained, always-on
+//   Data: WebRTC DataChannel via PeerJS (peer-to-peer for audio bytes)
 
-const SIGNAL_SERVER = 'wss://uncooperative-sea-urchin.glitch.me';
 const CHUNK_SIZE = 64 * 1024; // 64 KB chunks
+const PEERJS_CDN = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
 
-let _xferWs        = null;
-let _xferPc        = null;   // RTCPeerConnection (host side)
-let _xferDc        = null;   // RTCDataChannel (host side, receives)
+let _xferPeer      = null;   // PeerJS Peer (host side)
+let _xferConn      = null;   // PeerJS DataConnection (host side)
 let _xferSessionId = null;
 let _xferReceiving = {};     // { fileName: { meta, chunks[], received } }
 let _xferCurrentFile = null;
 
+// ── Lazy-load PeerJS ──────────────────────────────────────────────────
+function loadPeerJS() {
+  return new Promise((resolve, reject) => {
+    if (window.Peer) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = PEERJS_CDN;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
 // ── Open modal on Phone A ──────────────────────────────────────────────
 async function openDeviceTransfer() {
-  _xferSessionId = Math.random().toString(36).slice(2, 10).toUpperCase();
   document.getElementById('transferModal').classList.add('active');
-  document.getElementById('transferStatus').textContent = 'Setting up connection…';
+  document.getElementById('transferStatus').textContent = 'Loading connection library…';
   document.getElementById('transferStatus').className = 'transfer-status';
   document.getElementById('transferSteps').style.display = 'flex';
   document.getElementById('transferProgressWrap').style.display = 'none';
   document.getElementById('transferFileList').innerHTML = '';
 
-  await hostConnectSignal();
+  // Clean up any old peer
+  try { _xferPeer && _xferPeer.destroy(); } catch(e) {}
+  _xferPeer = null; _xferConn = null;
+
+  try {
+    await loadPeerJS();
+  } catch(e) {
+    document.getElementById('transferStatus').textContent = 'Failed to load PeerJS — check internet connection';
+    return;
+  }
+
+  // Create a peer with a short random readable ID
+  const shortId = 'audix-' + Math.random().toString(36).slice(2, 8);
+  _xferSessionId = shortId;
+
+  _xferPeer = new Peer(shortId, {
+    // Use PeerJS default cloud server (0.peerjs.com) — always online
+    debug: 0
+  });
+
+  _xferPeer.on('error', err => {
+    // If ID taken, retry with new one
+    if (err.type === 'unavailable-id') {
+      _xferSessionId = 'audix-' + Math.random().toString(36).slice(2, 8);
+      _xferPeer.destroy();
+      openDeviceTransfer();
+      return;
+    }
+    document.getElementById('transferStatus').textContent = 'Connection error: ' + err.message;
+  });
+
+  _xferPeer.on('open', id => {
+    document.getElementById('transferStatus').textContent = 'Ready — scan QR with Phone B';
+    buildReceiverPage(id);
+  });
+
+  _xferPeer.on('connection', conn => {
+    _xferConn = conn;
+    conn.on('open', () => {
+      document.getElementById('transferStatus').textContent = '✓ Phone B connected — waiting for files…';
+      document.getElementById('transferStatus').className = 'transfer-status connected';
+      document.getElementById('transferSteps').style.display = 'none';
+      document.getElementById('transferProgressWrap').style.display = 'block';
+    });
+    conn.on('data', hostOnMessage);
+    conn.on('error', e => {
+      document.getElementById('transferStatus').textContent = 'Transfer error: ' + e.message;
+    });
+  });
 }
 
 function closeDeviceTransfer() {
   document.getElementById('transferModal').classList.remove('active');
-  try { _xferWs && _xferWs.close(); } catch(e) {}
-  try { _xferPc && _xferPc.close(); } catch(e) {}
-  _xferWs = null; _xferPc = null; _xferDc = null;
-}
-
-// ── Host: connect to signaling WS, create RTCPeerConnection ──────────
-async function hostConnectSignal() {
-  _xferPc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-  _xferDc = _xferPc.createDataChannel('audix-transfer', { ordered: true });
-  _xferDc.binaryType = 'arraybuffer';
-
-  _xferDc.onopen  = () => {
-    document.getElementById('transferStatus').textContent = '✓ Phone B connected — waiting for files…';
-    document.getElementById('transferStatus').className = 'transfer-status connected';
-    document.getElementById('transferSteps').style.display = 'none';
-    document.getElementById('transferProgressWrap').style.display = 'block';
-  };
-  _xferDc.onmessage = hostOnMessage;
-
-  _xferPc.onicecandidate = e => {
-    if (e.candidate && _xferWs && _xferWs.readyState === WebSocket.OPEN) {
-      _xferWs.send(JSON.stringify({ type: 'ice', to: 'sender-' + _xferSessionId, candidate: e.candidate }));
-    }
-  };
-
-  // Build the offer
-  const offer = await _xferPc.createOffer();
-  await _xferPc.setLocalDescription(offer);
-
-  // Connect signaling WS
-  _xferWs = new WebSocket(SIGNAL_SERVER);
-  _xferWs.onopen = () => {
-    // Register as host
-    _xferWs.send(JSON.stringify({ type: 'register', id: 'host-' + _xferSessionId }));
-    // Send offer for any arriving sender
-    _xferWs.send(JSON.stringify({ type: 'offer', to: 'sender-' + _xferSessionId, offer: _xferPc.localDescription }));
-    // Build receiver URL & QR
-    buildReceiverPage(_xferSessionId);
-  };
-  _xferWs.onmessage = async ev => {
-    const msg = JSON.parse(ev.data);
-    if (msg.type === 'answer') {
-      await _xferPc.setRemoteDescription(new RTCSessionDescription(msg.answer));
-    } else if (msg.type === 'ice' && msg.candidate) {
-      try { await _xferPc.addIceCandidate(new RTCIceCandidate(msg.candidate)); } catch(e) {}
-    }
-  };
-  _xferWs.onerror = () => {
-    document.getElementById('transferStatus').textContent = 'Signaling error — check connection';
-  };
+  try { _xferPeer && _xferPeer.destroy(); } catch(e) {}
+  _xferPeer = null; _xferConn = null;
 }
 
 // ── Host: receive data from Phone B ──────────────────────────────────
-function hostOnMessage(ev) {
-  if (typeof ev.data === 'string') {
-    // JSON control message
-    const msg = JSON.parse(ev.data);
+function hostOnMessage(data) {
+  if (typeof data === 'string' || (data && typeof data === 'object' && data.type)) {
+    // JSON control message (PeerJS sends objects natively)
+    const msg = typeof data === 'string' ? JSON.parse(data) : data;
     if (msg.type === 'file-start') {
       _xferCurrentFile = msg.name;
       _xferReceiving[msg.name] = { meta: msg, chunks: [], received: 0 };
@@ -4214,20 +4204,20 @@ function hostOnMessage(ev) {
       document.getElementById('transferStatus').className = 'transfer-status receiving';
     } else if (msg.type === 'file-end') {
       finalizeReceivedFile(msg.name);
+    } else if (msg.type === 'progress') {
+      updateTransferFileItem(msg.name, msg.pct + '%');
+      document.getElementById('transferProgressBar').style.width = msg.pct + '%';
     } else if (msg.type === 'all-done') {
       document.getElementById('transferStatus').textContent = `✓ All files received!`;
       document.getElementById('transferStatus').className = 'transfer-status connected';
       toast('📲 Import complete — all files added to library!', 'success');
     }
-  } else {
-    // Binary chunk for current file
+  } else if (data instanceof ArrayBuffer || data instanceof Blob) {
+    // Binary chunk
     if (!_xferCurrentFile || !_xferReceiving[_xferCurrentFile]) return;
-    const state2 = _xferReceiving[_xferCurrentFile];
-    state2.chunks.push(ev.data);
-    state2.received += ev.data.byteLength;
-    const pct = Math.min(100, Math.round((state2.received / state2.meta.size) * 100));
-    updateTransferFileItem(_xferCurrentFile, pct + '%');
-    document.getElementById('transferProgressBar').style.width = pct + '%';
+    const s = _xferReceiving[_xferCurrentFile];
+    s.chunks.push(data);
+    s.received += (data.byteLength || data.size || 0);
   }
 }
 
@@ -4236,7 +4226,6 @@ async function finalizeReceivedFile(name) {
   if (!s) return;
   const blob = new Blob(s.chunks, { type: s.meta.mimeType || 'audio/mpeg' });
   const file  = new File([blob], s.meta.name, { type: blob.type });
-  // Re-use existing handleFileUpload logic
   const fakeEv = { target: { files: [file] } };
   await handleFileUpload(fakeEv);
   updateTransferFileItem(name, 'Done ✓', true);
@@ -4247,20 +4236,21 @@ function addTransferFileItem(name, status) {
   const list = document.getElementById('transferFileList');
   const el = document.createElement('div');
   el.className = 'transfer-file-item';
-  el.id = 'tfi-' + btoa(name).replace(/=/g,'');
+  el.id = 'tfi-' + btoa(unescape(encodeURIComponent(name))).replace(/[^a-zA-Z0-9]/g,'');
   el.innerHTML = `<span class="tfi-name">🎵 ${name}</span><span class="tfi-status">${status}</span>`;
   list.appendChild(el);
 }
 function updateTransferFileItem(name, status, done = false) {
-  const el = document.getElementById('tfi-' + btoa(name).replace(/=/g,''));
+  const el = document.getElementById('tfi-' + btoa(unescape(encodeURIComponent(name))).replace(/[^a-zA-Z0-9]/g,''));
   if (!el) return;
   const s = el.querySelector('.tfi-status');
   if (s) { s.textContent = status; if (done) s.classList.add('tfi-done'); }
 }
 
 // ── Build receiver page as a self-contained blob URL ─────────────────
-function buildReceiverPage(sessionId) {
-  const sigServer = SIGNAL_SERVER;
+// The receiver page uses PeerJS directly (loaded from CDN), connecting to
+// the host peer ID embedded in the page at QR-generation time.
+function buildReceiverPage(peerId) {
   const chunkSize = CHUNK_SIZE;
 
   const receiverHTML = `<!DOCTYPE html>
@@ -4276,16 +4266,15 @@ body{font-family:'Segoe UI',sans-serif;background:#0a0a0f;color:#f0f0ff;min-heig
 .sub{font-size:0.85rem;color:#9999bb;letter-spacing:2px;text-transform:uppercase}
 .card{background:#111118;border:1px solid rgba(139,92,246,0.3);border-radius:16px;padding:24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px;align-items:center}
 .status{font-size:0.9rem;color:#9999bb;text-align:center;line-height:1.5}
-.status.ok{color:#22c55e}
-.status.err{color:#ef4444}
+.status.ok{color:#22c55e}.status.err{color:#ef4444}
 .select-btn{background:linear-gradient(135deg,#00d4ff,#8b5cf6);border:none;border-radius:12px;padding:14px 28px;color:white;font-size:1rem;font-weight:700;cursor:pointer;width:100%;transition:opacity 0.2s}
 .select-btn:disabled{opacity:0.4;cursor:not-allowed}
 .select-btn:not(:disabled):hover{opacity:0.88}
 .file-list{width:100%;display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto}
 .file-row{background:#1a1a25;border:1px solid rgba(139,92,246,0.2);border-radius:8px;padding:8px 12px;font-size:0.8rem;display:flex;align-items:center;gap:8px}
-.file-row .fr-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.file-row .fr-st{font-size:0.65rem;color:#00d4ff;flex-shrink:0}
-.file-row .fr-done{color:#22c55e}
+.fr-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr-st{font-size:0.65rem;color:#00d4ff;flex-shrink:0}
+.fr-done{color:#22c55e}
 .progress{width:100%;height:5px;background:#22223a;border-radius:3px;overflow:hidden;display:none}
 .progress-bar{height:100%;background:linear-gradient(90deg,#00d4ff,#8b5cf6);width:0%;transition:width 0.15s}
 </style>
@@ -4294,104 +4283,81 @@ body{font-family:'Segoe UI',sans-serif;background:#0a0a0f;color:#f0f0ff;min-heig
 <div class="logo">AUDIX</div>
 <div class="sub">File Sender</div>
 <div class="card">
-  <div class="status" id="st">Connecting to ${location.hostname || 'host'}…</div>
+  <div class="status" id="st">Loading connection library…</div>
   <input type="file" id="fi" accept="audio/*,.mp3,.m4a,.flac,.wav,.ogg,.aac,.opus" multiple style="display:none">
   <button class="select-btn" id="selBtn" disabled onclick="document.getElementById('fi').click()">Select Music Files</button>
   <div class="progress" id="prog"><div class="progress-bar" id="progBar"></div></div>
   <div class="file-list" id="fileList"></div>
 </div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>
 <script>
-const SESSION = '${sessionId}';
-const SIG = '${sigServer}';
+const HOST_PEER_ID = '${peerId}';
 const CHUNK = ${chunkSize};
-let pc, dc, ws;
+let conn;
 
-function setStatus(msg, cls='') {
+function setStatus(msg, cls) {
   const el = document.getElementById('st');
   el.textContent = msg;
-  el.className = 'status' + (cls ? ' '+cls : '');
+  el.className = 'status' + (cls ? ' ' + cls : '');
 }
 
 function init() {
-  ws = new WebSocket(SIG);
-  pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-
-  pc.ondatachannel = e => {
-    dc = e.channel;
-    dc.binaryType = 'arraybuffer';
-    dc.onopen = () => {
+  setStatus('Connecting to Audix on Phone A…');
+  const peer = new Peer({ debug: 0 });
+  peer.on('open', () => {
+    conn = peer.connect(HOST_PEER_ID, { reliable: true });
+    conn.on('open', () => {
       setStatus('Connected! Select your music files.', 'ok');
       document.getElementById('selBtn').disabled = false;
-    };
-  };
-
-  pc.onicecandidate = e => {
-    if (e.candidate && ws.readyState === 1) {
-      ws.send(JSON.stringify({ type: 'ice', to: 'host-' + SESSION, candidate: e.candidate }));
+    });
+    conn.on('error', e => setStatus('Connection error: ' + e.message, 'err'));
+  });
+  peer.on('error', e => {
+    if (e.type === 'peer-unavailable') {
+      setStatus('Phone A not found — make sure the import screen is still open on Phone A.', 'err');
+    } else {
+      setStatus('Error: ' + e.message, 'err');
     }
-  };
-
-  ws.onopen = () => {
-    ws.send(JSON.stringify({ type: 'register', id: 'sender-' + SESSION }));
-    setStatus('Waiting for host offer…');
-  };
-
-  ws.onmessage = async ev => {
-    const msg = JSON.parse(ev.data);
-    if (msg.type === 'offer') {
-      await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      ws.send(JSON.stringify({ type: 'answer', to: 'host-' + SESSION, answer: pc.localDescription }));
-      setStatus('Exchanging connection details…');
-    } else if (msg.type === 'ice' && msg.candidate) {
-      try { await pc.addIceCandidate(new RTCIceCandidate(msg.candidate)); } catch(e) {}
-    }
-  };
-
-  ws.onerror = () => setStatus('Signaling error — try refreshing', 'err');
+  });
 }
 
 document.getElementById('fi').onchange = async e => {
   const files = [...e.target.files];
-  if (!files.length || !dc || dc.readyState !== 'open') return;
+  if (!files.length || !conn || conn.open === false) return;
   document.getElementById('selBtn').disabled = true;
   document.getElementById('prog').style.display = 'block';
   const list = document.getElementById('fileList');
 
   for (let i = 0; i < files.length; i++) {
     const f = files[i];
-    const rowId = 'fr' + i;
-    list.innerHTML += \`<div class="file-row" id="\${rowId}"><span class="fr-name">🎵 \${f.name}</span><span class="fr-st" id="st\${i}">Queued</span></div>\`;
+    const safeId = 'fr' + i;
+    list.innerHTML += \`<div class="file-row" id="\${safeId}"><span class="fr-name">🎵 \${f.name}</span><span class="fr-st" id="fst\${i}">Queued</span></div>\`;
     setStatus(\`Sending \${i+1}/\${files.length}: \${f.name}\`);
-    document.getElementById('st'+i).textContent = 'Sending…';
+    document.getElementById('fst' + i).textContent = 'Reading…';
 
-    // Send metadata first
-    dc.send(JSON.stringify({ type: 'file-start', name: f.name, size: f.size, mimeType: f.type }));
+    conn.send({ type: 'file-start', name: f.name, size: f.size, mimeType: f.type });
 
-    // Stream in chunks
     const ab = await f.arrayBuffer();
     let offset = 0;
     while (offset < ab.byteLength) {
-      // Throttle: wait for buffer to drain
-      while (dc.bufferedAmount > CHUNK * 8) {
-        await new Promise(r => setTimeout(r, 30));
-      }
       const chunk = ab.slice(offset, offset + CHUNK);
-      dc.send(chunk);
+      conn.send(chunk);
       offset += chunk.byteLength;
       const pct = Math.round((offset / ab.byteLength) * 100);
       document.getElementById('progBar').style.width = pct + '%';
-      document.getElementById('st'+i).textContent = pct + '%';
+      document.getElementById('fst' + i).textContent = pct + '%';
+      conn.send({ type: 'progress', name: f.name, pct });
+      // Small yield to keep UI responsive
+      if (offset % (CHUNK * 4) === 0) await new Promise(r => setTimeout(r, 10));
     }
 
-    dc.send(JSON.stringify({ type: 'file-end', name: f.name }));
-    document.getElementById('st'+i).textContent = '✓ Done';
-    document.getElementById('st'+i).classList.add('fr-done');
+    conn.send({ type: 'file-end', name: f.name });
+    document.getElementById('fst' + i).textContent = '✓ Done';
+    document.getElementById('fst' + i).className = 'fr-st fr-done';
   }
 
-  dc.send(JSON.stringify({ type: 'all-done' }));
-  setStatus('All files sent! Check Phone A.', 'ok');
+  conn.send({ type: 'all-done' });
+  setStatus('All files sent! You can close this page.', 'ok');
   document.getElementById('prog').style.display = 'none';
 };
 
@@ -4816,76 +4782,6 @@ Pick 6-8 songs that best match a ${_genMood} mood. Reply ONLY with JSON: [{"name
     btn.textContent = '🤖 Generate Playlist';
   }
 }
-
-// ========== CROSSFADE ENGINE ==========
-let _crossfadeEnabled = false;
-let _crossfadeAudio = null;
-let _crossfadeTimer = null;
-
-function toggleCrossfade(enabled) {
-  _crossfadeEnabled = enabled;
-  toast(enabled ? '🎚 Crossfade ON' : '🎚 Crossfade OFF', '');
-}
-
-function setupCrossfade() {
-  if (!_crossfadeEnabled) return;
-  const dur = parseInt(document.getElementById('crossfadeDur')?.value || 3);
-  const remaining = audio.duration - audio.currentTime;
-  if (remaining > dur + 1) {
-    _crossfadeTimer = setTimeout(() => startCrossfade(dur), (remaining - dur) * 1000);
-  }
-}
-
-function startCrossfade(dur) {
-  if (!_crossfadeEnabled || state.currentIdx < 0) return;
-  const nextIdx = state.shuffle
-    ? Math.floor(Math.random() * state.tracks.length)
-    : (state.currentIdx + 1) % state.tracks.length;
-  if (nextIdx === state.currentIdx) return;
-
-  const nextTrackObj = state.tracks[nextIdx];
-  if (!nextTrackObj?.url) return;
-
-  // Fade out current
-  const fadeSteps = dur * 10;
-  let step = 0;
-  const origVol = state.volume;
-  const fadeOut = setInterval(() => {
-    step++;
-    audio.volume = Math.max(0, origVol * (1 - step / fadeSteps));
-    if (step >= fadeSteps) { clearInterval(fadeOut); }
-  }, 100);
-
-  // Start next track with fade in
-  _crossfadeAudio = new Audio(nextTrackObj.url);
-  _crossfadeAudio.volume = 0;
-  _crossfadeAudio.play().catch(() => {});
-  let si = 0;
-  const fadeIn = setInterval(() => {
-    si++;
-    if (_crossfadeAudio) _crossfadeAudio.volume = Math.min(origVol, origVol * (si / fadeSteps));
-    if (si >= fadeSteps) {
-      clearInterval(fadeIn);
-      // Hand over to main player
-      audio.pause();
-      audio.volume = origVol;
-      playTrack(nextIdx);
-      _crossfadeAudio = null;
-    }
-  }, 100);
-}
-
-function clearCrossfadeTimer() {
-  if (_crossfadeTimer) { clearTimeout(_crossfadeTimer); _crossfadeTimer = null; }
-  if (_crossfadeAudio) { try { _crossfadeAudio.pause(); } catch(e){} _crossfadeAudio = null; }
-}
-
-// Hook into audio timeupdate to set crossfade timer when track starts
-audio.addEventListener('playing', () => {
-  clearCrossfadeTimer();
-  if (_crossfadeEnabled) setTimeout(setupCrossfade, 1000);
-});
-audio.addEventListener('pause', clearCrossfadeTimer);
 
 // ========== WAKE WORD DETECTION ==========
 let _wakeWordActive = false;
