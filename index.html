@@ -114,24 +114,7 @@ body{background:var(--bg);color:var(--text);transition:background 0.4s,color 0.4
 .tab-content::-webkit-scrollbar-track{background:transparent}
 .tab-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
-/* PLAYER TAB */
-.now-playing-hero{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:26px;display:flex;gap:24px;align-items:center;position:relative;overflow:hidden}
-.now-playing-hero::before{content:'';position:absolute;inset:0;background:var(--grad-r);opacity:0.06;pointer-events:none}
-.now-playing-hero::after{content:'';position:absolute;bottom:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,0.15),transparent 70%);pointer-events:none}
-.album-art-wrap{position:relative;flex-shrink:0}
-.album-art{width:140px;height:140px;border-radius:18px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(139,92,246,0.35)}
-.album-art img{width:100%;height:100%;object-fit:cover;border-radius:18px}
-.album-art .spin-ring{position:absolute;inset:-5px;border-radius:50%;border:2px solid transparent;border-top-color:var(--cyan);border-right-color:rgba(0,212,255,0.3);animation:spin 2s linear infinite;pointer-events:none;opacity:0}
-.album-art.playing .spin-ring{opacity:1}
-.album-art.playing{box-shadow:0 0 0 2px rgba(0,212,255,0.4), 0 8px 40px rgba(0,212,255,0.3)}
-.song-info{flex:1;min-width:0}
-.song-title{font-size:1.4rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
-.song-artist{color:var(--cyan);font-family:'Rajdhani';font-size:1.05rem;letter-spacing:1px;margin-top:5px;font-weight:600}
-.song-album{color:var(--text3);font-size:0.8rem;margin-top:3px;font-family:'Share Tech Mono'}
-.song-meta-tags{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-.tag{background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.25);border-radius:6px;padding:3px 9px;font-size:0.7rem;color:var(--text2);font-family:'Share Tech Mono'}
-.fav-btn{position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:1.2rem;cursor:pointer;transition:all 0.2s;width:36px;height:36px;display:flex;align-items:center;justify-content:center}
-.fav-btn.active,.fav-btn:hover{color:#ef4444;border-color:rgba(239,68,68,0.4);background:rgba(239,68,68,0.1);transform:scale(1.1)}
+/* PLAYER TAB — controls */
 .progress-section{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:20px 22px}
 .progress-times{display:flex;justify-content:space-between;font-family:'Share Tech Mono';font-size:0.78rem;color:var(--text2);margin-bottom:10px}
 .progress-bar{width:100%;height:5px;background:var(--bg4);border-radius:3px;cursor:pointer;position:relative;margin-bottom:2px}
@@ -279,6 +262,51 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 
 /* TOAST */
 #toast{position:fixed;bottom:24px;right:24px;z-index:9000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+
+/* ── REDESIGNED NOW-PLAYING HERO ── */
+.now-playing-hero{position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--border);min-height:200px;transition:border-color 0.6s}
+.hero-bg-blur{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(32px) brightness(0.35) saturate(1.6);transform:scale(1.1);transition:background-image 0.8s ease, opacity 0.6s;opacity:0.9;z-index:0}
+.hero-inner{position:relative;z-index:1;display:flex;gap:18px;align-items:center;padding:20px;background:linear-gradient(135deg,rgba(10,10,15,0.55),rgba(10,10,15,0.2))}
+.album-art-wrap{position:relative;flex-shrink:0}
+.album-art{width:120px;height:120px;border-radius:18px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 0 2px rgba(255,255,255,0.08);transition:box-shadow 0.6s}
+.album-art img.art-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:18px;z-index:1}
+.album-art .spin-ring{position:absolute;inset:-3px;border-radius:22px;border:2px solid transparent;border-top-color:var(--cyan);border-right-color:rgba(0,212,255,0.3);animation:spin 2s linear infinite;pointer-events:none;opacity:0;z-index:2}
+.album-art.playing .spin-ring{opacity:1}
+.album-art.playing{box-shadow:0 0 0 2px rgba(0,212,255,0.5),0 8px 40px rgba(0,212,255,0.25),0 0 60px rgba(139,92,246,0.2)}
+/* Reflection below art */
+.art-reflection{width:120px;height:30px;margin-top:6px;border-radius:0 0 18px 18px;background:linear-gradient(to bottom,rgba(255,255,255,0.08),transparent);filter:blur(4px);transform:scaleY(-0.4);opacity:0.4;pointer-events:none}
+.song-info{flex:1;min-width:0}
+.song-title{font-size:1.25rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;text-shadow:0 2px 8px rgba(0,0,0,0.5)}
+.song-artist{color:var(--cyan);font-family:'Rajdhani';font-size:1rem;letter-spacing:1px;margin-top:4px;font-weight:600;text-shadow:0 0 12px rgba(0,212,255,0.4)}
+.song-album{color:rgba(255,255,255,0.5);font-size:0.75rem;margin-top:3px;font-family:'Share Tech Mono'}
+.song-meta-tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.tag{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:2px 8px;font-size:0.68rem;color:rgba(255,255,255,0.7);font-family:'Share Tech Mono';backdrop-filter:blur(4px)}
+.fav-btn{position:absolute;top:14px;right:14px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:rgba(255,255,255,0.6);font-size:1.2rem;cursor:pointer;transition:all 0.2s;width:34px;height:34px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);z-index:2}
+.fav-btn.active,.fav-btn:hover{color:#ef4444;border-color:rgba(239,68,68,0.5);background:rgba(239,68,68,0.15)}
+
+/* Dynamic theme accent from album art */
+.now-playing-hero.themed{border-color:var(--accent-color, var(--border))}
+
+/* Shake indicator toast */
+.shake-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:rgba(0,0,0,0.85);border:1px solid var(--cyan);border-radius:16px;padding:16px 28px;font-size:1.1rem;font-weight:700;color:var(--cyan);font-family:'Rajdhani';letter-spacing:2px;text-align:center;pointer-events:none;animation:shakeToast 1.5s ease forwards}
+@keyframes shakeToast{0%{opacity:0;transform:translate(-50%,-50%) scale(0.8)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}85%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(0.95)}}
+
+/* Swipe gesture overlay hint */
+.swipe-hint{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9998;pointer-events:none;font-size:2.5rem;opacity:0;transition:opacity 0.15s}
+.swipe-hint.show{opacity:1}
+
+/* History */
+.history-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;cursor:pointer;transition:all 0.2s;border:1px solid transparent;background:var(--glass);position:relative}
+.history-item:hover{background:var(--bg4);border-color:var(--border)}
+.history-time{font-size:0.65rem;font-family:'Share Tech Mono';color:var(--text3);white-space:nowrap}
+.history-num{font-size:0.65rem;color:var(--text3);font-family:'Share Tech Mono';width:20px;text-align:center;flex-shrink:0}
+
+@media(max-width:600px){
+  .album-art{width:100px;height:100px;font-size:2.5rem}
+  .art-reflection{width:100px}
+  .song-title{font-size:1.1rem}
+  .hero-inner{padding:14px;gap:14px}
+}
 .toast-item{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 18px;font-size:0.85rem;color:var(--text);box-shadow:var(--glow2);animation:toastIn 0.3s ease,toastOut 0.3s ease 2.7s forwards;display:flex;align-items:center;gap:10px;font-family:'Rajdhani';font-weight:600;letter-spacing:0.5px}
 .toast-item.success{border-color:rgba(34,197,94,0.4)}
 .toast-item.error{border-color:rgba(239,68,68,0.4)}
@@ -353,37 +381,16 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .offset-reset{color:var(--text3);font-size:0.85rem;padding:3px 7px}
 .offset-value{font-family:'Share Tech Mono';font-size:0.78rem;color:var(--cyan);min-width:38px;text-align:center;font-weight:700}
 
-/* RESPONSIVE */
 @media(max-width:600px){
   .sidebar{display:none}
   .bottom-nav{display:flex}
-  /* Full-height scrollable player tab */
   .tab-content{padding:12px 12px 90px;gap:10px}
   .topbar{padding:8px 12px}
-
-  /* Compact now-playing hero — horizontal on mobile */
-  .now-playing-hero{flex-direction:row;text-align:left;padding:14px;gap:12px;align-items:center}
-  .album-art{width:72px;height:72px;font-size:2rem;border-radius:12px}
-  .song-title{font-size:1rem}
-  .song-artist{font-size:0.9rem}
-  .song-album{font-size:0.72rem}
-  .song-meta-tags{gap:5px;margin-top:6px}
-  .tag{font-size:0.62rem;padding:2px 6px}
-  .fav-btn{top:10px;right:10px;width:30px;height:30px;font-size:1rem}
-
-  /* Pipeline collapsed by default on mobile — user can expand */
   #pipelineStages{display:none}
-
-  /* Lyrics smaller */
-  .lyrics-body{max-height:200px}
-  .lyrics-panel{font-size:0.9rem}
-
-  /* Visualizer shorter */
+  .lyrics-body{max-height:220px}
   #vizCanvas{height:120px}
   .viz-types{flex-wrap:wrap;gap:4px}
   .visualizer-section{font-size:0.85rem}
-
-  /* Progress section tighter */
   .progress-section{padding:14px 16px}
   .controls{gap:8px;margin-top:10px}
   .play-btn{width:52px;height:52px;font-size:1.3rem}
@@ -391,12 +398,8 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
   .volume-row{margin-top:10px}
   .audio-quality-row{gap:5px;flex-wrap:wrap}
   .aq-btn{padding:3px 8px;font-size:0.65rem}
-
-  /* Meta/search grids */
   .meta-grid{grid-template-columns:1fr}
   .eq-bars{height:140px}
-
-  /* Toast bottom margin above nav */
   #toast{bottom:80px}
 }
 </style>
@@ -431,6 +434,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
       <div class="sidebar-section">Navigation</div>
       <div class="nav-item active" onclick="openTab('player')" id="nav-player"><span class="nav-icon">🎵</span>Player</div>
       <div class="nav-item" onclick="openTab('library')" id="nav-library"><span class="nav-icon">📚</span>Library</div>
+      <div class="nav-item" onclick="openTab('history')" id="nav-history"><span class="nav-icon">🕓</span>History</div>
       <div class="nav-item" onclick="openTab('search')" id="nav-search"><span class="nav-icon">🔍</span>Search</div>
       <div class="nav-item" onclick="openTab('equalizer')" id="nav-equalizer"><span class="nav-icon">🎛</span>Equalizer</div>
       <div class="sidebar-bottom">
@@ -442,24 +446,63 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
     <div class="main">
       <!-- PLAYER TAB -->
       <div class="tab-content active" id="tab-player">
-        <div class="now-playing-hero">
-          <div class="album-art-wrap">
-            <div class="album-art" id="albumArt">
-              <div class="spin-ring"></div>
-              <span id="albumEmoji">🎵</span>
+
+        <!-- HERO: full-width art + dynamic background -->
+        <div class="now-playing-hero" id="nowPlayingHero">
+          <div class="hero-bg-blur" id="heroBgBlur"></div>
+          <div class="hero-inner">
+            <div class="album-art-wrap">
+              <div class="album-art" id="albumArt">
+                <div class="spin-ring"></div>
+                <span id="albumEmoji">🎵</span>
+              </div>
+              <div class="art-reflection" id="artReflection"></div>
             </div>
-          </div>
-          <div class="song-info">
-            <div class="song-title" id="songTitle">No Track Selected</div>
-            <div class="song-artist" id="songArtist">Choose a song from Library</div>
-            <div class="song-album" id="songAlbum">—</div>
-            <div class="song-meta-tags" id="songMetaTags">
-              <span class="tag" id="tagGenre">Genre: —</span>
-              <span class="tag" id="tagYear">Year: —</span>
-              <span class="tag" id="tagBpm">BPM: —</span>
+            <div class="song-info">
+              <div class="song-title" id="songTitle">No Track Selected</div>
+              <div class="song-artist" id="songArtist">Choose a song from Library</div>
+              <div class="song-album" id="songAlbum">—</div>
+              <div class="song-meta-tags">
+                <span class="tag" id="tagGenre">Genre: —</span>
+                <span class="tag" id="tagYear">Year: —</span>
+                <span class="tag" id="tagBpm">BPM: —</span>
+              </div>
             </div>
+            <button class="fav-btn" id="favBtn" onclick="toggleFav()">♡</button>
           </div>
-          <button class="fav-btn" id="favBtn" onclick="toggleFav()">♡</button>
+        </div>
+
+        <!-- PROGRESS + CONTROLS (sticky at readable position) -->
+        <div class="progress-section">
+          <div class="progress-times">
+            <span id="curTime">0:00</span>
+            <span id="durTime">0:00</span>
+          </div>
+          <div class="progress-bar" id="progressBar" onclick="seekTrack(event)">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="controls">
+            <button class="ctrl-btn" onclick="toggleShuffle()" id="shuffleBtn" title="Shuffle">🔀</button>
+            <button class="ctrl-btn" onclick="prevTrack()" title="Previous">⏮</button>
+            <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+            <button class="ctrl-btn" onclick="nextTrack()" title="Next">⏭</button>
+            <button class="ctrl-btn" onclick="toggleRepeat()" id="repeatBtn" title="Repeat">🔁</button>
+          </div>
+          <div class="volume-row">
+            <span class="volume-icon" id="volIcon">🔊</span>
+            <div class="volume-bar" id="volumeBar" onclick="setVolume(event)">
+              <div class="volume-fill" id="volumeFill"></div>
+            </div>
+            <span style="font-size:0.75rem;font-family:'Share Tech Mono';color:var(--text2)" id="volPct">70%</span>
+          </div>
+          <div class="audio-quality-row">
+            <span style="font-size:0.75rem;font-family:'Share Tech Mono';color:var(--text3)">Quality:</span>
+            <button class="aq-btn active" onclick="setQuality('MP3')">MP3</button>
+            <button class="aq-btn" onclick="setQuality('AAC')">AAC</button>
+            <button class="aq-btn" onclick="setQuality('FLAC')">FLAC</button>
+            <button class="aq-btn" onclick="setQuality('HI-RES')">HI-RES</button>
+            <button class="aq-btn" onclick="setQuality('LOSSLESS')">LOSSLESS</button>
+          </div>
         </div>
 
         <!-- IDENTIFICATION PIPELINE -->
@@ -494,7 +537,6 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
             <div class="lyrics-title">🎤 Lyrics <span class="lyrics-sync-badge" id="lyricsSyncBadge" style="display:none">SYNCED</span></div>
             <button class="lyrics-fetch-btn" id="lyricsFetchBtn" onclick="triggerIdentification()" disabled>Identify Track</button>
           </div>
-          <!-- Sync offset controls — only shown when synced lyrics are active -->
           <div class="lyrics-offset-bar" id="lyricsOffsetBar" style="display:none">
             <span class="offset-label">Sync offset</span>
             <button class="offset-btn" onclick="adjustLyricsOffset(-0.5)">−0.5s</button>
@@ -521,38 +563,6 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
             <button class="fullscreen-viz-btn" onclick="openFullViz()">⛶ Fullscreen</button>
           </div>
           <canvas id="vizCanvas"></canvas>
-        </div>
-
-        <div class="progress-section">
-          <div class="progress-times">
-            <span id="curTime">0:00</span>
-            <span id="durTime">0:00</span>
-          </div>
-          <div class="progress-bar" id="progressBar" onclick="seekTrack(event)">
-            <div class="progress-fill" id="progressFill"></div>
-          </div>
-          <div class="controls">
-            <button class="ctrl-btn" onclick="toggleShuffle()" id="shuffleBtn" title="Shuffle">🔀</button>
-            <button class="ctrl-btn" onclick="prevTrack()" title="Previous">⏮</button>
-            <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
-            <button class="ctrl-btn" onclick="nextTrack()" title="Next">⏭</button>
-            <button class="ctrl-btn" onclick="toggleRepeat()" id="repeatBtn" title="Repeat">🔁</button>
-          </div>
-          <div class="volume-row">
-            <span class="volume-icon" id="volIcon">🔊</span>
-            <div class="volume-bar" id="volumeBar" onclick="setVolume(event)">
-              <div class="volume-fill" id="volumeFill"></div>
-            </div>
-            <span style="font-size:0.75rem;font-family:'Share Tech Mono';color:var(--text2)" id="volPct">70%</span>
-          </div>
-          <div class="audio-quality-row">
-            <span style="font-size:0.75rem;font-family:'Share Tech Mono';color:var(--text3)">Quality:</span>
-            <button class="aq-btn active" onclick="setQuality('MP3')">MP3</button>
-            <button class="aq-btn" onclick="setQuality('AAC')">AAC</button>
-            <button class="aq-btn" onclick="setQuality('FLAC')">FLAC</button>
-            <button class="aq-btn" onclick="setQuality('HI-RES')">HI-RES</button>
-            <button class="aq-btn" onclick="setQuality('LOSSLESS')">LOSSLESS</button>
-          </div>
         </div>
       </div>
 
@@ -657,6 +667,17 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
           </div>
         </div>
       </div>
+      <!-- HISTORY TAB -->
+      <div class="tab-content" id="tab-history">
+        <div class="lib-header">
+          <div class="lib-title">Recently Played</div>
+          <button onclick="clearHistory()" style="background:none;border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:6px 12px;color:#ef4444;cursor:pointer;font-size:0.75rem;font-family:'Share Tech Mono'">Clear</button>
+        </div>
+        <div id="historyList" class="track-list">
+          <div class="lyrics-idle" style="padding:40px">No history yet — start playing music 🎵</div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -669,6 +690,10 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
     <div class="bn-item" id="bn-library" onclick="openTab('library')">
       <span class="bn-icon">📚</span>
       <span>Library</span>
+    </div>
+    <div class="bn-item" id="bn-history" onclick="openTab('history')">
+      <span class="bn-icon">🕓</span>
+      <span>History</span>
     </div>
     <div class="bn-item" id="bn-search" onclick="openTab('search')">
       <span class="bn-icon">🔍</span>
@@ -983,6 +1008,9 @@ function showApp() {
   try { renderTrackList(); } catch(e) {}
   try { renderPlaylists(); } catch(e) {}
   try { updateStorageInfo(); } catch(e) {}
+  try { initShake(); } catch(e) {}
+  try { initSwipeGestures(); } catch(e) {}
+  try { fixAutoRotate(); } catch(e) {}
 }
 
 async function startLoader() {
@@ -1060,6 +1088,7 @@ function openTab(tab) {
   if(navEl) navEl.classList.add('active');
   const bnEl = document.getElementById('bn-'+tab);
   if(bnEl) bnEl.classList.add('active');
+  if (tab === 'history') renderHistory();
 }
 
 
@@ -1119,22 +1148,68 @@ function applyArt(trackId, dataUrl) {
 function setPlayerArt(dataUrl) {
   const emoji = document.getElementById('albumEmoji');
   const art   = document.getElementById('albumArt');
+  const heroBg = document.getElementById('heroBgBlur');
+  const reflection = document.getElementById('artReflection');
+
   if (dataUrl) {
     emoji.style.display = 'none';
-    // Remove old img if any
     let img = art.querySelector('img.art-img');
     if (!img) {
       img = document.createElement('img');
       img.className = 'art-img';
-      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:1';
       art.appendChild(img);
     }
     img.src = dataUrl;
+    // Dynamic background blur from album art
+    heroBg.style.backgroundImage = `url(${dataUrl})`;
+    heroBg.style.opacity = '0.9';
+    // Reflection
+    reflection.style.backgroundImage = `url(${dataUrl})`;
+    reflection.style.backgroundSize = 'cover';
+    reflection.style.opacity = '0.35';
+    // Extract dominant color for accent (canvas trick)
+    extractDominantColor(dataUrl);
   } else {
     emoji.style.display = '';
     const img = art.querySelector('img.art-img');
     if (img) img.remove();
+    heroBg.style.backgroundImage = 'none';
+    heroBg.style.opacity = '0.5';
+    reflection.style.backgroundImage = 'none';
+    document.documentElement.style.removeProperty('--accent-color');
   }
+}
+
+function extractDominantColor(dataUrl) {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 16; // tiny for speed
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, 16, 16);
+      const d = ctx.getImageData(0, 0, 16, 16).data;
+      let r = 0, g = 0, b = 0, count = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        // Skip very dark or very light pixels
+        const brightness = (d[i] + d[i+1] + d[i+2]) / 3;
+        if (brightness > 30 && brightness < 220) {
+          r += d[i]; g += d[i+1]; b += d[i+2]; count++;
+        }
+      }
+      if (count > 0) {
+        r = Math.round(r / count);
+        g = Math.round(g / count);
+        b = Math.round(b / count);
+        const accent = `rgb(${r},${g},${b})`;
+        document.documentElement.style.setProperty('--accent-color', accent);
+        document.getElementById('nowPlayingHero').style.borderColor = `rgba(${r},${g},${b},0.5)`;
+        document.getElementById('nowPlayingHero').style.boxShadow = `0 0 40px rgba(${r},${g},${b},0.15)`;
+      }
+    };
+    img.src = dataUrl;
+  } catch(e) {}
 }
 function handleFileUpload(e) {
   const files = Array.from(e.target.files);
@@ -1222,6 +1297,7 @@ async function playTrack(idx) {
   if(idx<0||idx>=state.tracks.length) return;
   state.currentIdx = idx;
   const track = state.tracks[idx];
+  addToHistory(track);
   if(!track.url) {
     toast('Track file unavailable — try re-adding it to the library','error');
     return;
@@ -2537,6 +2613,158 @@ if('launchQueue' in window){
         }
       } catch(e){ console.log('[Audix] File handle error', e); }
     }
+  });
+}
+
+// ========== HISTORY ==========
+let _playHistory = JSON.parse(localStorage.getItem('audix_history') || '[]');
+
+function addToHistory(track) {
+  if (!track) return;
+  // Remove existing entry for same track
+  _playHistory = _playHistory.filter(h => h.id !== track.id);
+  _playHistory.unshift({ id: track.id, name: track.name, artist: track.artist, emoji: track.emoji, playedAt: Date.now() });
+  if (_playHistory.length > 20) _playHistory = _playHistory.slice(0, 20);
+  localStorage.setItem('audix_history', JSON.stringify(_playHistory));
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (!list) return;
+  if (!_playHistory.length) {
+    list.innerHTML = '<div class="lyrics-idle" style="padding:40px">No history yet — start playing music 🎵</div>';
+    return;
+  }
+  list.innerHTML = _playHistory.map((h, i) => {
+    const art = _artCache.get(String(h.id));
+    const thumb = art ? `<img src="${art}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">` : (h.emoji || '🎵');
+    const ago = formatAgo(h.playedAt);
+    const trackIdx = state.tracks.findIndex(t => t.id === h.id);
+    return `<div class="history-item" onclick="${trackIdx >= 0 ? `playTrack(${trackIdx})` : ''}">
+      <span class="history-num">${i + 1}</span>
+      <div class="track-thumb" style="flex-shrink:0">${thumb}</div>
+      <div class="track-info">
+        <div class="track-name">${h.name}</div>
+        <div class="track-artist">${h.artist || 'Unknown Artist'}</div>
+      </div>
+      <span class="history-time">${ago}</span>
+    </div>`;
+  }).join('');
+}
+
+function formatAgo(ts) {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function clearHistory() {
+  _playHistory = [];
+  localStorage.removeItem('audix_history');
+  renderHistory();
+  toast('History cleared', '');
+}
+
+// ========== SHAKE TO SHUFFLE ==========
+let _lastShake = 0;
+let _shakeBuffer = [];
+
+function initShake() {
+  if (!window.DeviceMotionEvent) return;
+  // iOS 13+ requires permission
+  if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    // We'll request on first user gesture to avoid blocking
+    document.addEventListener('click', async function requestOnce() {
+      try { await DeviceMotionEvent.requestPermission(); } catch(e) {}
+      document.removeEventListener('click', requestOnce);
+    }, { once: true });
+  }
+  window.addEventListener('devicemotion', e => {
+    const acc = e.accelerationIncludingGravity;
+    if (!acc) return;
+    const total = Math.abs(acc.x || 0) + Math.abs(acc.y || 0) + Math.abs(acc.z || 0);
+    _shakeBuffer.push({ t: Date.now(), v: total });
+    _shakeBuffer = _shakeBuffer.filter(s => Date.now() - s.t < 600);
+    const max = Math.max(..._shakeBuffer.map(s => s.v));
+    const min = Math.min(..._shakeBuffer.map(s => s.v));
+    if ((max - min) > 40 && Date.now() - _lastShake > 1500) {
+      _lastShake = Date.now();
+      onShakeDetected();
+    }
+  });
+}
+
+function onShakeDetected() {
+  if (!state.tracks.length) return;
+  // Pick a random track different from current
+  let next;
+  do { next = Math.floor(Math.random() * state.tracks.length); }
+  while (next === state.currentIdx && state.tracks.length > 1);
+  // Show shake toast
+  const el = document.createElement('div');
+  el.className = 'shake-toast';
+  el.textContent = '🎲 Shuffle!';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1600);
+  playTrack(next);
+}
+
+// ========== SWIPE GESTURES ==========
+function initSwipeGestures() {
+  const playerTab = document.getElementById('tab-player');
+  let startX = 0, startY = 0, startT = 0;
+  const hint = document.createElement('div');
+  hint.className = 'swipe-hint';
+  document.body.appendChild(hint);
+
+  playerTab.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    startT = Date.now();
+  }, { passive: true });
+
+  playerTab.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    const dt = Date.now() - startT;
+    // Must be fast (<300ms), mostly horizontal, and >60px
+    if (dt > 300 || Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.8) return;
+    if (dx < 0) {
+      // Swipe left → next track
+      hint.textContent = '⏭';
+      hint.classList.add('show');
+      setTimeout(() => hint.classList.remove('show'), 400);
+      nextTrack();
+    } else {
+      // Swipe right → prev track
+      hint.textContent = '⏮';
+      hint.classList.add('show');
+      setTimeout(() => hint.classList.remove('show'), 400);
+      prevTrack();
+    }
+  }, { passive: true });
+}
+
+// ========== FIX AUTO-ROTATE ==========
+function fixAutoRotate() {
+  // Lock orientation to portrait if Screen Orientation API available
+  try {
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('portrait').catch(() => {});
+    }
+  } catch(e) {}
+  // Prevent layout breaks on rotate by recalculating canvas sizes
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      const c = document.getElementById('vizCanvas');
+      if (c) { c.width = c.offsetWidth; c.height = c.offsetHeight; }
+      const cf = document.getElementById('vizFull');
+      if (cf) { cf.width = cf.offsetWidth; cf.height = cf.offsetHeight; }
+    }, 200);
   });
 }
 
