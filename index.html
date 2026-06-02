@@ -744,7 +744,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
   <div class="topbar">
     <div class="topbar-logo">AUDIX<span>MUSIC PLAYER</span></div>
     <div class="topbar-actions">
-      <button class="icon-btn" onclick="openApiKeyModal()" id="apiKeyBtn" title="AI Provider Keys" style="position:relative">🔑<span id="apiKeyDot" style="display:none;position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:#22c55e"></span></button>
+      <button class="icon-btn" onclick="openApiKeyModal()" id="apiKeyBtn" title="Set Groq API Key" style="position:relative">🔑<span id="apiKeyDot" style="display:none;position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:#22c55e"></span></button>
       <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
       <button class="icon-btn" onclick="openTab('search')">🔍</button>
       <div style="display:flex;align-items:center;gap:5px;padding:6px 10px;background:var(--glass);border:1px solid var(--border);border-radius:10px;cursor:pointer" onclick="toggleWakeWord()" title="Always-on wake word: say 'Hey Audix'">
@@ -2003,82 +2003,32 @@ function extractDominantColor(dataUrl) {
 }
 function handleFileUpload(e) {
   const files = Array.from(e.target.files);
+  let done = 0;
   if (!files.length) return;
   toast(`Saving ${files.length} track${files.length>1?'s':''} offline…`, '');
 
-  let done = 0;
-
   files.forEach((file, fi) => {
-    const url     = URL.createObjectURL(file);
+    const url  = URL.createObjectURL(file);
     const rawName = file.name.replace(/\.[^.]+$/, '');
-    const id      = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
 
-    // Placeholder track shown instantly — will be enriched by ID3 + AI below
+    // Instantly apply local regex cleaner so names look clean from the start
+    const cleaned = localCleanTitle(rawName);
+    const id = Date.now() + Math.random();
     const track = {
       id,
-      name:     rawName,
-      artist:   'Unknown Artist',
-      album:    'Unknown Album',
+      name:   cleaned.title || rawName,
+      artist: cleaned.artist || 'Unknown Artist',
+      album:  'Unknown Album',
       url,
       duration: 0,
-      emoji:    randomMusicEmoji(),
+      emoji:  randomMusicEmoji(),
       genre: '—', year: '—', bpm: '—',
       _order: state.tracks.length + fi
     };
     _fileMap.set(String(id), file);
 
-    // ── Step A: get duration (non-blocking) ──
     const tempAudio = new Audio(url);
-    const onDuration = () => { track.duration = tempAudio.duration || 0; };
-    tempAudio.onloadedmetadata = onDuration;
-
-    // ── Step B: read embedded ID3 tags immediately ──
-    const applyID3 = async () => {
-      try {
-        const id3 = await readID3Tags(file);
-
-        // Title — trust embedded tag if present and not obviously junk
-        if (id3.title && id3.title.trim().length > 0) {
-          track.name = id3.title.trim();
-        }
-        // Artist — trust embedded tag
-        if (id3.artist && id3.artist.trim().length > 0) {
-          track.artist = id3.artist.trim();
-        }
-        // Album
-        if (id3.album && id3.album.trim().length > 0 && !/^unknown/i.test(id3.album.trim())) {
-          track.album = id3.album.trim();
-        }
-        // Year
-        if (id3.year) track.year = String(id3.year);
-
-        // Cover art — convert picture blob to data URL and store
-        if (id3.picture) {
-          try {
-            const bytes = new Uint8Array(id3.picture.data);
-            let binary = '';
-            bytes.forEach(b => binary += String.fromCharCode(b));
-            const b64     = btoa(binary);
-            const dataUrl = `data:${id3.picture.format};base64,${b64}`;
-            _artCache.set(String(id), dataUrl);
-            idbSaveArt(id, dataUrl).catch(() => {});
-            applyArt(id, dataUrl);
-          } catch(artErr) { /* ignore art error */ }
-        }
-
-        renderTrackList();
-        updatePlayerUI();
-      } catch(id3Err) {
-        // No ID3 tags — fall back to filename parsing
-        const cleaned = localCleanTitle(rawName);
-        if (cleaned.title) track.name   = cleaned.title;
-        if (cleaned.artist && cleaned.artist !== 'Unknown Artist') track.artist = cleaned.artist;
-      }
-    };
-
-    // ── Step C: persist to IndexedDB then show in UI ──
     const finish = async () => {
-      await applyID3(); // always wait for ID3 before saving so we store correct data
       try {
         await idbSaveAudio(id, file);
         const meta = { ...track }; delete meta.url;
@@ -2089,54 +2039,44 @@ function handleFileUpload(e) {
       state.tracks.push(track);
       renderTrackList();
       updateStorageInfo();
-      done++;
 
+      // Extract album art in background (non-blocking)
+      extractArtFromFile(file).then(dataUrl => {
+        if (dataUrl) {
+          idbSaveArt(id, dataUrl).catch(() => {});
+          applyArt(id, dataUrl);
+        }
+      });
+
+      done++;
       if (done === files.length) {
         toast(`✓ ${done} track${done>1?'s':''} saved — available offline!`, 'success');
-
-        // ── Step D: AI enrichment pass — only for tracks still missing title/artist ──
-        // AI is only used when ID3 tags are absent or generic (e.g. "Track 01", "Unknown")
+        // Background AI clean for all newly added tracks (non-blocking)
+        // Stagger requests to avoid hammering the API
         files.forEach((_, i) => {
           const t = state.tracks[state.tracks.length - files.length + i];
           if (!t) return;
-
-          const needsAI = !t.name || /^track\s*\d+$/i.test(t.name) || t.name === rawName ||
-                          !t.artist || t.artist === 'Unknown Artist';
-          if (!needsAI) return; // ID3 tags were good — skip AI
-
           const rawFile = _fileMap.get(String(t.id));
-          const rawInput = rawFile ? rawFile.name.replace(/\.[^.]+$/, '') : t.name;
-
+          const raw = rawFile ? rawFile.name.replace(/\.[^.]+$/, '') : t.name;
           setTimeout(async () => {
             try {
-              const aiResult = await aiCleanTitle(rawInput);
-              let changed = false;
-              // Only apply AI title if track still has no good title from ID3
-              if (aiResult && aiResult.title && (!t.name || t.name === rawName || /^track\s*\d+$/i.test(t.name))) {
-                t.name = aiResult.title; changed = true;
-              }
-              // Only apply AI artist if still unknown
-              if (aiResult && aiResult.artist && (!t.artist || t.artist === 'Unknown Artist')) {
-                t.artist = aiResult.artist; changed = true;
-              }
-              if (changed) {
-                const m = { ...t }; delete m.url;
+              const aiResult = await aiCleanTitle(raw);
+              if (aiResult && aiResult.title && aiResult.title !== t.name) {
+                t.name   = aiResult.title;
+                if (aiResult.artist) t.artist = aiResult.artist;
+                const m = {...t}; delete m.url;
                 await idbSaveMeta(m).catch(() => {});
                 renderTrackList();
                 if (state.currentIdx >= 0 && state.tracks[state.currentIdx].id === t.id)
                   updatePlayerUI();
               }
-            } catch(aiErr) { /* silent — local + ID3 already applied */ }
-          }, i * 600);
+            } catch(e) { /* silent fail — local clean already applied */ }
+          }, i * 600); // 600ms stagger between tracks
         });
       }
     };
-
-    // Kick off: wait a tick for audio element to try loading, then finish regardless
-    tempAudio.onloadedmetadata = () => { onDuration(); finish(); };
+    tempAudio.onloadedmetadata = () => { track.duration = tempAudio.duration; finish(); };
     tempAudio.onerror = () => finish();
-    // Safety: if metadata never fires (some formats), finish after 2s
-    setTimeout(() => { if (!state.tracks.find(t => t.id === id)) finish(); }, 2000);
   });
   e.target.value = '';
 }
@@ -3450,36 +3390,42 @@ async function aiCleanTitle(rawName) {
   // Always compute local result as guaranteed baseline
   const localResult = localCleanTitle(rawName);
   try {
-    const prompt = `You are a music metadata extractor. Given a raw song filename or title string, extract the clean song title and the artist name.
+    const prompt = `You are a music metadata extractor. Given a raw song filename or title string, extract the clean song title and artist name.
 
-CRITICAL RULES:
-1. Filenames are almost always formatted as: ARTIST - TITLE (artist on LEFT, title on RIGHT of separator).
-   Examples: "Ed Sheeran - Shape Of You" => artist=Ed Sheeran, title=Shape Of You
-             "Eminem - Lose Yourself"     => artist=Eminem, title=Lose Yourself
-   NEVER swap them. The part before " - " is ALWAYS the artist; after is the title.
-2. If there is NO separator and it is a standalone song name, put it in title, leave artist blank.
-3. Strip junk words from title: lyrics, lyric video, audio, video, official, music video, hd, hq, 4k, vevo, visualizer, remastered, slowed, reverb, nightcore, explicit, clean, radio edit, extended, instrumental, YouTube, Spotify, SoundCloud.
-4. Strip download counters: (0), (1), (2) etc. at the very end.
-5. Strip leading track numbers: "01 ", "02 - ", etc.
-6. Replace underscores with spaces.
-7. Use Title Case for both title and artist.
-8. Common separators: " - ", " \u2013 ", " \u2014 ", "_-_".
+Rules:
+- Replace underscores with spaces
+- Remove ALL descriptor/junk words whether inside brackets or bare at the end of the string. This includes: lyrics, lyric video, audio, video, official, official audio, official video, official music video, music video, hd, hq, 4k, vevo, visualizer, remastered, slowed, reverb, nightcore, explicit, clean, radio edit, extended, instrumental
+- IMPORTANT: "song title lyrics" → title is "song title" (strip bare "lyrics" even without brackets)
+- IMPORTANT: "song title audio" → title is "song title" (strip bare "audio" even without brackets)
+- Remove platform tags: YouTube, Vevo, Spotify, SoundCloud
+- Remove leading track numbers like "01 ", "02 - "
+- Remove download counter suffixes like (0), (1), (2) at the end
+- Remove trailing/leading whitespace and punctuation
+- Common artist-title separators: " - ", " – ", " — ", "_-_"
+- If no artist separator is found, put everything cleaned in title and leave artist empty
 
 Examples:
-- "it will rain lyrics" => {"title":"It Will Rain","artist":""}
-- "Bruno Mars - it will rain lyrics" => {"title":"It Will Rain","artist":"Bruno Mars"}
-- "01 Shape Of You Official Audio" => {"title":"Shape Of You","artist":""}
-- "Ed Sheeran - Shape Of You (Official Music Video)" => {"title":"Shape Of You","artist":"Ed Sheeran"}
-- "Eminem_Lose_Yourself" => {"title":"Lose Yourself","artist":"Eminem"}
-- "Queen - Bohemian Rhapsody (Official Video)" => {"title":"Bohemian Rhapsody","artist":"Queen"}
+- "it will rain lyrics" → {"title": "It Will Rain", "artist": ""}
+- "Bruno Mars - it will rain lyrics" → {"title": "It Will Rain", "artist": "Bruno Mars"}
+- "01 Shape Of You Official Audio" → {"title": "Shape Of You", "artist": ""}
+- "Ed Sheeran - Shape Of You (Official Music Video)" → {"title": "Shape Of You", "artist": "Ed Sheeran"}
 
 Input: "${rawName}"
 
-Respond with ONLY a JSON object, no markdown, no explanation:
-{"title":"Clean Song Title","artist":"Artist Name or empty string"}`;
+Respond with ONLY a JSON object, no explanation:
+{"title": "Clean Song Title", "artist": "Artist Name or empty string"}`;
 
-    if (!_anyAIKeySet()) return localResult;
-    const text = await callClaude([{ role: 'user', content: prompt }], 150);
+    const _tkey = getGroqKey();
+    if (!_tkey) return localResult;
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _tkey },
+      body: JSON.stringify({ model: GROQ_MODEL, max_tokens: 150, messages: [{ role: 'user', content: prompt }] })
+    });
+    if (!resp.ok) return localResult;
+    const data = await resp.json();
+    const text = (data.choices?.[0]?.message?.content || '').trim();
+    // Strip any markdown fences just in case
     const clean = text.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
     if (parsed.title) return { title: parsed.title.trim(), artist: (parsed.artist || '').trim() };
@@ -3500,72 +3446,22 @@ async function triggerIdentification() {
   resetPipeline();
 
   try {
-    // ── Stage 1: ID3 tags (primary) then AI cleanup (fallback) ──
+    // ── Stage 1: AI Title Cleaner ──
     stageSet('ai', 'loading', '');
-    pipelineStatus('Reading ID3 tags…');
+    pipelineStatus('AI cleaning title…');
 
+    // Use the original file reference if available (has the raw filename with junk words).
+    // If not (e.g. re-identify after page reload), use track.name but run it through
+    // localCleanTitle first so stored junk like "lyrics" at the end is stripped before AI sees it.
     const file = _fileMap.get(String(track.id)) || null;
-    let cleanTitle  = track.name;
-    let cleanArtist = track.artist || '';
+    const rawName = file ? file.name.replace(/\.[^.]+$/, '') : track.name;
+    const aiResult = await aiCleanTitle(rawName).catch(() => localCleanTitle(rawName));
+    let cleanTitle, cleanArtist;
 
-    // Always try to read the embedded ID3 tags first — they are ground truth
-    if (file) {
-      try {
-        const id3 = await readID3Tags(file);
-
-        // Title from tag
-        if (id3.title && id3.title.trim().length > 0) {
-          cleanTitle = id3.title.trim();
-        }
-        // Artist from tag
-        if (id3.artist && id3.artist.trim().length > 0) {
-          cleanArtist = id3.artist.trim();
-        }
-        // Album from tag
-        if (id3.album && id3.album.trim().length > 0 && !/^unknown/i.test(id3.album.trim())) {
-          track.album = id3.album.trim();
-        }
-        // Year from tag
-        if (id3.year) track.year = String(id3.year);
-
-        // Cover art from tag — re-extract here in case upload happened before art was cached
-        if (id3.picture && !_artCache.get(String(track.id))) {
-          try {
-            const bytes = new Uint8Array(id3.picture.data);
-            let binary = '';
-            bytes.forEach(b => binary += String.fromCharCode(b));
-            const b64     = btoa(binary);
-            const dataUrl = `data:${id3.picture.format};base64,${b64}`;
-            applyArt(track.id, dataUrl);
-            idbSaveArt(track.id, dataUrl).catch(() => {});
-          } catch(artErr) {}
-        }
-      } catch(id3Err) { /* no embedded tags */ }
-    }
-
-    // Use AI only when ID3 gave us nothing useful
-    const id3GaveTitle  = cleanTitle  !== track.name || (file && cleanTitle !== file.name.replace(/\.[^.]+$/, ''));
-    const id3GaveArtist = cleanArtist && cleanArtist !== 'Unknown Artist';
-    const needsAI = !id3GaveTitle || !id3GaveArtist;
-
-    if (needsAI) {
-      pipelineStatus('AI cleaning title…');
-      const rawName = file ? file.name.replace(/\.[^.]+$/, '') : cleanTitle;
-      try {
-        const aiResult = await aiCleanTitle(rawName);
-        // Only use AI title if ID3 gave nothing
-        if (!id3GaveTitle && aiResult.title) cleanTitle  = aiResult.title;
-        // Only use AI artist if ID3 gave nothing
-        if (!id3GaveArtist && aiResult.artist) cleanArtist = aiResult.artist;
-      } catch(e) {
-        // Fall back to local regex cleaner
-        const local = localCleanTitle(rawName);
-        if (!id3GaveTitle  && local.title)  cleanTitle  = local.title;
-        if (!id3GaveArtist && local.artist) cleanArtist = local.artist;
-      }
-    }
-
-    const source = (id3GaveTitle || id3GaveArtist) ? ' ✓ ID3' : ' (AI/filename)';
+    // aiCleanTitle always returns a result (AI or local fallback)
+    cleanTitle  = aiResult.title  || track.name;
+    cleanArtist = aiResult.artist || track.artist || '';
+    const source = aiResult._source === 'local' ? ' (local fallback)' : '';
     stageSet('ai', 'done', cleanArtist ? `"${cleanTitle}" by ${cleanArtist}${source}` : `"${cleanTitle}"${source}`);
     track.name = cleanTitle;
     if (cleanArtist) track.artist = cleanArtist;
@@ -4066,7 +3962,7 @@ if('launchQueue' in window){
           const name = file.name.replace(/\.[^.]+$/,'');
           const parts = name.split(' - ');
           const track = {
-            id: Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9),
+            id: Date.now()+Math.random(),
             name: parts.length>1?parts[1].trim():name,
             artist: parts.length>1?parts[0].trim():'Unknown Artist',
             album:'Unknown Album', url,
@@ -4903,84 +4799,17 @@ function drawQR(canvas, text, size) {
 }
 </script>
 <script>
-// ========== AI CONFIG — Multi-provider waterfall ==========
-// Order: Gemini → Claude → Groq → ChatGPT
-// Each provider is tried in turn; if it is unconfigured or rate-limited (429/529)
-// the next one is attempted automatically.
+// ========== AI CONFIG (Groq — key set by user) ==========
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+function getGroqKey() { return localStorage.getItem('audix_groq_key') || ''; }
 
-const GROQ_MODEL   = 'llama-3.3-70b-versatile';
-const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
-const GEMINI_MODEL = 'gemini-2.0-flash';
-const OPENAI_MODEL = 'gpt-4o-mini';
-
-// Key accessors
-function getGeminiKey() { return localStorage.getItem('audix_gemini_key') || ''; }
-function getClaudeKey() { return localStorage.getItem('audix_claude_key') || ''; }
-function getGroqKey()   { return localStorage.getItem('audix_groq_key')   || ''; }
-function getOpenAIKey() { return localStorage.getItem('audix_openai_key') || ''; }
-
-function _anyAIKeySet() {
-  return !!(getGeminiKey() || getClaudeKey() || getGroqKey() || getOpenAIKey());
-}
-
-function _isRateLimit(status) {
-  return status === 429 || status === 529 || status === 503;
-}
-
-// Per-provider implementations
-async function _callGemini(messages, maxTokens) {
-  const key = getGeminiKey();
-  if (!key) { const e = new Error('No Gemini key'); e._skip = true; throw e; }
-  const contents = messages.map(m => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: String(m.content).replace(/[\u0000-\u001F\u007F]/g, ' ') }]
-  }));
-  const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 } }) }
-  );
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    const e = new Error('Gemini ' + resp.status + ': ' + (err?.error?.message || resp.status));
-    if (_isRateLimit(resp.status)) e._rateLimited = true; else e._skip = true; throw e;
-  }
-  const data = await resp.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  if (!text) { const e = new Error('Empty Gemini response'); e._skip = true; throw e; }
-  return text.replace(/```json|```/g, '').trim();
-}
-
-async function _callClaudeAI(messages, maxTokens) {
-  const key = getClaudeKey();
-  if (!key) { const e = new Error('No Claude key'); e._skip = true; throw e; }
-  const safeMessages = messages.map(m => ({
-    role: m.role === 'assistant' ? 'assistant' : 'user',
-    content: String(m.content).replace(/[\u0000-\u001F\u007F]/g, ' ')
-  }));
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true' },
-    body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: maxTokens, messages: safeMessages })
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    const e = new Error('Claude ' + resp.status + ': ' + (err?.error?.message || resp.status));
-    if (_isRateLimit(resp.status)) e._rateLimited = true; else e._skip = true; throw e;
-  }
-  const data = await resp.json();
-  const text = data.content?.[0]?.text || '';
-  if (!text) { const e = new Error('Empty Claude response'); e._skip = true; throw e; }
-  return text.replace(/```json|```/g, '').trim();
-}
-
-async function _callGroq(messages, maxTokens) {
+// ========== SHARED AI CALL HELPER ==========
+async function callClaude(messages, maxTokens = 300) {
   const key = getGroqKey();
-  if (!key) { const e = new Error('No Groq key'); e._skip = true; throw e; }
+  if (!key) throw new Error('No API key — tap the 🔑 button in the top bar to add your Groq key.');
   const safeMessages = messages.map(m => ({
-    role: m.role, content: String(m.content).replace(/[\u0000-\u001F\u007F]/g, ' ')
+    role: m.role,
+    content: String(m.content).replace(/[\u0000-\u001F\u007F]/g, ' ')
   }));
   const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
@@ -4989,64 +4818,16 @@ async function _callGroq(messages, maxTokens) {
   });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}));
-    const e = new Error('Groq ' + resp.status + ': ' + (err?.error?.message || resp.status));
-    if (_isRateLimit(resp.status)) e._rateLimited = true; else e._skip = true; throw e;
+    const detail = err?.error?.message || err?.error?.type || resp.status;
+    if (resp.status === 401) throw new Error('Invalid Groq API key — check your key in settings.');
+    if (resp.status === 429) throw new Error('Rate limit hit — please wait a moment and try again.');
+    if (resp.status >= 500) throw new Error('Groq server error — try again shortly.');
+    throw new Error('API error (' + detail + ')');
   }
   const data = await resp.json();
   const text = (data.choices?.[0]?.message?.content || '').replace(/```json|```/g, '').trim();
-  if (!text) { const e = new Error('Empty Groq response'); e._skip = true; throw e; }
+  if (!text) throw new Error('Empty response from AI.');
   return text;
-}
-
-async function _callOpenAI(messages, maxTokens) {
-  const key = getOpenAIKey();
-  if (!key) { const e = new Error('No OpenAI key'); e._skip = true; throw e; }
-  const safeMessages = messages.map(m => ({
-    role: m.role, content: String(m.content).replace(/[\u0000-\u001F\u007F]/g, ' ')
-  }));
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-    body: JSON.stringify({ model: OPENAI_MODEL, max_tokens: maxTokens, messages: safeMessages, temperature: 0.7 })
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    const e = new Error('OpenAI ' + resp.status + ': ' + (err?.error?.message || resp.status));
-    if (_isRateLimit(resp.status)) e._rateLimited = true; else e._skip = true; throw e;
-  }
-  const data = await resp.json();
-  const text = (data.choices?.[0]?.message?.content || '').replace(/```json|```/g, '').trim();
-  if (!text) { const e = new Error('Empty OpenAI response'); e._skip = true; throw e; }
-  return text;
-}
-
-// Waterfall: Gemini → Claude → Groq → ChatGPT
-const _AI_PROVIDERS = [
-  { name: 'Gemini',  fn: _callGemini   },
-  { name: 'Claude',  fn: _callClaudeAI },
-  { name: 'Groq',    fn: _callGroq     },
-  { name: 'ChatGPT', fn: _callOpenAI   },
-];
-let _lastAIProvider = '';
-
-async function callClaude(messages, maxTokens = 300) {
-  let lastErr = null;
-  for (const provider of _AI_PROVIDERS) {
-    try {
-      const result = await provider.fn(messages, maxTokens);
-      _lastAIProvider = provider.name;
-      return result;
-    } catch (err) {
-      lastErr = err;
-      if (err._skip || err._rateLimited) {
-        console.info('[Audix AI] ' + provider.name + ' skipped: ' + err.message);
-        continue;
-      }
-      console.warn('[Audix AI] ' + provider.name + ' failed: ' + err.message);
-      continue;
-    }
-  }
-  throw new Error('All AI providers unavailable or rate-limited. Add at least one API key via 🔑.');
 }
 
 function showAiError(context, err) {
@@ -5613,24 +5394,30 @@ async function sendDjMessage() {
       ..._djHistory.slice(1).map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }))
     ];
 
-    if (!_anyAIKeySet()) {
+    const _djkey = getGroqKey();
+    if (!_djkey) {
       hideDjTyping();
-      addDjMessage('ai', 'No API key set — tap the 🔑 button to add a Gemini, Claude, Groq, or OpenAI key.');
+      addDjMessage('ai', 'No API key set — tap the 🔑 button in the top bar to add your Groq key.');
       _djBusy = false;
       document.getElementById('djSend').disabled = false;
       return;
     }
-    const reply = (await callClaude(messages, 300).catch(e => {
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _djkey },
+      body: JSON.stringify({ model: GROQ_MODEL, max_tokens: 300, messages, temperature: 0.7 })
+    });
+
+    const data = await resp.json();
+    if (!resp.ok) {
       hideDjTyping();
-      addDjMessage('ai', '⚠️ ' + (e.message || 'AI error'));
+      const errMsg = data?.error?.message || `API error ${resp.status}`;
+      addDjMessage('ai', `⚠️ Groq API error: ${errMsg}`);
       _djBusy = false;
       document.getElementById('djSend').disabled = false;
-      return null;
-    }));
-    if (reply === null) return;
-    const replyText = reply.trim() || 'Sorry, I had a momentary silence. Try again? 🎵';
-    // alias for rest of function
-    const _reply = replyText;
+      return;
+    }
+    const reply = (data.choices?.[0]?.message?.content || '').trim() || 'Sorry, I had a momentary silence. Try again? 🎵';
 
     hideDjTyping();
     addDjMessage('ai', reply);
@@ -5675,151 +5462,76 @@ async function sendDjMessage() {
 
 <!-- API KEY MODAL -->
 <div id="apiKeyModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:28px;width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;position:relative;max-height:90vh;overflow-y:auto">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:28px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:16px;position:relative">
     <button onclick="closeApiKeyModal()" style="position:absolute;top:14px;right:14px;background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text2);cursor:pointer;font-size:0.85rem">✕</button>
-    <div style="font-size:1.1rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-family:'Exo 2'">🔑 AI Provider Keys</div>
-    <div style="font-size:0.8rem;color:var(--text2);font-family:'Rajdhani';line-height:1.5">Add keys for any providers you have. Audix tries them in order: <b style="color:var(--cyan)">Gemini → Claude → Groq → ChatGPT</b>. If one hits its rate limit, the next kicks in automatically.</div>
-
-    <!-- Gemini -->
-    <div style="display:flex;flex-direction:column;gap:6px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:0.78rem;font-weight:700;color:var(--text);font-family:'Rajdhani';letter-spacing:1px">
-          🧠 GEMINI <span style="font-size:0.65rem;color:var(--text3)">(gemini-2.0-flash)</span>
-        </div>
-        <a href="https://aistudio.google.com/apikey" target="_blank" style="font-size:0.65rem;color:var(--cyan);font-family:'Rajdhani'">Get free key →</a>
-      </div>
-      <div style="display:flex;gap:6px">
-        <input id="geminiKeyInput" type="password" placeholder="AIza..."
-          style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Share Tech Mono';font-size:0.82rem;outline:none;transition:border-color 0.2s"
-          onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'">
-        <button onclick="saveProviderKey('gemini')" style="background:var(--grad);border:none;border-radius:10px;padding:9px 14px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap">Save</button>
-        <button onclick="clearProviderKey('gemini')" title="Clear" style="background:none;border:1px solid var(--border);border-radius:10px;padding:9px 10px;color:var(--text2);cursor:pointer;font-size:0.8rem">✕</button>
-      </div>
-      <div id="geminiKeyStatus" style="font-size:0.72rem;font-family:'Rajdhani';min-height:14px;color:var(--text3)"></div>
+    <div style="font-size:1.1rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-family:'Exo 2'">🔑 Groq API Key</div>
+    <div style="font-size:0.82rem;color:var(--text2);font-family:'Rajdhani';line-height:1.5">Enter your free Groq API key to enable AI features.<br>Get one free at <a href="https://console.groq.com" target="_blank" style="color:var(--cyan)">console.groq.com</a></div>
+    <input id="apiKeyInput" type="password"
+      placeholder="gsk_..."
+      style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Share Tech Mono';font-size:0.88rem;outline:none;transition:border-color 0.2s"
+      onfocus="this.style.borderColor='var(--cyan)'"
+      onblur="this.style.borderColor='var(--border)'"
+      onkeydown="if(event.key==='Enter')saveApiKey()"
+    >
+    <div style="display:flex;gap:8px">
+      <button onclick="saveApiKey()" style="flex:1;background:var(--grad);border:none;border-radius:10px;padding:11px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.9rem;cursor:pointer">Save Key</button>
+      <button onclick="clearApiKey()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:11px 16px;color:var(--text2);font-family:'Exo 2';font-weight:600;font-size:0.85rem;cursor:pointer">Clear</button>
     </div>
-
-    <!-- Claude -->
-    <div style="display:flex;flex-direction:column;gap:6px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:0.78rem;font-weight:700;color:var(--text);font-family:'Rajdhani';letter-spacing:1px">
-          🤖 CLAUDE <span style="font-size:0.65rem;color:var(--text3)">(claude-haiku)</span>
-        </div>
-        <a href="https://console.anthropic.com/settings/keys" target="_blank" style="font-size:0.65rem;color:var(--cyan);font-family:'Rajdhani'">Get key →</a>
-      </div>
-      <div style="display:flex;gap:6px">
-        <input id="claudeKeyInput" type="password" placeholder="sk-ant-..."
-          style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Share Tech Mono';font-size:0.82rem;outline:none;transition:border-color 0.2s"
-          onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'">
-        <button onclick="saveProviderKey('claude')" style="background:var(--grad);border:none;border-radius:10px;padding:9px 14px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap">Save</button>
-        <button onclick="clearProviderKey('claude')" title="Clear" style="background:none;border:1px solid var(--border);border-radius:10px;padding:9px 10px;color:var(--text2);cursor:pointer;font-size:0.8rem">✕</button>
-      </div>
-      <div id="claudeKeyStatus" style="font-size:0.72rem;font-family:'Rajdhani';min-height:14px;color:var(--text3)"></div>
-    </div>
-
-    <!-- Groq -->
-    <div style="display:flex;flex-direction:column;gap:6px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:0.78rem;font-weight:700;color:var(--text);font-family:'Rajdhani';letter-spacing:1px">
-          ⚡ GROQ <span style="font-size:0.65rem;color:var(--text3)">(llama-3.3-70b) — free</span>
-        </div>
-        <a href="https://console.groq.com" target="_blank" style="font-size:0.65rem;color:var(--cyan);font-family:'Rajdhani'">Get free key →</a>
-      </div>
-      <div style="display:flex;gap:6px">
-        <input id="groqKeyInput" type="password" placeholder="gsk_..."
-          style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Share Tech Mono';font-size:0.82rem;outline:none;transition:border-color 0.2s"
-          onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'">
-        <button onclick="saveProviderKey('groq')" style="background:var(--grad);border:none;border-radius:10px;padding:9px 14px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap">Save</button>
-        <button onclick="clearProviderKey('groq')" title="Clear" style="background:none;border:1px solid var(--border);border-radius:10px;padding:9px 10px;color:var(--text2);cursor:pointer;font-size:0.8rem">✕</button>
-      </div>
-      <div id="groqKeyStatus" style="font-size:0.72rem;font-family:'Rajdhani';min-height:14px;color:var(--text3)"></div>
-    </div>
-
-    <!-- ChatGPT / OpenAI -->
-    <div style="display:flex;flex-direction:column;gap:6px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:0.78rem;font-weight:700;color:var(--text);font-family:'Rajdhani';letter-spacing:1px">
-          💬 CHATGPT <span style="font-size:0.65rem;color:var(--text3)">(gpt-4o-mini)</span>
-        </div>
-        <a href="https://platform.openai.com/api-keys" target="_blank" style="font-size:0.65rem;color:var(--cyan);font-family:'Rajdhani'">Get key →</a>
-      </div>
-      <div style="display:flex;gap:6px">
-        <input id="openaiKeyInput" type="password" placeholder="sk-..."
-          style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Share Tech Mono';font-size:0.82rem;outline:none;transition:border-color 0.2s"
-          onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'">
-        <button onclick="saveProviderKey('openai')" style="background:var(--grad);border:none;border-radius:10px;padding:9px 14px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap">Save</button>
-        <button onclick="clearProviderKey('openai')" title="Clear" style="background:none;border:1px solid var(--border);border-radius:10px;padding:9px 10px;color:var(--text2);cursor:pointer;font-size:0.8rem">✕</button>
-      </div>
-      <div id="openaiKeyStatus" style="font-size:0.72rem;font-family:'Rajdhani';min-height:14px;color:var(--text3)"></div>
-    </div>
-
-    <div id="apiKeyStatus" style="font-size:0.78rem;font-family:'Rajdhani';text-align:center;min-height:16px;padding-top:2px"></div>
+    <div id="apiKeyStatus" style="font-size:0.78rem;font-family:'Rajdhani';text-align:center;min-height:18px"></div>
   </div>
 </div>
 
 <script>
-const _PROVIDER_META = {
-  gemini: { storageKey: 'audix_gemini_key', inputId: 'geminiKeyInput', statusId: 'geminiKeyStatus', prefix: 'AIza', label: 'Gemini' },
-  claude:  { storageKey: 'audix_claude_key',  inputId: 'claudeKeyInput',  statusId: 'claudeKeyStatus',  prefix: 'sk-ant', label: 'Claude' },
-  groq:    { storageKey: 'audix_groq_key',    inputId: 'groqKeyInput',    statusId: 'groqKeyStatus',    prefix: 'gsk_',  label: 'Groq' },
-  openai:  { storageKey: 'audix_openai_key',  inputId: 'openaiKeyInput',  statusId: 'openaiKeyStatus', prefix: 'sk-',   label: 'ChatGPT' },
-};
-
 function openApiKeyModal() {
   const modal = document.getElementById('apiKeyModal');
   modal.style.display = 'flex';
-  // Populate each input
-  Object.values(_PROVIDER_META).forEach(m => {
-    const existing = localStorage.getItem(m.storageKey);
-    const input = document.getElementById(m.inputId);
-    const status = document.getElementById(m.statusId);
-    input.value = existing ? existing.slice(0,8) + '••••••••••••' : '';
-    input.placeholder = existing ? 'Saved — paste to replace' : (m.prefix + '...');
-    status.textContent = existing ? '✓ Key saved' : '';
-    status.style.color = existing ? '#22c55e' : 'var(--text3)';
-  });
-  _refreshApiKeyDot();
+  const existing = getGroqKey();
+  const input = document.getElementById('apiKeyInput');
+  input.value = existing ? existing.slice(0,8) + '••••••••••••••••••••' : '';
+  input.placeholder = existing ? 'Key saved — paste new to replace' : 'gsk_...';
+  document.getElementById('apiKeyStatus').textContent = existing ? '✓ Key is set — AI features active' : '';
+  document.getElementById('apiKeyStatus').style.color = existing ? '#22c55e' : '';
+  setTimeout(() => { if (!existing) input.focus(); }, 100);
 }
 
 function closeApiKeyModal() {
   document.getElementById('apiKeyModal').style.display = 'none';
 }
 
-function saveProviderKey(provider) {
-  const m = _PROVIDER_META[provider];
-  const val = document.getElementById(m.inputId).value.trim();
-  const status = document.getElementById(m.statusId);
-  if (!val || val.includes('•')) { status.textContent = 'Please paste a new key.'; status.style.color='#ef4444'; return; }
-  localStorage.setItem(m.storageKey, val);
-  status.textContent = '✓ Saved!';
-  status.style.color = '#22c55e';
-  document.getElementById(m.inputId).value = val.slice(0,8) + '••••••••••••';
-  document.getElementById(m.inputId).placeholder = 'Saved — paste to replace';
-  toast('🔑 ' + m.label + ' key saved!', 'success');
-  _refreshApiKeyDot();
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val || val.includes('•')) {
+    document.getElementById('apiKeyStatus').textContent = 'Please enter a valid key.';
+    document.getElementById('apiKeyStatus').style.color = '#ef4444';
+    return;
+  }
+  if (!val.startsWith('gsk_')) {
+    document.getElementById('apiKeyStatus').textContent = 'Groq keys start with gsk_ — check your key.';
+    document.getElementById('apiKeyStatus').style.color = '#ef4444';
+    return;
+  }
+  localStorage.setItem('audix_groq_key', val);
+  document.getElementById('apiKeyDot').style.display = 'block';
+  document.getElementById('apiKeyStatus').textContent = '✓ Key saved! AI features are now active.';
+  document.getElementById('apiKeyStatus').style.color = '#22c55e';
+  toast('🔑 Groq API key saved — AI features enabled!', 'success');
+  setTimeout(closeApiKeyModal, 1200);
 }
 
-function clearProviderKey(provider) {
-  const m = _PROVIDER_META[provider];
-  localStorage.removeItem(m.storageKey);
-  document.getElementById(m.inputId).value = '';
-  document.getElementById(m.inputId).placeholder = m.prefix + '...';
-  const status = document.getElementById(m.statusId);
-  status.textContent = 'Cleared.'; status.style.color = 'var(--text2)';
-  toast(m.label + ' key cleared', '');
-  _refreshApiKeyDot();
+function clearApiKey() {
+  localStorage.removeItem('audix_groq_key');
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('apiKeyInput').placeholder = 'gsk_...';
+  document.getElementById('apiKeyDot').style.display = 'none';
+  document.getElementById('apiKeyStatus').textContent = 'Key cleared.';
+  document.getElementById('apiKeyStatus').style.color = 'var(--text2)';
+  toast('API key removed', '');
 }
 
-function _refreshApiKeyDot() {
-  const dot = document.getElementById('apiKeyDot');
-  if (dot) dot.style.display = _anyAIKeySet() ? 'block' : 'none';
-}
-
+// Show green dot if key already saved
 window.addEventListener('DOMContentLoaded', () => {
-  _refreshApiKeyDot();
+  if (getGroqKey()) document.getElementById('apiKeyDot').style.display = 'block';
 });
-// Legacy alias kept so old code that calls saveApiKey / clearApiKey doesn't break
-function saveApiKey() { saveProviderKey('groq'); }
-function clearApiKey() { clearProviderKey('groq'); }
 </script>
 
 <script>
