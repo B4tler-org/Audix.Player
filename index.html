@@ -744,7 +744,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
   <div class="topbar">
     <div class="topbar-logo">AUDIX<span>MUSIC PLAYER</span></div>
     <div class="topbar-actions">
-      <button class="icon-btn" onclick="openApiKeyModal()" id="apiKeyBtn" title="Set Groq API Key" style="position:relative">🔑<span id="apiKeyDot" style="display:none;position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:#22c55e"></span></button>
+      <button class="icon-btn" onclick="openApiKeyModal()" id="apiKeyBtn" title="AI Provider Keys" style="position:relative">🔑<span id="apiKeyDot" style="display:none;position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:#22c55e"></span></button>
       <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
       <button class="icon-btn" onclick="openTab('search')">🔍</button>
       <div style="display:flex;align-items:center;gap:5px;padding:6px 10px;background:var(--glass);border:1px solid var(--border);border-radius:10px;cursor:pointer" onclick="toggleWakeWord()" title="Always-on wake word: say 'Hey Audix'">
@@ -3415,17 +3415,8 @@ Input: "${rawName}"
 Respond with ONLY a JSON object, no explanation:
 {"title": "Clean Song Title", "artist": "Artist Name or empty string"}`;
 
-    const _tkey = getGroqKey();
-    if (!_tkey) return localResult;
-    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _tkey },
-      body: JSON.stringify({ model: GROQ_MODEL, max_tokens: 150, messages: [{ role: 'user', content: prompt }] })
-    });
-    if (!resp.ok) return localResult;
-    const data = await resp.json();
-    const text = (data.choices?.[0]?.message?.content || '').trim();
-    // Strip any markdown fences just in case
+    if (!_anyAIKeySet()) return localResult;
+    const text = await callClaude([{ role: 'user', content: prompt }], 150);
     const clean = text.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
     if (parsed.title) return { title: parsed.title.trim(), artist: (parsed.artist || '').trim() };
@@ -4799,17 +4790,84 @@ function drawQR(canvas, text, size) {
 }
 </script>
 <script>
-// ========== AI CONFIG (Groq — key set by user) ==========
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
-function getGroqKey() { return localStorage.getItem('audix_groq_key') || ''; }
+// ========== AI CONFIG — Multi-provider waterfall ==========
+// Order: Gemini → Claude → Groq → ChatGPT
+// Each provider is tried in turn; if it is unconfigured or rate-limited (429/529)
+// the next one is attempted automatically.
 
-// ========== SHARED AI CALL HELPER ==========
-async function callClaude(messages, maxTokens = 300) {
-  const key = getGroqKey();
-  if (!key) throw new Error('No API key — tap the 🔑 button in the top bar to add your Groq key.');
+const GROQ_MODEL   = 'llama-3.3-70b-versatile';
+const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
+const GEMINI_MODEL = 'gemini-2.0-flash';
+const OPENAI_MODEL = 'gpt-4o-mini';
+
+// Key accessors
+function getGeminiKey() { return localStorage.getItem('audix_gemini_key') || ''; }
+function getClaudeKey() { return localStorage.getItem('audix_claude_key') || ''; }
+function getGroqKey()   { return localStorage.getItem('audix_groq_key')   || ''; }
+function getOpenAIKey() { return localStorage.getItem('audix_openai_key') || ''; }
+
+function _anyAIKeySet() {
+  return !!(getGeminiKey() || getClaudeKey() || getGroqKey() || getOpenAIKey());
+}
+
+function _isRateLimit(status) {
+  return status === 429 || status === 529 || status === 503;
+}
+
+// Per-provider implementations
+async function _callGemini(messages, maxTokens) {
+  const key = getGeminiKey();
+  if (!key) { const e = new Error('No Gemini key'); e._skip = true; throw e; }
+  const contents = messages.map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: String(m.content).replace(/[\u0000-\u001F\u007F]/g, ' ') }]
+  }));
+  const resp = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 } }) }
+  );
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    const e = new Error('Gemini ' + resp.status + ': ' + (err?.error?.message || resp.status));
+    if (_isRateLimit(resp.status)) e._rateLimited = true; else e._skip = true; throw e;
+  }
+  const data = await resp.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  if (!text) { const e = new Error('Empty Gemini response'); e._skip = true; throw e; }
+  return text.replace(/```json|```/g, '').trim();
+}
+
+async function _callClaudeAI(messages, maxTokens) {
+  const key = getClaudeKey();
+  if (!key) { const e = new Error('No Claude key'); e._skip = true; throw e; }
   const safeMessages = messages.map(m => ({
-    role: m.role,
+    role: m.role === 'assistant' ? 'assistant' : 'user',
     content: String(m.content).replace(/[\u0000-\u001F\u007F]/g, ' ')
+  }));
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: maxTokens, messages: safeMessages })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    const e = new Error('Claude ' + resp.status + ': ' + (err?.error?.message || resp.status));
+    if (_isRateLimit(resp.status)) e._rateLimited = true; else e._skip = true; throw e;
+  }
+  const data = await resp.json();
+  const text = data.content?.[0]?.text || '';
+  if (!text) { const e = new Error('Empty Claude response'); e._skip = true; throw e; }
+  return text.replace(/```json|```/g, '').trim();
+}
+
+async function _callGroq(messages, maxTokens) {
+  const key = getGroqKey();
+  if (!key) { const e = new Error('No Groq key'); e._skip = true; throw e; }
+  const safeMessages = messages.map(m => ({
+    role: m.role, content: String(m.content).replace(/[\u0000-\u001F\u007F]/g, ' ')
   }));
   const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
@@ -4818,16 +4876,64 @@ async function callClaude(messages, maxTokens = 300) {
   });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}));
-    const detail = err?.error?.message || err?.error?.type || resp.status;
-    if (resp.status === 401) throw new Error('Invalid Groq API key — check your key in settings.');
-    if (resp.status === 429) throw new Error('Rate limit hit — please wait a moment and try again.');
-    if (resp.status >= 500) throw new Error('Groq server error — try again shortly.');
-    throw new Error('API error (' + detail + ')');
+    const e = new Error('Groq ' + resp.status + ': ' + (err?.error?.message || resp.status));
+    if (_isRateLimit(resp.status)) e._rateLimited = true; else e._skip = true; throw e;
   }
   const data = await resp.json();
   const text = (data.choices?.[0]?.message?.content || '').replace(/```json|```/g, '').trim();
-  if (!text) throw new Error('Empty response from AI.');
+  if (!text) { const e = new Error('Empty Groq response'); e._skip = true; throw e; }
   return text;
+}
+
+async function _callOpenAI(messages, maxTokens) {
+  const key = getOpenAIKey();
+  if (!key) { const e = new Error('No OpenAI key'); e._skip = true; throw e; }
+  const safeMessages = messages.map(m => ({
+    role: m.role, content: String(m.content).replace(/[\u0000-\u001F\u007F]/g, ' ')
+  }));
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    body: JSON.stringify({ model: OPENAI_MODEL, max_tokens: maxTokens, messages: safeMessages, temperature: 0.7 })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    const e = new Error('OpenAI ' + resp.status + ': ' + (err?.error?.message || resp.status));
+    if (_isRateLimit(resp.status)) e._rateLimited = true; else e._skip = true; throw e;
+  }
+  const data = await resp.json();
+  const text = (data.choices?.[0]?.message?.content || '').replace(/```json|```/g, '').trim();
+  if (!text) { const e = new Error('Empty OpenAI response'); e._skip = true; throw e; }
+  return text;
+}
+
+// Waterfall: Gemini → Claude → Groq → ChatGPT
+const _AI_PROVIDERS = [
+  { name: 'Gemini',  fn: _callGemini   },
+  { name: 'Claude',  fn: _callClaudeAI },
+  { name: 'Groq',    fn: _callGroq     },
+  { name: 'ChatGPT', fn: _callOpenAI   },
+];
+let _lastAIProvider = '';
+
+async function callClaude(messages, maxTokens = 300) {
+  let lastErr = null;
+  for (const provider of _AI_PROVIDERS) {
+    try {
+      const result = await provider.fn(messages, maxTokens);
+      _lastAIProvider = provider.name;
+      return result;
+    } catch (err) {
+      lastErr = err;
+      if (err._skip || err._rateLimited) {
+        console.info('[Audix AI] ' + provider.name + ' skipped: ' + err.message);
+        continue;
+      }
+      console.warn('[Audix AI] ' + provider.name + ' failed: ' + err.message);
+      continue;
+    }
+  }
+  throw new Error('All AI providers unavailable or rate-limited. Add at least one API key via 🔑.');
 }
 
 function showAiError(context, err) {
@@ -5394,30 +5500,24 @@ async function sendDjMessage() {
       ..._djHistory.slice(1).map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }))
     ];
 
-    const _djkey = getGroqKey();
-    if (!_djkey) {
+    if (!_anyAIKeySet()) {
       hideDjTyping();
-      addDjMessage('ai', 'No API key set — tap the 🔑 button in the top bar to add your Groq key.');
+      addDjMessage('ai', 'No API key set — tap the 🔑 button to add a Gemini, Claude, Groq, or OpenAI key.');
       _djBusy = false;
       document.getElementById('djSend').disabled = false;
       return;
     }
-    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _djkey },
-      body: JSON.stringify({ model: GROQ_MODEL, max_tokens: 300, messages, temperature: 0.7 })
-    });
-
-    const data = await resp.json();
-    if (!resp.ok) {
+    const reply = (await callClaude(messages, 300).catch(e => {
       hideDjTyping();
-      const errMsg = data?.error?.message || `API error ${resp.status}`;
-      addDjMessage('ai', `⚠️ Groq API error: ${errMsg}`);
+      addDjMessage('ai', '⚠️ ' + (e.message || 'AI error'));
       _djBusy = false;
       document.getElementById('djSend').disabled = false;
-      return;
-    }
-    const reply = (data.choices?.[0]?.message?.content || '').trim() || 'Sorry, I had a momentary silence. Try again? 🎵';
+      return null;
+    }));
+    if (reply === null) return;
+    const replyText = reply.trim() || 'Sorry, I had a momentary silence. Try again? 🎵';
+    // alias for rest of function
+    const _reply = replyText;
 
     hideDjTyping();
     addDjMessage('ai', reply);
@@ -5462,76 +5562,151 @@ async function sendDjMessage() {
 
 <!-- API KEY MODAL -->
 <div id="apiKeyModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:28px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:16px;position:relative">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:28px;width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;position:relative;max-height:90vh;overflow-y:auto">
     <button onclick="closeApiKeyModal()" style="position:absolute;top:14px;right:14px;background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text2);cursor:pointer;font-size:0.85rem">✕</button>
-    <div style="font-size:1.1rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-family:'Exo 2'">🔑 Groq API Key</div>
-    <div style="font-size:0.82rem;color:var(--text2);font-family:'Rajdhani';line-height:1.5">Enter your free Groq API key to enable AI features.<br>Get one free at <a href="https://console.groq.com" target="_blank" style="color:var(--cyan)">console.groq.com</a></div>
-    <input id="apiKeyInput" type="password"
-      placeholder="gsk_..."
-      style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Share Tech Mono';font-size:0.88rem;outline:none;transition:border-color 0.2s"
-      onfocus="this.style.borderColor='var(--cyan)'"
-      onblur="this.style.borderColor='var(--border)'"
-      onkeydown="if(event.key==='Enter')saveApiKey()"
-    >
-    <div style="display:flex;gap:8px">
-      <button onclick="saveApiKey()" style="flex:1;background:var(--grad);border:none;border-radius:10px;padding:11px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.9rem;cursor:pointer">Save Key</button>
-      <button onclick="clearApiKey()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:11px 16px;color:var(--text2);font-family:'Exo 2';font-weight:600;font-size:0.85rem;cursor:pointer">Clear</button>
+    <div style="font-size:1.1rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-family:'Exo 2'">🔑 AI Provider Keys</div>
+    <div style="font-size:0.8rem;color:var(--text2);font-family:'Rajdhani';line-height:1.5">Add keys for any providers you have. Audix tries them in order: <b style="color:var(--cyan)">Gemini → Claude → Groq → ChatGPT</b>. If one hits its rate limit, the next kicks in automatically.</div>
+
+    <!-- Gemini -->
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--text);font-family:'Rajdhani';letter-spacing:1px">
+          🧠 GEMINI <span style="font-size:0.65rem;color:var(--text3)">(gemini-2.0-flash)</span>
+        </div>
+        <a href="https://aistudio.google.com/apikey" target="_blank" style="font-size:0.65rem;color:var(--cyan);font-family:'Rajdhani'">Get free key →</a>
+      </div>
+      <div style="display:flex;gap:6px">
+        <input id="geminiKeyInput" type="password" placeholder="AIza..."
+          style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Share Tech Mono';font-size:0.82rem;outline:none;transition:border-color 0.2s"
+          onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'">
+        <button onclick="saveProviderKey('gemini')" style="background:var(--grad);border:none;border-radius:10px;padding:9px 14px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap">Save</button>
+        <button onclick="clearProviderKey('gemini')" title="Clear" style="background:none;border:1px solid var(--border);border-radius:10px;padding:9px 10px;color:var(--text2);cursor:pointer;font-size:0.8rem">✕</button>
+      </div>
+      <div id="geminiKeyStatus" style="font-size:0.72rem;font-family:'Rajdhani';min-height:14px;color:var(--text3)"></div>
     </div>
-    <div id="apiKeyStatus" style="font-size:0.78rem;font-family:'Rajdhani';text-align:center;min-height:18px"></div>
+
+    <!-- Claude -->
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--text);font-family:'Rajdhani';letter-spacing:1px">
+          🤖 CLAUDE <span style="font-size:0.65rem;color:var(--text3)">(claude-haiku)</span>
+        </div>
+        <a href="https://console.anthropic.com/settings/keys" target="_blank" style="font-size:0.65rem;color:var(--cyan);font-family:'Rajdhani'">Get key →</a>
+      </div>
+      <div style="display:flex;gap:6px">
+        <input id="claudeKeyInput" type="password" placeholder="sk-ant-..."
+          style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Share Tech Mono';font-size:0.82rem;outline:none;transition:border-color 0.2s"
+          onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'">
+        <button onclick="saveProviderKey('claude')" style="background:var(--grad);border:none;border-radius:10px;padding:9px 14px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap">Save</button>
+        <button onclick="clearProviderKey('claude')" title="Clear" style="background:none;border:1px solid var(--border);border-radius:10px;padding:9px 10px;color:var(--text2);cursor:pointer;font-size:0.8rem">✕</button>
+      </div>
+      <div id="claudeKeyStatus" style="font-size:0.72rem;font-family:'Rajdhani';min-height:14px;color:var(--text3)"></div>
+    </div>
+
+    <!-- Groq -->
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--text);font-family:'Rajdhani';letter-spacing:1px">
+          ⚡ GROQ <span style="font-size:0.65rem;color:var(--text3)">(llama-3.3-70b) — free</span>
+        </div>
+        <a href="https://console.groq.com" target="_blank" style="font-size:0.65rem;color:var(--cyan);font-family:'Rajdhani'">Get free key →</a>
+      </div>
+      <div style="display:flex;gap:6px">
+        <input id="groqKeyInput" type="password" placeholder="gsk_..."
+          style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Share Tech Mono';font-size:0.82rem;outline:none;transition:border-color 0.2s"
+          onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'">
+        <button onclick="saveProviderKey('groq')" style="background:var(--grad);border:none;border-radius:10px;padding:9px 14px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap">Save</button>
+        <button onclick="clearProviderKey('groq')" title="Clear" style="background:none;border:1px solid var(--border);border-radius:10px;padding:9px 10px;color:var(--text2);cursor:pointer;font-size:0.8rem">✕</button>
+      </div>
+      <div id="groqKeyStatus" style="font-size:0.72rem;font-family:'Rajdhani';min-height:14px;color:var(--text3)"></div>
+    </div>
+
+    <!-- ChatGPT / OpenAI -->
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--text);font-family:'Rajdhani';letter-spacing:1px">
+          💬 CHATGPT <span style="font-size:0.65rem;color:var(--text3)">(gpt-4o-mini)</span>
+        </div>
+        <a href="https://platform.openai.com/api-keys" target="_blank" style="font-size:0.65rem;color:var(--cyan);font-family:'Rajdhani'">Get key →</a>
+      </div>
+      <div style="display:flex;gap:6px">
+        <input id="openaiKeyInput" type="password" placeholder="sk-..."
+          style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Share Tech Mono';font-size:0.82rem;outline:none;transition:border-color 0.2s"
+          onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'">
+        <button onclick="saveProviderKey('openai')" style="background:var(--grad);border:none;border-radius:10px;padding:9px 14px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap">Save</button>
+        <button onclick="clearProviderKey('openai')" title="Clear" style="background:none;border:1px solid var(--border);border-radius:10px;padding:9px 10px;color:var(--text2);cursor:pointer;font-size:0.8rem">✕</button>
+      </div>
+      <div id="openaiKeyStatus" style="font-size:0.72rem;font-family:'Rajdhani';min-height:14px;color:var(--text3)"></div>
+    </div>
+
+    <div id="apiKeyStatus" style="font-size:0.78rem;font-family:'Rajdhani';text-align:center;min-height:16px;padding-top:2px"></div>
   </div>
 </div>
 
 <script>
+const _PROVIDER_META = {
+  gemini: { storageKey: 'audix_gemini_key', inputId: 'geminiKeyInput', statusId: 'geminiKeyStatus', prefix: 'AIza', label: 'Gemini' },
+  claude:  { storageKey: 'audix_claude_key',  inputId: 'claudeKeyInput',  statusId: 'claudeKeyStatus',  prefix: 'sk-ant', label: 'Claude' },
+  groq:    { storageKey: 'audix_groq_key',    inputId: 'groqKeyInput',    statusId: 'groqKeyStatus',    prefix: 'gsk_',  label: 'Groq' },
+  openai:  { storageKey: 'audix_openai_key',  inputId: 'openaiKeyInput',  statusId: 'openaiKeyStatus', prefix: 'sk-',   label: 'ChatGPT' },
+};
+
 function openApiKeyModal() {
   const modal = document.getElementById('apiKeyModal');
   modal.style.display = 'flex';
-  const existing = getGroqKey();
-  const input = document.getElementById('apiKeyInput');
-  input.value = existing ? existing.slice(0,8) + '••••••••••••••••••••' : '';
-  input.placeholder = existing ? 'Key saved — paste new to replace' : 'gsk_...';
-  document.getElementById('apiKeyStatus').textContent = existing ? '✓ Key is set — AI features active' : '';
-  document.getElementById('apiKeyStatus').style.color = existing ? '#22c55e' : '';
-  setTimeout(() => { if (!existing) input.focus(); }, 100);
+  // Populate each input
+  Object.values(_PROVIDER_META).forEach(m => {
+    const existing = localStorage.getItem(m.storageKey);
+    const input = document.getElementById(m.inputId);
+    const status = document.getElementById(m.statusId);
+    input.value = existing ? existing.slice(0,8) + '••••••••••••' : '';
+    input.placeholder = existing ? 'Saved — paste to replace' : (m.prefix + '...');
+    status.textContent = existing ? '✓ Key saved' : '';
+    status.style.color = existing ? '#22c55e' : 'var(--text3)';
+  });
+  _refreshApiKeyDot();
 }
 
 function closeApiKeyModal() {
   document.getElementById('apiKeyModal').style.display = 'none';
 }
 
-function saveApiKey() {
-  const val = document.getElementById('apiKeyInput').value.trim();
-  if (!val || val.includes('•')) {
-    document.getElementById('apiKeyStatus').textContent = 'Please enter a valid key.';
-    document.getElementById('apiKeyStatus').style.color = '#ef4444';
-    return;
-  }
-  if (!val.startsWith('gsk_')) {
-    document.getElementById('apiKeyStatus').textContent = 'Groq keys start with gsk_ — check your key.';
-    document.getElementById('apiKeyStatus').style.color = '#ef4444';
-    return;
-  }
-  localStorage.setItem('audix_groq_key', val);
-  document.getElementById('apiKeyDot').style.display = 'block';
-  document.getElementById('apiKeyStatus').textContent = '✓ Key saved! AI features are now active.';
-  document.getElementById('apiKeyStatus').style.color = '#22c55e';
-  toast('🔑 Groq API key saved — AI features enabled!', 'success');
-  setTimeout(closeApiKeyModal, 1200);
+function saveProviderKey(provider) {
+  const m = _PROVIDER_META[provider];
+  const val = document.getElementById(m.inputId).value.trim();
+  const status = document.getElementById(m.statusId);
+  if (!val || val.includes('•')) { status.textContent = 'Please paste a new key.'; status.style.color='#ef4444'; return; }
+  localStorage.setItem(m.storageKey, val);
+  status.textContent = '✓ Saved!';
+  status.style.color = '#22c55e';
+  document.getElementById(m.inputId).value = val.slice(0,8) + '••••••••••••';
+  document.getElementById(m.inputId).placeholder = 'Saved — paste to replace';
+  toast('🔑 ' + m.label + ' key saved!', 'success');
+  _refreshApiKeyDot();
 }
 
-function clearApiKey() {
-  localStorage.removeItem('audix_groq_key');
-  document.getElementById('apiKeyInput').value = '';
-  document.getElementById('apiKeyInput').placeholder = 'gsk_...';
-  document.getElementById('apiKeyDot').style.display = 'none';
-  document.getElementById('apiKeyStatus').textContent = 'Key cleared.';
-  document.getElementById('apiKeyStatus').style.color = 'var(--text2)';
-  toast('API key removed', '');
+function clearProviderKey(provider) {
+  const m = _PROVIDER_META[provider];
+  localStorage.removeItem(m.storageKey);
+  document.getElementById(m.inputId).value = '';
+  document.getElementById(m.inputId).placeholder = m.prefix + '...';
+  const status = document.getElementById(m.statusId);
+  status.textContent = 'Cleared.'; status.style.color = 'var(--text2)';
+  toast(m.label + ' key cleared', '');
+  _refreshApiKeyDot();
 }
 
-// Show green dot if key already saved
+function _refreshApiKeyDot() {
+  const dot = document.getElementById('apiKeyDot');
+  if (dot) dot.style.display = _anyAIKeySet() ? 'block' : 'none';
+}
+
 window.addEventListener('DOMContentLoaded', () => {
-  if (getGroqKey()) document.getElementById('apiKeyDot').style.display = 'block';
+  _refreshApiKeyDot();
 });
+// Legacy alias kept so old code that calls saveApiKey / clearApiKey doesn't break
+function saveApiKey() { saveProviderKey('groq'); }
+function clearApiKey() { clearProviderKey('groq'); }
 </script>
 
 <script>
