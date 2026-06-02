@@ -2013,7 +2013,7 @@ function handleFileUpload(e) {
 
     // Instantly apply local regex cleaner so names look clean from the start
     const cleaned = localCleanTitle(rawName);
-    const id = Date.now() + Math.random();
+    const id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
     const track = {
       id,
       name:   cleaned.title || rawName,
@@ -3962,7 +3962,7 @@ if('launchQueue' in window){
           const name = file.name.replace(/\.[^.]+$/,'');
           const parts = name.split(' - ');
           const track = {
-            id: Date.now()+Math.random(),
+            id: Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9),
             name: parts.length>1?parts[1].trim():name,
             artist: parts.length>1?parts[0].trim():'Unknown Artist',
             album:'Unknown Album', url,
