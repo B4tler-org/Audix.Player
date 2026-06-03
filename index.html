@@ -10,10 +10,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Audix">
 <link rel="manifest" href="manifest.json">
-<link rel="sitemap" type="application/xml" href="/Audix.Player/sitemap.xml">
 <meta property="og:site_name" content="Audix Music Player">
 <meta property="og:title" content="Audix Music Player">
-<meta property="og:url" content="https://b4tler-org.github.io/Audix.Player">
+<meta property="og:url" content="https://audixplayer.qzz.io">
 <meta property="og:description" content="Audix — a premium local music player with visualizer, equalizer and MusicBrainz search">
 <script type="application/ld+json">
 {
@@ -21,7 +20,7 @@
   "@type": "WebSite",
   "name": "Audix Music Player",
   "alternateName": "Audix",
-  "url": "https://b4tler-org.github.io/Audix.Player",
+  "url": "https://audixplayer.qzz.io",
   "description": "Audix — a premium local music player with visualizer, equalizer and MusicBrainz search"
 }
 </script>
@@ -79,7 +78,7 @@
   --glass: rgba(255,255,255,0.5);
 }
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;overflow:hidden;font-family:'Exo 2',sans-serif;touch-action:pan-y}
+html,body{height:100%;max-height:100%;overflow:hidden;font-family:'Exo 2',sans-serif;touch-action:manipulation;overscroll-behavior:none}
 body{background:var(--bg);color:var(--text);transition:background 0.4s,color 0.4s}
 
 /* LOADER */
@@ -124,7 +123,7 @@ body{background:var(--bg);color:var(--text);transition:background 0.4s,color 0.4
 
 /* MAIN PANEL */
 .main{flex:1;overflow:hidden;display:flex;flex-direction:column}
-.tab-content{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px;display:none;-webkit-overflow-scrolling:touch}
+.tab-content{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px;display:none;-webkit-overflow-scrolling:touch;height:0}
 .tab-content.active{display:flex;flex-direction:column;gap:16px}
 .tab-content::-webkit-scrollbar{width:4px}
 .tab-content::-webkit-scrollbar-track{background:transparent}
@@ -364,8 +363,10 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 @keyframes eqPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 
 /* BOTTOM NAV (mobile) */
-.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--bg2);border-top:1px solid var(--border);padding:8px 0 max(8px, env(safe-area-inset-bottom));justify-content:space-around;align-items:center;backdrop-filter:blur(16px)}
-.bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 16px;cursor:pointer;color:var(--text3);transition:color 0.2s;font-family:'Rajdhani';font-size:0.65rem;font-weight:700;letter-spacing:1px;border-radius:10px;min-width:60px;text-transform:uppercase}
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--bg2);border-top:1px solid var(--border);padding:8px 0 max(8px, env(safe-area-inset-bottom));overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;white-space:nowrap;backdrop-filter:blur(16px)}
+.bottom-nav::-webkit-scrollbar{display:none}
+.bottom-nav-inner{display:inline-flex;min-width:100%;align-items:center;padding:0 4px}
+.bn-item{display:inline-flex;flex-direction:column;align-items:center;gap:3px;padding:6px 14px;cursor:pointer;color:var(--text3);transition:color 0.2s;font-family:'Rajdhani';font-size:0.65rem;font-weight:700;letter-spacing:1px;border-radius:10px;min-width:60px;text-transform:uppercase;flex-shrink:0}
 .bn-item.active{color:var(--cyan)}
 .bn-icon{font-size:1.3rem;line-height:1}
 .bn-item.active .bn-icon{filter:drop-shadow(0 0 6px var(--cyan))}
@@ -407,6 +408,11 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .lyrics-fetch-btn{background:var(--grad);border:none;border-radius:8px;padding:6px 14px;color:white;font-size:0.78rem;font-family:'Exo 2';font-weight:600;cursor:pointer;transition:transform 0.15s}
 .lyrics-fetch-btn:hover{transform:scale(1.04)}
 .lyrics-fetch-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.lyrics-toggle-btn{background:var(--bg4);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--text2);cursor:pointer;font-size:0.75rem;font-family:'Exo 2';font-weight:600;transition:all 0.2s;white-space:nowrap}
+.lyrics-toggle-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,0.08)}
+.lyrics-toggle-btn.hidden-state{background:rgba(0,212,255,0.1);border-color:rgba(0,212,255,0.4);color:var(--cyan)}
+.lyrics-panel.lyrics-collapsed .lyrics-offset-bar,
+.lyrics-panel.lyrics-collapsed .lyrics-body{display:none!important}
 .lyrics-offset-bar{display:flex;align-items:center;gap:5px;padding:8px 14px;border-bottom:1px solid var(--border);background:rgba(0,212,255,0.03);flex-wrap:wrap}
 .offset-label{font-size:0.65rem;font-family:'Share Tech Mono';color:var(--text3);letter-spacing:1px;margin-right:2px;white-space:nowrap}
 .offset-btn{background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:0.7rem;font-family:'Share Tech Mono';color:var(--text2);cursor:pointer;transition:all 0.15s;white-space:nowrap}
@@ -1014,10 +1020,13 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
         </div>
 
         <!-- LYRICS PANEL -->
-        <div class="lyrics-panel">
+        <div class="lyrics-panel" id="lyricsPanel">
           <div class="lyrics-header">
             <div class="lyrics-title">🎤 Lyrics <span class="lyrics-sync-badge" id="lyricsSyncBadge" style="display:none">SYNCED</span></div>
-            <button class="lyrics-fetch-btn" id="lyricsFetchBtn" onclick="triggerIdentification()" disabled>Identify Track</button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="lyrics-toggle-btn" id="lyricsToggleBtn" onclick="toggleLyricsPanel()" title="Toggle Lyrics">👁 Hide</button>
+              <button class="lyrics-fetch-btn" id="lyricsFetchBtn" onclick="triggerIdentification()" disabled>Identify Track</button>
+            </div>
           </div>
           <div class="lyrics-offset-bar" id="lyricsOffsetBar" style="display:none">
             <span class="offset-label">Sync offset</span>
@@ -1380,6 +1389,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 
   <!-- BOTTOM NAV (mobile) -->
   <nav class="bottom-nav" id="bottomNav">
+    <div class="bottom-nav-inner">
     <div class="bn-item active" id="bn-player" onclick="openTab('player')">
       <span class="bn-icon">🎵</span>
       <span>Player</span>
@@ -1419,6 +1429,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
     <div class="bn-item" id="bn-dj" onclick="toggleDjPanel()">
       <span class="bn-icon">🎧</span>
       <span>DJ</span>
+    </div>
     </div>
   </nav>
 </div>
@@ -1552,6 +1563,16 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 <script>
 // ========== INDEXEDDB — persistent audio storage ==========
 // Stores actual audio Blobs so tracks survive app close/offline
+
+// ── Lyrics Panel Toggle ──
+function toggleLyricsPanel() {
+  const panel = document.getElementById('lyricsPanel');
+  const btn   = document.getElementById('lyricsToggleBtn');
+  if (!panel) return;
+  const isCollapsed = panel.classList.toggle('lyrics-collapsed');
+  btn.textContent  = isCollapsed ? '👁 Show' : '👁 Hide';
+  btn.classList.toggle('hidden-state', isCollapsed);
+}
 const DB_NAME    = 'audix-db';
 const DB_VERSION = 2;
 const STORE_AUDIO = 'audio-blobs';
