@@ -6549,22 +6549,26 @@ window.openTab = function(tab) {
 // ===== FEATURE: INTERNET RADIO ==============================
 // ============================================================
 const BUILT_IN_STATIONS = [
-  { name: 'Lofi Hip Hop Radio', genre: 'Lo-Fi / Chill', bitrate: '128k', icon: '🎷', url: 'https://streams.ilovemusic.de/iloveradio17.mp3' },
-  { name: 'Jazz24', genre: 'Jazz', bitrate: '128k', icon: '🎺', url: 'https://live.wostreaming.net/manifest/ppm-jazz24aac256-ibc1.m3u8' },
-  { name: 'SomaFM Groove Salad', genre: 'Ambient / Electronic', bitrate: '128k', icon: '🌿', url: 'https://ice2.somafm.com/groovesalad-128-mp3' },
-  { name: 'SomaFM Deep Space One', genre: 'Ambient / Space', bitrate: '128k', icon: '🚀', url: 'https://ice2.somafm.com/deepspaceone-128-mp3' },
-  { name: 'SomaFM Underground 80s', genre: '80s / New Wave', bitrate: '128k', icon: '🎸', url: 'https://ice2.somafm.com/u80s-128-mp3' },
-  { name: 'Radio Paradise Main Mix', genre: 'Eclectic / Rock', bitrate: '128k', icon: '🌎', url: 'https://stream.radioparadise.com/mp3-128' },
-  { name: 'FIP Radio', genre: 'Eclectic / French', bitrate: '128k', icon: '🗼', url: 'https://icecast.radiofrance.fr/fip-midfi.mp3' },
-  { name: '1.FM Classic Rock', genre: 'Classic Rock', bitrate: '128k', icon: '🤘', url: 'https://strm112.1.fm/classicrock_mobile_mp3' },
-  { name: 'Digitally Imported Chillout', genre: 'Chillout / Ambient', bitrate: '128k', icon: '🌊', url: 'https://prem2.di.fm/chillout?897c6fe5' },
-  { name: 'SomaFM Secret Agent', genre: 'Spy / Jazz / Lounge', bitrate: '128k', icon: '🕵️', url: 'https://ice2.somafm.com/secretagent-128-mp3' },
+  // ── International ──
+  { name: 'Lofi Hip Hop Radio', genre: 'Lo-Fi / Chill', bitrate: '128k', icon: '☕', url: 'https://streams.ilovemusic.de/iloveradio17.mp3', coverGradient: 'linear-gradient(135deg,#1a1a2e,#16213e)', coverText: 'LO', coverSub: 'Lo-Fi Chill' },
+  { name: 'Jazz FM (WBGO)', genre: 'Jazz', bitrate: '128k', icon: '🎺', url: 'https://wbgo.streamguys1.com/wbgo128', coverGradient: 'linear-gradient(135deg,#2c1810,#8b4513)', coverText: 'JZ', coverSub: 'Jazz FM' },
+  { name: 'SomaFM Groove Salad', genre: 'Ambient / Electronic', bitrate: '128k', icon: '🌿', url: 'https://ice2.somafm.com/groovesalad-128-mp3', coverGradient: 'linear-gradient(135deg,#0f4c1e,#1a7a35)', coverText: 'GS', coverSub: 'Groove Salad' },
+  { name: 'SomaFM Deep Space One', genre: 'Ambient / Space', bitrate: '128k', icon: '🚀', url: 'https://ice2.somafm.com/deepspaceone-128-mp3', coverGradient: 'linear-gradient(135deg,#020024,#090979)', coverText: 'DS', coverSub: 'Deep Space' },
+  { name: 'SomaFM Underground 80s', genre: '80s / New Wave', bitrate: '128k', icon: '🎸', url: 'https://ice2.somafm.com/u80s-128-mp3', coverGradient: 'linear-gradient(135deg,#ff00cc,#333399)', coverText: '80s', coverSub: 'Underground' },
+  { name: 'SomaFM Secret Agent', genre: 'Spy / Jazz / Lounge', bitrate: '128k', icon: '🕵️', url: 'https://ice2.somafm.com/secretagent-128-mp3', coverGradient: 'linear-gradient(135deg,#1a1a1a,#4a4a4a)', coverText: 'SA', coverSub: 'Secret Agent' },
+  { name: 'SomaFM Lush', genre: 'Dream Pop / Shoegaze', bitrate: '128k', icon: '🌸', url: 'https://ice2.somafm.com/lush-128-mp3', coverGradient: 'linear-gradient(135deg,#ff9a9e,#a18cd1)', coverText: 'LH', coverSub: 'Lush' },
+  { name: 'Radio Paradise Main Mix', genre: 'Eclectic / Rock', bitrate: '128k', icon: '🌎', url: 'https://stream.radioparadise.com/mp3-128', coverGradient: 'linear-gradient(135deg,#1565c0,#0d47a1)', coverText: 'RP', coverSub: 'Radio Paradise' },
+  { name: 'FIP Radio', genre: 'Eclectic / French', bitrate: '192k', icon: '🗼', url: 'https://icecast.radiofrance.fr/fip-hifi.mp3', coverGradient: 'linear-gradient(135deg,#00209f,#ef4135)', coverText: 'FIP', coverSub: 'Radio France' },
+  { name: 'Classic FM (UK)', genre: 'Classical', bitrate: '128k', icon: '🎻', url: 'https://media-ice.musicradio.com/ClassicFMMP3', coverGradient: 'linear-gradient(135deg,#1a237e,#283593)', coverText: 'CF', coverSub: 'Classic FM' },
+  { name: 'BBC World Service', genre: 'News / Talk', bitrate: '128k', icon: '🌐', url: 'https://stream.live.vc.bbcmedia.co.uk/bbc_world_service', coverGradient: 'linear-gradient(135deg,#bb1919,#8b0000)', coverText: 'BBC', coverSub: 'World Service' },
+  { name: 'NTS Radio 1', genre: 'Eclectic / Experimental', bitrate: '128k', icon: '📡', url: 'https://stream-relay-geo.ntslive.net/stream', coverGradient: 'linear-gradient(135deg,#000000,#333333)', coverText: 'NTS', coverSub: 'NTS Radio' },
   // ── Nepali Stations ──
   { name: 'Kantipur FM', genre: 'Nepali / News & Music', bitrate: 'Live', icon: '🇳🇵', url: 'https://stream.zeno.fm/6uh6g4mrnj8uv', coverGradient: 'linear-gradient(135deg,#c41e1e,#8b0000)', coverText: 'KF', coverSub: 'Kantipur FM' },
   { name: 'Kalika FM', genre: 'Nepali / Folk & Pop', bitrate: 'Live', icon: '🎵', url: 'https://stream.zeno.fm/w78a98fmqf8uv', coverGradient: 'linear-gradient(135deg,#1a6b3c,#0f4a2a)', coverText: 'KL', coverSub: 'Kalika FM' },
-  { name: 'Nepali ko Radio', genre: 'Nepali / Hits', bitrate: 'Live', icon: '📻', url: 'https://stream.zeno.fm/ts2xwk4w828uv', coverGradient: 'linear-gradient(135deg,#003893,#dc143c)', coverText: 'NR', coverSub: 'Nepali ko Radio' },
-  { name: 'Nepali Sanchar Radio', genre: 'Nepali / News & Entertainment', bitrate: 'Live', icon: '📡', url: 'https://stream.zeno.fm/5d0c9edg1y8uv', coverGradient: 'linear-gradient(135deg,#6a0dad,#3a0070)', coverText: 'NS', coverSub: 'Sanchar Radio' },
   { name: 'Hits FM 91.2', genre: 'Nepali / Hits & Pop', bitrate: '128k', icon: '🎤', url: 'https://stream.zeno.fm/v7yw6j5jrj8uv', coverGradient: 'linear-gradient(135deg,#ff6b00,#cc2200)', coverText: '91.2', coverSub: 'Hits FM' },
+  { name: 'Image FM 97.9', genre: 'Nepali / Pop & Hits', bitrate: 'Live', icon: '📻', url: 'https://stream.zeno.fm/yn65gdt0q38uv', coverGradient: 'linear-gradient(135deg,#003893,#dc143c)', coverText: 'IM', coverSub: 'Image FM' },
+  { name: 'Sagarmatha FM', genre: 'Nepali / Music & Talk', bitrate: 'Live', icon: '⛰️', url: 'https://stream.zeno.fm/hqua6dt0q38uv', coverGradient: 'linear-gradient(135deg,#2980b9,#1a5276)', coverText: 'SF', coverSub: 'Sagarmatha' },
+  { name: 'Nepal FM 91.8', genre: 'Nepali / News & Music', bitrate: 'Live', icon: '🏔️', url: 'https://stream.zeno.fm/m6yw6j5jrj8uv', coverGradient: 'linear-gradient(135deg,#6a0dad,#3a0070)', coverText: 'NF', coverSub: 'Nepal FM' },
 ];
 
 let _radioPlaying = false;
@@ -6714,6 +6718,8 @@ function toggleRadioPlayer() {
     _rpSyncUI('stopped');
     renderRadioStations();
     toast('Radio stopped', '');
+    // Restore music media session if a track is loaded
+    if (typeof updateMediaSession === 'function') updateMediaSession();
   } else {
     // Play
     if (state.isPlaying) { audio.pause(); state.isPlaying = false; updatePlayerUI(); }
@@ -6812,13 +6818,131 @@ radioAudio.onerror = () => {
 };
 
 function updateRadioPlayerUI() {
-  // Show station info in player when radio is playing
   if (_radioPlaying && _currentStation) {
     document.getElementById('songTitle').textContent = _currentStation.name;
     document.getElementById('songArtist').textContent = '📻 Live Radio · ' + (_currentStation.genre || '');
     document.getElementById('songAlbum').textContent = 'Internet Radio';
     document.getElementById('albumEmoji').textContent = _currentStation.icon || '📻';
+    // Update OS notification panel for radio
+    updateRadioMediaSession(_currentStation);
   }
+}
+
+// Generate a canvas image from a station's gradient + text for the notification artwork
+function _makeRadioArtwork(station) {
+  try {
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    // Parse gradient colors from coverGradient or use defaults
+    let c1 = '#0a0a2e', c2 = '#1a1a6e';
+    if (station.coverGradient) {
+      const m = station.coverGradient.match(/#[0-9a-f]{3,8}/gi);
+      if (m && m.length >= 2) { c1 = m[0]; c2 = m[1]; }
+    }
+
+    // Background gradient
+    const grad = ctx.createLinearGradient(0, 0, size, size);
+    grad.addColorStop(0, c1);
+    grad.addColorStop(1, c2);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+
+    // Glow circle
+    const glow = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size*0.45);
+    glow.addColorStop(0, 'rgba(255,255,255,0.18)');
+    glow.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, size, size);
+
+    // Outer ring
+    ctx.beginPath();
+    ctx.arc(size/2, size/2, size*0.38, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Inner circle
+    ctx.beginPath();
+    ctx.arc(size/2, size/2, size*0.32, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fill();
+
+    // Station text (coverText or first 2 chars of name)
+    const label = station.coverText || station.name.substring(0, 2).toUpperCase();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold ' + (label.length > 3 ? '72' : '96') + 'px "Arial", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 12;
+    ctx.fillText(label, size/2, size/2 - 20);
+
+    // Sub text (coverSub or genre)
+    const sub = station.coverSub || station.genre || '';
+    if (sub) {
+      ctx.font = '28px "Arial", sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.shadowBlur = 6;
+      ctx.fillText(sub.substring(0, 18), size/2, size/2 + 55);
+    }
+
+    // LIVE badge
+    ctx.fillStyle = 'rgba(255,60,60,0.9)';
+    ctx.beginPath();
+    const bw = 100, bh = 34, bx = size/2 - bw/2, by = size - 90;
+    ctx.roundRect(bx, by, bw, bh, 8);
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 20px "Arial", sans-serif';
+    ctx.shadowBlur = 0;
+    ctx.fillText('● LIVE', size/2, by + bh/2 + 1);
+
+    return canvas.toDataURL('image/jpeg', 0.85);
+  } catch(e) { return null; }
+}
+
+const _radioArtCache = new Map();
+
+function updateRadioMediaSession(station) {
+  if (!('mediaSession' in navigator) || !station) return;
+
+  // Get or generate artwork
+  let artBlobUrl = _radioArtCache.get(station.name);
+  if (!artBlobUrl) {
+    const dataUrl = _makeRadioArtwork(station);
+    if (dataUrl) {
+      // Convert data URL to blob URL
+      try {
+        const byteStr = atob(dataUrl.split(',')[1]);
+        const bytes = new Uint8Array(byteStr.length);
+        for (let i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
+        const blob = new Blob([bytes], { type: 'image/jpeg' });
+        artBlobUrl = URL.createObjectURL(blob);
+        _radioArtCache.set(station.name, artBlobUrl);
+      } catch(e) {}
+    }
+  }
+
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title:  station.name,
+    artist: '📻 Live Radio',
+    album:  station.genre || 'Internet Radio',
+    artwork: artBlobUrl
+      ? [{ src: artBlobUrl, sizes: '512x512', type: 'image/jpeg' }]
+      : [{ src: 'https://b4tler-org.github.io/Audix.Player/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' }]
+  });
+
+  navigator.mediaSession.playbackState = 'playing';
+
+  navigator.mediaSession.setActionHandler('play',  () => { if (!_radioPlaying) toggleRadioPlayer(); });
+  navigator.mediaSession.setActionHandler('pause', () => { if (_radioPlaying)  toggleRadioPlayer(); });
+  navigator.mediaSession.setActionHandler('stop',  () => { if (_radioPlaying)  toggleRadioPlayer(); });
+  // No prev/next for radio — clear them so they don't show stale track handlers
+  try { navigator.mediaSession.setActionHandler('previoustrack', null); } catch(e) {}
+  try { navigator.mediaSession.setActionHandler('nexttrack',     null); } catch(e) {}
 }
 
 function addCustomRadioStation() {
