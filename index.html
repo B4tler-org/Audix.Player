@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.json">
 <meta property="og:site_name" content="Audix Music Player">
 <meta property="og:title" content="Audix Music Player">
-<meta property="og:url" content="https://audixplayer.qzz.io">
+<meta property="og:url" content="https://b4tler-org.github.io/Audix.Player/">
 <meta property="og:description" content="Audix — a premium local music player with visualizer, equalizer and MusicBrainz search">
 <script type="application/ld+json">
 {
@@ -20,14 +20,23 @@
   "@type": "WebSite",
   "name": "Audix Music Player",
   "alternateName": "Audix",
-  "url": "https://audixplayer.qzz.io",
+  "url": "https://b4tler-org.github.io/Audix.Player/",
   "description": "Audix — a premium local music player with visualizer, equalizer and MusicBrainz search"
 }
 </script>
-<link rel="apple-touch-icon" href="/Audix/icons/apple-touch-icon.png">
-<link rel="apple-touch-icon" sizes="152x152" href="/Audix/icons/icon-152x152.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/Audix/icons/icon-180x180.png">
-<link rel="apple-touch-icon" sizes="192x192" href="/Audix/icons/icon-192x192.png">
+<link rel="apple-touch-icon" href="/Audix.Player/icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/Audix.Player/icons/icon-152x152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/Audix.Player/icons/icon-180x180.png">
+<link rel="apple-touch-icon" sizes="192x192" href="/Audix.Player/icons/icon-192x192.png">
+<script>
+  // GitHub Pages SPA/PWA fix — restore path after 404 redirect
+  (function() {
+    const p = new URLSearchParams(window.location.search).get('p');
+    if (p) {
+      window.history.replaceState(null, null, p + (window.location.hash || ''));
+    }
+  })();
+</script>
 <style>
 /* Window Controls Overlay — desktop PWA titlebar integration */
 @media (display-mode: window-controls-overlay) {

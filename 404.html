@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Audix Music Player</title>
+  <script>
+    // GitHub Pages 404 → SPA redirect fix
+    // Redirects all 404s back to index.html while preserving the path
+    var path = window.location.pathname;
+    var search = window.location.search;
+    var hash = window.location.hash;
+    var redirectUrl = window.location.origin + '/Audix.Player/?p=' +
+      encodeURIComponent(path.replace('/Audix.Player', '') + search + hash);
+    window.location.replace(redirectUrl);
+  </script>
+</head>
+<body></body>
+</html>
