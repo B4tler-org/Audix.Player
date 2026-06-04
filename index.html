@@ -1323,6 +1323,26 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
           <button class="report-generate-btn" onclick="generateMonthlyReport()">✦ Generate AI Report</button>
         </div>
 
+        <!-- RADIO REPORT -->
+        <div class="aihub-section">
+          <div class="aihub-section-title">📻 Radio Report</div>
+          <div class="report-grid" id="radioReportGrid">
+            <div class="report-stat"><div class="report-stat-val" id="radioRepMinutes">0</div><div class="report-stat-lbl">Minutes Listened</div></div>
+            <div class="report-stat"><div class="report-stat-val" id="radioRepSessions">0</div><div class="report-stat-lbl">Sessions</div></div>
+            <div class="report-stat"><div class="report-stat-val" id="radioRepStations">0</div><div class="report-stat-lbl">Stations Tuned</div></div>
+            <div class="report-stat"><div class="report-stat-val" id="radioRepCustom">0</div><div class="report-stat-lbl">My Stations</div></div>
+          </div>
+          <div id="radioTopStation" style="margin-top:10px;display:none">
+            <div style="font-family:'Share Tech Mono';font-size:0.65rem;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">🏆 Most Listened</div>
+            <div class="top-list" id="radioTopList"></div>
+          </div>
+          <div id="radioCustomAdded" style="margin-top:10px;display:none">
+            <div style="font-family:'Share Tech Mono';font-size:0.65rem;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">📡 My Custom Stations</div>
+            <div id="radioCustomAddedList" style="display:flex;flex-direction:column;gap:6px"></div>
+          </div>
+          <button class="report-generate-btn" style="margin-top:10px" onclick="resetRadioReport()">🗑 Reset Radio Stats</button>
+        </div>
+
         <!-- AI PLAYLIST GENERATOR -->
         <div class="aihub-section">
           <div class="aihub-section-title">🎼 AI Playlist Generator</div>
@@ -5849,6 +5869,7 @@ window.openTab = function(tab) {
     });
   }
   if (tab === 'radio') renderRadioStations();
+  if (tab === 'aihub') { renderStreakCalendar(); renderTopCharts(); renderMonthlyStats(); renderRadioReport(); }
   if (tab === 'achievements') renderAchievements();
 };
 
@@ -5923,6 +5944,7 @@ function playRadioStation(idx, isCustom) {
 
   if (_currentStation && _currentStation.url === station.url && _radioPlaying) {
     // Stop radio
+    _radioTrackStop(_currentStation);
     radioAudio.pause();
     radioAudio.src = '';
     _radioPlaying = false;
@@ -5933,11 +5955,17 @@ function playRadioStation(idx, isCustom) {
     return;
   }
 
+  // If switching stations, stop tracking the previous one
+  if (_currentStation && _radioPlaying) {
+    _radioTrackStop(_currentStation);
+  }
+
   _currentStation = station;
   _radioPlaying = true;
   radioAudio.src = station.url;
   radioAudio.volume = state.volume;
   radioAudio.play().then(() => {
+    _radioTrackStart(station);
     toast('📻 Now streaming: ' + station.name, 'success');
     renderRadioStations();
     updateRadioPlayerUI();
@@ -5952,6 +5980,7 @@ function playRadioStation(idx, isCustom) {
 
 radioAudio.onerror = () => {
   if (_radioPlaying) {
+    _radioTrackStop(_currentStation);
     toast('⚠ Stream connection lost — try another station', 'error');
     _radioPlaying = false;
     _currentStation = null;
@@ -5976,8 +6005,10 @@ function addCustomRadioStation() {
   const genre = document.getElementById('radioGenreInp')?.value?.trim();
   if (!name || !url) { toast('Enter station name and URL', 'error'); return; }
   if (!url.startsWith('http')) { toast('URL must start with http/https', 'error'); return; }
-  _customStations.push({ name, url, genre: genre || 'Custom' });
+  const newStation = { name, url, genre: genre || 'Custom' };
+  _customStations.push(newStation);
   localStorage.setItem('audix_radio_stations', JSON.stringify(_customStations));
+  _radioTrackCustomAdded(newStation);
   if (document.getElementById('radioNameInp')) document.getElementById('radioNameInp').value = '';
   if (document.getElementById('radioUrlInp')) document.getElementById('radioUrlInp').value = '';
   if (document.getElementById('radioGenreInp')) document.getElementById('radioGenreInp').value = '';
@@ -5991,12 +6022,140 @@ function removeCustomStation(idx) {
   renderRadioStations();
 }
 
+// ============================================================
+// ===== RADIO STATS TRACKING =================================
+// ============================================================
+const RADIO_STATS_KEY = 'audix_radio_stats_v1';
+
+function loadRadioStats() {
+  try { return JSON.parse(localStorage.getItem(RADIO_STATS_KEY) || '{}'); } catch(e) { return {}; }
+}
+function saveRadioStats(s) { localStorage.setItem(RADIO_STATS_KEY, JSON.stringify(s)); }
+
+let _radioSessionStart = null; // timestamp when current station started
+
+// Call when a station starts playing
+function _radioTrackStart(station) {
+  _radioSessionStart = Date.now();
+}
+
+// Call when a station stops (pause, switch, or error)
+function _radioTrackStop(station) {
+  if (!_radioSessionStart || !station) { _radioSessionStart = null; return; }
+  const elapsed = Math.round((Date.now() - _radioSessionStart) / 1000); // seconds
+  _radioSessionStart = null;
+  if (elapsed < 5) return; // ignore very short blips
+
+  const s = loadRadioStats();
+  const today = new Date().toISOString().slice(0, 10);
+  const key = station.name;
+
+  // Total seconds per station
+  if (!s.stations) s.stations = {};
+  if (!s.stations[key]) s.stations[key] = { name: station.name, genre: station.genre || '', secs: 0, sessions: 0 };
+  s.stations[key].secs += elapsed;
+  s.stations[key].sessions += 1;
+
+  // Total overall seconds
+  s.totalSecs = (s.totalSecs || 0) + elapsed;
+  s.totalSessions = (s.totalSessions || 0) + 1;
+
+  // Active days
+  if (!s.days) s.days = {};
+  s.days[today] = (s.days[today] || 0) + elapsed;
+
+  saveRadioStats(s);
+}
+
+// Track custom station additions
+function _radioTrackCustomAdded(station) {
+  const s = loadRadioStats();
+  if (!s.customAdded) s.customAdded = [];
+  // avoid exact duplicates
+  if (!s.customAdded.find(c => c.url === station.url)) {
+    s.customAdded.push({ name: station.name, genre: station.genre || 'Custom', url: station.url, addedAt: new Date().toISOString().slice(0,10) });
+  }
+  saveRadioStats(s);
+}
+
+function renderRadioReport() {
+  const s = loadRadioStats();
+  const totalMins = Math.round((s.totalSecs || 0) / 60);
+  document.getElementById('radioRepMinutes').textContent = totalMins > 999 ? Math.round(totalMins/60)+'h' : totalMins;
+  document.getElementById('radioRepSessions').textContent = s.totalSessions || 0;
+
+  const stationEntries = Object.values(s.stations || {});
+  document.getElementById('radioRepStations').textContent = stationEntries.length;
+  document.getElementById('radioRepCustom').textContent = (s.customAdded || []).length;
+
+  // Top stations list
+  const topEl = document.getElementById('radioTopStation');
+  const topList = document.getElementById('radioTopList');
+  if (stationEntries.length && topList) {
+    topEl.style.display = '';
+    const sorted = [...stationEntries].sort((a, b) => b.secs - a.secs).slice(0, 5);
+    const maxSecs = sorted[0]?.secs || 1;
+    topList.innerHTML = sorted.map((st, i) => {
+      const mins = Math.round(st.secs / 60);
+      const pct = Math.round((st.secs / maxSecs) * 100);
+      const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+      return `<div class="top-item">
+        <div class="top-rank ${rankClass}">${i+1}</div>
+        <div class="top-info">
+          <div class="top-name">${st.name}</div>
+          <div class="top-sub">${st.genre} · ${mins} min${mins!==1?'s':''} · ${st.sessions} session${st.sessions!==1?'s':''}</div>
+        </div>
+        <div class="top-bar-wrap"><div class="top-bar" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+  } else if (topEl) {
+    topEl.style.display = 'none';
+  }
+
+  // Custom stations added
+  const customEl = document.getElementById('radioCustomAdded');
+  const customList = document.getElementById('radioCustomAddedList');
+  const added = s.customAdded || [];
+  if (added.length && customList) {
+    customEl.style.display = '';
+    customList.innerHTML = added.map(c => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg4);border-radius:10px">
+        <span style="font-size:1rem">📡</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
+          <div style="font-size:0.68rem;color:var(--text2);font-family:'Rajdhani'">${c.genre} · Added ${c.addedAt}</div>
+        </div>
+      </div>`).join('');
+  } else if (customEl) {
+    customEl.style.display = 'none';
+  }
+}
+
+function resetRadioReport() {
+  if (!confirm('Reset all radio listening stats? This cannot be undone.')) return;
+  localStorage.removeItem(RADIO_STATS_KEY);
+  renderRadioReport();
+  toast('Radio stats cleared', '');
+}
+
 // Keep radio volume in sync with main volume
 const _origSetVolume = setVolume;
 window.setVolume = function(e) {
   _origSetVolume(e);
   if (radioAudio) radioAudio.volume = state.volume;
 };
+
+// Save radio listen time when app goes to background or is closed
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && _radioPlaying && _currentStation) {
+    _radioTrackStop(_currentStation);
+    // Restart the timer so it keeps accumulating if they come back
+    _radioSessionStart = Date.now();
+  }
+});
+window.addEventListener('beforeunload', () => {
+  if (_radioPlaying && _currentStation) _radioTrackStop(_currentStation);
+});
 
 // ============================================================
 // ===== FEATURE: VOLUME NORMALIZATION ========================
