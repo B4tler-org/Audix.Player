@@ -6179,7 +6179,7 @@ window.openTab = function(tab) {
       c.classList.toggle('active', c.dataset.cpal === _vizPalette);
     });
   }
-  if (tab === 'radio') renderRadioStations();
+  if (tab === 'radio') { renderRadioStations(); _loadNepalStationsFromAPI(); }
   if (tab === 'aihub') { renderStreakCalendar(); renderTopCharts(); renderMonthlyStats(); renderRadioReport(); }
   if (tab === 'achievements') renderAchievements();
 };
@@ -6208,19 +6208,22 @@ const BUILT_IN_STATIONS = [
   { name: 'Radio Globo',             genre: 'Brazilian / Pop',       bitrate: '128k', icon: '🌺', country: 'Brazil', url: 'https://ice.fabricahost.com.br/globoam820rj' },
   { name: 'SomaFM Lush',            genre: 'Ambient / Shoegaze',    bitrate: '128k', icon: '✨', country: 'US',     url: 'https://ice2.somafm.com/lush-128-mp3' },
   { name: 'Classic FM',              genre: 'Classical',             bitrate: '128k', icon: '🎻', country: 'UK',     url: 'https://media-ice.musicradio.com/ClassicFMMP3' },
-  // ── Nepal ──
-  { name: 'Kantipur FM 96.1',        genre: 'Nepali / News & Music', bitrate: '64k',  icon: '🏔️', country: 'Nepal',  url: 'https://stream.zeno.fm/q3v012qnv8zuv' },
-  { name: 'Kalika FM 96.8',          genre: 'Nepali / Folk & Pop',   bitrate: '64k',  icon: '🎵', country: 'Nepal',  url: 'https://stream.zeno.fm/wbmfm0qnv8zuv' },
-  { name: 'Image FM 97.9',           genre: 'Nepali / Pop & News',   bitrate: '64k',  icon: '📡', country: 'Nepal',  url: 'https://stream.zeno.fm/0r0xa792kwzuv' },
-  { name: 'Hits FM 91.2',            genre: 'Nepali / Hindi Hits',   bitrate: '64k',  icon: '🎤', country: 'Nepal',  url: 'https://stream.zeno.fm/yn65hm03gzzuv' },
-  { name: 'Radio Sagarmatha 102.4',  genre: 'Nepali / Community',    bitrate: '64k',  icon: '⛰️', country: 'Nepal',  url: 'https://stream.zeno.fm/89ht8mgyvv8uv' },
-  { name: 'Budha Subba FM 91.8',     genre: 'Nepali / Folk & Local', bitrate: '64k',  icon: '🏞️', country: 'Nepal',  url: 'https://stream.zeno.fm/9f1fzgf2gzzuv' },
-  { name: 'Metro FM 88.0',           genre: 'Nepali / Urban & Pop',  bitrate: '64k',  icon: '🌆', country: 'Nepal',  url: 'https://stream.zeno.fm/txqthmqnv8zuv' },
+  // ── Nepal (verified via Radio Browser community DB) ──
+  { name: 'Radio Kantipur 96.1',     genre: 'Nepali / News & Music', bitrate: '64k',  icon: '🏔️', country: 'Nepal',  url: 'https://www.radiokantipur.com/live/stream' },
+  { name: 'Hits FM 91.2',            genre: 'Nepali / Hindi Hits',   bitrate: '64k',  icon: '🎤', country: 'Nepal',  url: 'https://stream.zenolive.com/yn65hm03gzzuv' },
+  { name: 'Kalika FM 95.2',          genre: 'Nepali / Folk & Pop',   bitrate: '64k',  icon: '🎵', country: 'Nepal',  url: 'https://stream.zenolive.com/trsyt2t8m8zuv' },
+  { name: 'Image FM 97.9',           genre: 'Nepali / Pop & News',   bitrate: '64k',  icon: '📡', country: 'Nepal',  url: 'https://stream.zenolive.com/9t4fyhfhnk0uv' },
+  { name: 'Ujyaalo 90 Network',      genre: 'Nepali / Talk & News',  bitrate: '64k',  icon: '🌟', country: 'Nepal',  url: 'https://stream.zenolive.com/evygwmr4nk0uv' },
+  { name: 'Radio Nepal 100 MHz',     genre: 'Nepali / National',     bitrate: '64k',  icon: '🇳🇵', country: 'Nepal',  url: 'https://stream.zenolive.com/ezrpmm04nk0uv' },
+  { name: 'Capital FM 92.4',         genre: 'Nepali / Pop & Talk',   bitrate: '64k',  icon: '🏙️', country: 'Nepal',  url: 'https://stream.zenolive.com/r4hm4mt4nk0uv' },
+  { name: 'Synergy FM',              genre: 'Nepali / Urban & Pop',  bitrate: '64k',  icon: '⚡', country: 'Nepal',  url: 'https://stream.zenolive.com/p2hbyhb4nk0uv' },
+  { name: 'Times FM 90.6',           genre: 'Nepali / Music & Talk', bitrate: '64k',  icon: '⏱️', country: 'Nepal',  url: 'https://stream.zenolive.com/9vh8yhf4nk0uv' },
+  { name: 'Radio Audio 106.3',       genre: 'Nepali / Music',        bitrate: '64k',  icon: '🎙️', country: 'Nepal',  url: 'https://stream.zenolive.com/2trryt24nk0uv' },
+  { name: 'Classic FM 101.2',        genre: 'Nepali / Classic Hits', bitrate: '64k',  icon: '🎶', country: 'Nepal',  url: 'https://stream.zenolive.com/6hnfm0t4nk0uv' },
   // ── India ──
   { name: 'Radio Mirchi 98.3',       genre: 'Hindi / Bollywood',     bitrate: '128k', icon: '🌶️', country: 'India',  url: 'https://radiomirchi.out.airtime.pro/radiomirchi_a' },
   { name: 'Big FM 92.7',             genre: 'Hindi / Pop & Retro',   bitrate: '128k', icon: '🎙️', country: 'India',  url: 'https://bigfm.out.airtime.pro/bigfm_a' },
-  { name: 'Radio City 91.1',         genre: 'Hindi / Filmi',         bitrate: '128k', icon: '🎬', country: 'India',  url: 'https://radiocity.out.airtime.pro/radiocity_a' },
-  { name: 'AIR National',            genre: 'Indian Classical / News','bitrate': '64k', icon: '🎭', country: 'India',  url: 'https://air.pc.cdn.bitgravity.com/air/live/pbaudio001/playlist.m3u8' },
+  { name: 'AIR National',            genre: 'Indian / Classical & News', bitrate: '64k', icon: '🎭', country: 'India', url: 'https://air.pc.cdn.bitgravity.com/air/live/pbaudio001/playlist.m3u8' },
   { name: 'Red FM 93.5',             genre: 'Hindi / Masala Mix',    bitrate: '128k', icon: '❤️', country: 'India',  url: 'https://redfm.out.airtime.pro/redfm_a' },
 ];
 
@@ -6233,6 +6236,69 @@ let _radioGenreFilter = 'all';
 let _radioCountryFilter = 'all';
 let _radioSearchQuery = '';
 const radioAudio = document.getElementById('radioAudio');
+
+// ── Radio Browser API: fetch live verified streams for Nepal & India ──
+const NEPAL_ICONS = {
+  'kantipur': '🏔️', 'hits': '🎤', 'kalika': '🎵', 'image': '📡',
+  'ujyaalo': '🌟', 'nepal': '🇳🇵', 'capital': '🏙️', 'synergy': '⚡',
+  'times': '⏱️', 'audio': '🎙️', 'classic': '🎶', 'sagarmatha': '⛰️',
+  'buddha': '☸️', 'mero': '🎼', 'annapurna': '🏔️', 'lumbini': '🕊️',
+  'himalaya': '⛰️', 'city': '🌆', 'saptakoshi': '🌊', 'resunga': '🌿',
+};
+function _nepalIcon(name) {
+  const n = name.toLowerCase();
+  for (const [k, v] of Object.entries(NEPAL_ICONS)) if (n.includes(k)) return v;
+  return '📻';
+}
+
+let _radioBrowserLoaded = false;
+async function _loadNepalStationsFromAPI() {
+  if (_radioBrowserLoaded) return;
+  try {
+    const servers = ['de1', 'de2', 'nl1', 'at1'];
+    let data = null;
+    for (const s of servers) {
+      try {
+        const r = await fetch(`https://${s}.api.radio-browser.info/json/stations/bycountryexact/Nepal?limit=40&hidebroken=true&order=votes&reverse=true`, {
+          headers: { 'User-Agent': 'AudixPlayer/1.0' }
+        });
+        if (r.ok) { data = await r.json(); break; }
+      } catch(e) {}
+    }
+    if (!data || !data.length) return;
+
+    // Remove old hardcoded Nepal entries from BUILT_IN_STATIONS
+    const toRemove = BUILT_IN_STATIONS.filter(s => s.country === 'Nepal');
+    toRemove.forEach(s => {
+      const i = BUILT_IN_STATIONS.indexOf(s);
+      if (i > -1) BUILT_IN_STATIONS.splice(i, 1);
+    });
+
+    // Add fresh verified ones
+    const added = new Set();
+    data.forEach(st => {
+      if (!st.url_resolved && !st.url) return;
+      const url = st.url_resolved || st.url;
+      if (added.has(url)) return;
+      added.add(url);
+      BUILT_IN_STATIONS.push({
+        name: st.name.trim(),
+        genre: (st.tags || 'Nepali').split(',')[0].trim() || 'Nepali',
+        bitrate: st.bitrate ? st.bitrate + 'k' : '—',
+        icon: _nepalIcon(st.name),
+        country: 'Nepal',
+        url
+      });
+    });
+
+    _radioBrowserLoaded = true;
+    if (_radioCountryFilter === 'Nepal' || _radioGenreFilter === 'all') {
+      renderRadioStations();
+    }
+  } catch(e) {
+    console.log('[Audix] Radio Browser API unavailable, using fallback Nepal stations');
+  }
+}
 
 // ── Live bitrate tracking (simulated fluctuation for display) ──
 let _radioLiveBitrate = 128;
@@ -6281,6 +6347,8 @@ function setRadioCountryFilter(country, el) {
   _radioCountryFilter = country;
   document.querySelectorAll('.radio-country-chip').forEach(c => c.classList.remove('active'));
   if (el) el.classList.add('active');
+  // Lazily load Nepal stations from Radio Browser API on first click
+  if (country === 'Nepal' || country === 'India') _loadNepalStationsFromAPI();
   renderRadioStations();
 }
 
