@@ -760,7 +760,70 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .norm-meter-bar{width:4px;border-radius:2px;background:var(--grad);transition:height 0.15s}
 .norm-db-label{font-family:'Share Tech Mono';font-size:0.72rem;color:var(--cyan);flex-shrink:0}
 
-/* ===== CROSSFADE (invisible but indicator) ===== */
+/* ===== RADIO PLAYER MODAL ===== */
+#radioPlayerModal{position:fixed;inset:0;z-index:6000;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.75);backdrop-filter:blur(14px)}
+#radioPlayerModal.active{display:flex}
+.radio-player-sheet{background:var(--bg2);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:0 0 env(safe-area-inset-bottom,0);width:100%;max-width:480px;animation:sheetUp 0.35s cubic-bezier(.4,0,.2,1);overflow:hidden;box-shadow:0 -12px 60px rgba(0,0,0,0.6)}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.rp-cover-wrap{position:relative;width:100%;height:200px;overflow:hidden;flex-shrink:0}
+.rp-cover-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(20px) brightness(0.4) saturate(1.5);transform:scale(1.15);transition:background 0.6s}
+.rp-cover-art{position:relative;z-index:1;width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px}
+.rp-art-circle{width:110px;height:110px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;border:3px solid rgba(255,255,255,0.2);box-shadow:0 0 40px rgba(0,0,0,0.5),0 0 0 6px rgba(255,255,255,0.07);position:relative;overflow:hidden}
+.rp-art-text{font-size:2rem;font-weight:900;color:white;letter-spacing:-1px;text-shadow:0 2px 8px rgba(0,0,0,0.5);line-height:1;z-index:1}
+.rp-art-sub{font-size:0.6rem;font-family:'Share Tech Mono';color:rgba(255,255,255,0.7);letter-spacing:2px;text-transform:uppercase;z-index:1;text-align:center;padding:0 4px}
+.rp-art-spin-ring{position:absolute;inset:-4px;border-radius:50%;border:2px solid transparent;border-top-color:rgba(255,255,255,0.6);animation:spin 2s linear infinite;pointer-events:none;opacity:0;transition:opacity 0.3s}
+.rp-art-circle.playing .rp-art-spin-ring{opacity:1}
+.rp-body{padding:20px 22px 24px;display:flex;flex-direction:column;gap:14px}
+.rp-header{display:flex;align-items:flex-start;justify-content:space-between}
+.rp-station-name{font-size:1.3rem;font-weight:800;color:var(--text);font-family:'Exo 2';line-height:1.1}
+.rp-station-genre{font-size:0.78rem;color:var(--text2);font-family:'Rajdhani';letter-spacing:1px;margin-top:3px}
+.rp-close{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:6px 12px;color:var(--text2);cursor:pointer;font-size:0.9rem;transition:all 0.2s;flex-shrink:0}
+.rp-close:hover{color:var(--cyan);border-color:var(--cyan)}
+.rp-status-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:12px}
+.rp-live-dot{width:8px;height:8px;border-radius:50%;background:#ef4444;box-shadow:0 0 8px #ef4444;animation:livePulse 1.2s ease-in-out infinite;flex-shrink:0}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.8)}}
+.rp-live-dot.buffering{background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+.rp-live-dot.stopped{background:var(--text3);box-shadow:none;animation:none}
+.rp-status-text{font-size:0.8rem;font-family:'Rajdhani';font-weight:600;color:var(--text2);letter-spacing:1px;flex:1}
+.rp-bitrate{font-family:'Share Tech Mono';font-size:0.68rem;color:var(--text3)}
+.rp-controls{display:flex;align-items:center;gap:12px}
+.rp-play-btn{width:64px;height:64px;border-radius:50%;background:var(--grad);border:none;color:white;font-size:1.5rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 0 28px rgba(139,92,246,0.5),0 4px 16px rgba(0,0,0,0.3);transition:transform 0.15s,box-shadow 0.2s;flex-shrink:0}
+.rp-play-btn:hover{transform:scale(1.08);box-shadow:0 0 40px rgba(139,92,246,0.7)}
+.rp-play-btn:active{transform:scale(0.95)}
+.rp-vol-row{flex:1;display:flex;align-items:center;gap:10px}
+.rp-vol-icon{font-size:1rem;color:var(--text2)}
+.rp-vol-slider{flex:1;height:4px;background:var(--bg4);border-radius:2px;cursor:pointer;-webkit-appearance:none;appearance:none;outline:none}
+.rp-vol-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--grad);cursor:pointer}
+.rp-wave{display:flex;align-items:center;gap:2px;height:24px;flex-shrink:0}
+.rp-wave-bar{width:3px;border-radius:2px;background:var(--grad);animation:waveBar 0.8s ease-in-out infinite;transform-origin:bottom}
+.rp-wave-bar:nth-child(1){animation-delay:0s;height:8px}
+.rp-wave-bar:nth-child(2){animation-delay:0.15s;height:16px}
+.rp-wave-bar:nth-child(3){animation-delay:0.3s;height:20px}
+.rp-wave-bar:nth-child(4){animation-delay:0.15s;height:14px}
+.rp-wave-bar:nth-child(5){animation-delay:0s;height:8px}
+@keyframes waveBar{0%,100%{transform:scaleY(0.4)}50%{transform:scaleY(1)}}
+.rp-wave.stopped .rp-wave-bar{animation:none;transform:scaleY(0.3);opacity:0.4}
+
+/* Radio card grid layout */
+.radio-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.radio-card{border-radius:16px;overflow:hidden;cursor:pointer;border:1px solid var(--border);background:var(--bg3);transition:all 0.22s;position:relative}
+.radio-card:hover{transform:translateY(-2px);border-color:rgba(0,212,255,0.4);box-shadow:0 6px 20px rgba(0,0,0,0.3)}
+.radio-card.playing{border-color:rgba(0,212,255,0.5);box-shadow:0 0 0 2px rgba(0,212,255,0.3),0 6px 24px rgba(0,212,255,0.15)}
+.radio-card-art{height:90px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.radio-card-art-inner{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;border:2px solid rgba(255,255,255,0.2);position:relative;overflow:hidden}
+.radio-card-art-text{font-size:1rem;font-weight:900;color:white;letter-spacing:-0.5px;line-height:1;z-index:1;text-shadow:0 2px 4px rgba(0,0,0,0.4)}
+.radio-card-art-sub{font-size:0.45rem;font-family:'Share Tech Mono';color:rgba(255,255,255,0.7);letter-spacing:1.5px;text-transform:uppercase;z-index:1;text-align:center;margin-top:1px}
+.radio-card-art-emoji{font-size:1.6rem;z-index:1}
+.radio-card-art-spin{position:absolute;inset:-3px;border-radius:50%;border:2px solid transparent;border-top-color:rgba(255,255,255,0.7);animation:spin 1.8s linear infinite;pointer-events:none;opacity:0;transition:opacity 0.3s}
+.radio-card.playing .radio-card-art-spin{opacity:1}
+.radio-card-info{padding:10px 12px 12px}
+.radio-card-name{font-size:0.82rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.radio-card.playing .radio-card-name{color:var(--cyan)}
+.radio-card-genre{font-size:0.65rem;color:var(--text2);font-family:'Rajdhani';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.radio-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.radio-card-live{background:linear-gradient(135deg,#ef4444,#f97316);border-radius:4px;padding:1px 6px;font-size:0.58rem;font-weight:700;color:white;letter-spacing:1px}
+.radio-card-bitrate{font-family:'Share Tech Mono';font-size:0.58rem;color:var(--text3)}
+
 .crossfade-indicator{display:flex;align-items:center;gap:8px;font-family:'Share Tech Mono';font-size:0.68rem;color:var(--text3);padding:4px 8px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.1);border-radius:8px}
 .crossfade-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:cfPulse 2s ease-in-out infinite}
 @keyframes cfPulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
@@ -1421,11 +1484,11 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 
         <div class="section-card">
           <div class="section-card-title">Featured Stations</div>
-          <div class="track-list" id="radioStationList"></div>
+          <div class="radio-card-grid" id="radioStationList"></div>
         </div>
         <div class="section-card" id="customRadioSection" style="display:none">
           <div class="section-card-title">My Stations</div>
-          <div class="track-list" id="customRadioList"></div>
+          <div class="radio-card-grid" id="customRadioList"></div>
         </div>
       </div>
 
@@ -1506,7 +1569,52 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 </div>
 
 
-<!-- ID3 TAG EDITOR MODAL -->
+<!-- RADIO PLAYER MODAL -->
+<div id="radioPlayerModal">
+  <div class="radio-player-sheet" id="radioPlayerSheet">
+    <div class="rp-cover-wrap" id="rpCoverWrap">
+      <div class="rp-cover-bg" id="rpCoverBg"></div>
+      <div class="rp-cover-art">
+        <div class="rp-art-circle" id="rpArtCircle">
+          <div class="rp-art-spin-ring"></div>
+          <div class="rp-art-text" id="rpArtText">📻</div>
+          <div class="rp-art-sub" id="rpArtSub"></div>
+        </div>
+      </div>
+    </div>
+    <div class="rp-body">
+      <div class="rp-header">
+        <div>
+          <div class="rp-station-name" id="rpStationName">Station Name</div>
+          <div class="rp-station-genre" id="rpStationGenre">Genre</div>
+        </div>
+        <button class="rp-close" onclick="closeRadioPlayer()">✕</button>
+      </div>
+      <div class="rp-status-bar">
+        <div class="rp-live-dot stopped" id="rpLiveDot"></div>
+        <div class="rp-status-text" id="rpStatusText">Tap play to stream</div>
+        <div class="rp-bitrate" id="rpBitrate"></div>
+        <div class="rp-wave stopped" id="rpWave">
+          <div class="rp-wave-bar"></div>
+          <div class="rp-wave-bar"></div>
+          <div class="rp-wave-bar"></div>
+          <div class="rp-wave-bar"></div>
+          <div class="rp-wave-bar"></div>
+        </div>
+      </div>
+      <div class="rp-controls">
+        <button class="rp-play-btn" id="rpPlayBtn" onclick="toggleRadioPlayer()">▶</button>
+        <div class="rp-vol-row">
+          <span class="rp-vol-icon">🔈</span>
+          <input type="range" class="rp-vol-slider" id="rpVolSlider" min="0" max="1" step="0.01" value="0.7" oninput="setRadioPlayerVolume(this.value)">
+          <span class="rp-vol-icon">🔊</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <div id="id3Modal">
   <div class="id3-box">
     <div class="id3-header">
@@ -6100,6 +6208,12 @@ const BUILT_IN_STATIONS = [
   { name: '1.FM Classic Rock', genre: 'Classic Rock', bitrate: '128k', icon: '🤘', url: 'https://strm112.1.fm/classicrock_mobile_mp3' },
   { name: 'Digitally Imported Chillout', genre: 'Chillout / Ambient', bitrate: '128k', icon: '🌊', url: 'https://prem2.di.fm/chillout?897c6fe5' },
   { name: 'SomaFM Secret Agent', genre: 'Spy / Jazz / Lounge', bitrate: '128k', icon: '🕵️', url: 'https://ice2.somafm.com/secretagent-128-mp3' },
+  // ── Nepali Stations ──
+  { name: 'Kantipur FM', genre: 'Nepali / News & Music', bitrate: 'Live', icon: '🇳🇵', url: 'https://radio-broadcast.ekantipur.com/stream', coverGradient: 'linear-gradient(135deg,#c41e1e,#8b0000)', coverText: 'KF', coverSub: 'Kantipur FM' },
+  { name: 'Kalika FM', genre: 'Nepali / Folk & Pop', bitrate: 'Live', icon: '🎵', url: 'http://kalika-stream.softnep.com:7740', coverGradient: 'linear-gradient(135deg,#1a6b3c,#0f4a2a)', coverText: 'KL', coverSub: 'Kalika FM' },
+  { name: 'Nepali ko Radio', genre: 'Nepali / Hits', bitrate: 'Live', icon: '📻', url: 'http://streaming.webhostnepal.com:9888/', coverGradient: 'linear-gradient(135deg,#003893,#dc143c)', coverText: 'NR', coverSub: 'Nepali ko Radio' },
+  { name: 'Nepali Sanchar Radio', genre: 'Nepali / News & Entertainment', bitrate: 'Live', icon: '📡', url: 'https://onlineradio.websoftitnepal.com/8048/stream', coverGradient: 'linear-gradient(135deg,#6a0dad,#3a0070)', coverText: 'NS', coverSub: 'Sanchar Radio' },
+  { name: 'Hits FM 91.2', genre: 'Nepali / Hits & Pop', bitrate: '128k', icon: '🎤', url: 'https://usa15.fastcast4u.com/proxy/hitsfm912', coverGradient: 'linear-gradient(135deg,#ff6b00,#cc2200)', coverText: '91.2', coverSub: 'Hits FM' },
 ];
 
 let _radioPlaying = false;
@@ -6110,17 +6224,43 @@ const radioAudio = document.getElementById('radioAudio');
 function renderRadioStations() {
   const list = document.getElementById('radioStationList');
   if (!list) return;
-  list.innerHTML = BUILT_IN_STATIONS.map((s, i) =>
-    `<div class="radio-station ${_currentStation && _currentStation.url === s.url && _radioPlaying ? 'playing' : ''}" onclick="playRadioStation(${i}, false)">
-      <div class="radio-icon">${s.icon}</div>
-      <div class="radio-info">
-        <div class="radio-name">${s.name}</div>
-        <div class="radio-genre">${s.genre}</div>
+
+  function cardHtml(s, idx, isCustom) {
+    const isPlaying = _currentStation && _currentStation.url === s.url && _radioPlaying;
+    const hasCover = !!s.coverGradient;
+    let artHtml;
+    if (hasCover) {
+      artHtml = `<div class="radio-card-art-inner" style="background:${s.coverGradient}">
+        <div class="radio-card-art-spin"></div>
+        <div class="radio-card-art-text">${s.coverText || s.icon}</div>
+        ${s.coverSub ? `<div class="radio-card-art-sub">${s.coverSub}</div>` : ''}
+      </div>`;
+    } else {
+      artHtml = `<div class="radio-card-art-inner" style="background:var(--bg4)">
+        <div class="radio-card-art-spin"></div>
+        <div class="radio-card-art-emoji">${s.icon}</div>
+      </div>`;
+    }
+    const bgStyle = hasCover
+      ? `background:${s.coverGradient};`
+      : `background:var(--bg4);`;
+    return `<div class="radio-card ${isPlaying ? 'playing' : ''}" onclick="openRadioPlayer(${idx}, ${isCustom})">
+      <div class="radio-card-art" style="${bgStyle}">
+        ${artHtml}
       </div>
-      <span class="radio-live-badge">LIVE</span>
-      <span class="radio-bitrate">${s.bitrate}</span>
-    </div>`
-  ).join('');
+      <div class="radio-card-info">
+        <div class="radio-card-name">${s.name}</div>
+        <div class="radio-card-genre">${s.genre}</div>
+        <div class="radio-card-footer">
+          <span class="radio-card-live">● LIVE</span>
+          <span class="radio-card-bitrate">${s.bitrate}</span>
+          ${isCustom ? `<button class="ta-btn" onclick="event.stopPropagation();removeCustomStation(${idx})" title="Remove" style="padding:2px 6px;font-size:0.7rem">🗑</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  list.innerHTML = BUILT_IN_STATIONS.map((s, i) => cardHtml(s, i, false)).join('');
 
   // Custom stations
   const customSection = document.getElementById('customRadioSection');
@@ -6128,21 +6268,138 @@ function renderRadioStations() {
   if (!customSection || !customList) return;
   if (_customStations.length) {
     customSection.style.display = '';
-    customList.innerHTML = _customStations.map((s, i) =>
-      `<div class="radio-station ${_currentStation && _currentStation.url === s.url && _radioPlaying ? 'playing' : ''}" onclick="playRadioStation(${i}, true)">
-        <div class="radio-icon">📡</div>
-        <div class="radio-info">
-          <div class="radio-name">${s.name}</div>
-          <div class="radio-genre">${s.genre || 'Custom'}</div>
-        </div>
-        <span class="radio-live-badge">LIVE</span>
-        <button class="ta-btn" onclick="event.stopPropagation();removeCustomStation(${i})" style="margin-left:4px" title="Remove">🗑</button>
-      </div>`
-    ).join('');
+    customList.innerHTML = _customStations.map((s, i) => cardHtml(s, i, true)).join('');
   } else {
     customSection.style.display = 'none';
   }
 }
+
+// ── Radio Player Modal ──────────────────────────────────────────────────
+let _rpStation = null;
+let _rpIsCustom = false;
+
+function openRadioPlayer(idx, isCustom) {
+  _rpStation = isCustom ? _customStations[idx] : BUILT_IN_STATIONS[idx];
+  _rpIsCustom = isCustom;
+  if (!_rpStation) return;
+
+  // Populate UI
+  document.getElementById('rpStationName').textContent = _rpStation.name;
+  document.getElementById('rpStationGenre').textContent = _rpStation.genre;
+  document.getElementById('rpBitrate').textContent = _rpStation.bitrate || '';
+
+  // Art
+  const circle = document.getElementById('rpArtCircle');
+  const artText = document.getElementById('rpArtText');
+  const artSub = document.getElementById('rpArtSub');
+  const coverBg = document.getElementById('rpCoverBg');
+  const coverWrap = document.getElementById('rpCoverWrap');
+
+  if (_rpStation.coverGradient) {
+    circle.style.background = _rpStation.coverGradient;
+    artText.textContent = _rpStation.coverText || _rpStation.icon;
+    artSub.textContent = _rpStation.coverSub || '';
+    coverBg.style.background = _rpStation.coverGradient;
+    coverWrap.style.background = _rpStation.coverGradient;
+  } else {
+    circle.style.background = 'var(--bg4)';
+    artText.textContent = _rpStation.icon || '📻';
+    artSub.textContent = '';
+    coverBg.style.background = 'var(--bg3)';
+    coverWrap.style.background = 'var(--bg3)';
+  }
+
+  // Sync play state
+  const isThisPlaying = _currentStation && _currentStation.url === _rpStation.url && _radioPlaying;
+  _rpSyncUI(isThisPlaying ? 'playing' : 'stopped');
+
+  // Sync volume slider
+  document.getElementById('rpVolSlider').value = state.volume;
+
+  document.getElementById('radioPlayerModal').classList.add('active');
+}
+
+function closeRadioPlayer() {
+  document.getElementById('radioPlayerModal').classList.remove('active');
+}
+
+function _rpSyncUI(state) {
+  const dot = document.getElementById('rpLiveDot');
+  const statusText = document.getElementById('rpStatusText');
+  const wave = document.getElementById('rpWave');
+  const btn = document.getElementById('rpPlayBtn');
+  const circle = document.getElementById('rpArtCircle');
+  if (state === 'playing') {
+    dot.className = 'rp-live-dot';
+    statusText.textContent = '● On Air — Streaming Live';
+    wave.className = 'rp-wave';
+    btn.textContent = '⏹';
+    circle.classList.add('playing');
+  } else if (state === 'buffering') {
+    dot.className = 'rp-live-dot buffering';
+    statusText.textContent = 'Buffering…';
+    wave.className = 'rp-wave stopped';
+    btn.textContent = '⏹';
+    circle.classList.remove('playing');
+  } else {
+    dot.className = 'rp-live-dot stopped';
+    statusText.textContent = 'Tap ▶ to start streaming';
+    wave.className = 'rp-wave stopped';
+    btn.textContent = '▶';
+    circle.classList.remove('playing');
+  }
+}
+
+function toggleRadioPlayer() {
+  if (!_rpStation) return;
+  const isThisPlaying = _currentStation && _currentStation.url === _rpStation.url && _radioPlaying;
+  if (isThisPlaying) {
+    // Stop
+    _radioTrackStop(_currentStation);
+    radioAudio.pause();
+    radioAudio.src = '';
+    _radioPlaying = false;
+    _currentStation = null;
+    _rpSyncUI('stopped');
+    renderRadioStations();
+    toast('Radio stopped', '');
+  } else {
+    // Play
+    if (state.isPlaying) { audio.pause(); state.isPlaying = false; updatePlayerUI(); }
+    if (_currentStation && _radioPlaying) _radioTrackStop(_currentStation);
+    _currentStation = _rpStation;
+    _radioPlaying = true;
+    _rpSyncUI('buffering');
+    radioAudio.src = _rpStation.url;
+    radioAudio.volume = state.volume;
+    radioAudio.play().then(() => {
+      _radioTrackStart(_rpStation);
+      _rpSyncUI('playing');
+      toast('📻 Now streaming: ' + _rpStation.name, 'success');
+      renderRadioStations();
+      updateRadioPlayerUI();
+      checkAchievements();
+    }).catch(e => {
+      _radioPlaying = false;
+      _currentStation = null;
+      _rpSyncUI('stopped');
+      toast('Stream failed: ' + e.message, 'error');
+      renderRadioStations();
+    });
+  }
+}
+
+function setRadioPlayerVolume(val) {
+  state.volume = parseFloat(val);
+  radioAudio.volume = state.volume;
+  audio.volume = state.volume;
+}
+
+// Close modal on backdrop click
+document.getElementById('radioPlayerModal').addEventListener('click', function(e) {
+  if (e.target === this) closeRadioPlayer();
+});
+
 
 function playRadioStation(idx, isCustom) {
   const station = isCustom ? _customStations[idx] : BUILT_IN_STATIONS[idx];
@@ -6197,6 +6454,7 @@ radioAudio.onerror = () => {
     toast('⚠ Stream connection lost — try another station', 'error');
     _radioPlaying = false;
     _currentStation = null;
+    _rpSyncUI('stopped');
     updateRadioPlayerUI();
     renderRadioStations();
   }
