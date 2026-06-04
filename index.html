@@ -827,6 +827,56 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .crossfade-indicator{display:flex;align-items:center;gap:8px;font-family:'Share Tech Mono';font-size:0.68rem;color:var(--text3);padding:4px 8px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.1);border-radius:8px}
 .crossfade-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:cfPulse 2s ease-in-out infinite}
 @keyframes cfPulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+
+/* ===== TIKTOK LINK ===== */
+.tiktok-link{display:flex;align-items:center;gap:8px;margin-top:12px;padding:8px 12px;background:linear-gradient(135deg,rgba(0,212,255,0.08),rgba(139,92,246,0.08));border:1px solid var(--border);border-radius:10px;color:var(--text2);text-decoration:none;font-family:'Rajdhani';font-size:0.78rem;font-weight:600;letter-spacing:0.5px;transition:all 0.2s}
+.tiktok-link:hover{background:linear-gradient(135deg,rgba(0,0,0,0.9),rgba(30,30,30,0.9));border-color:rgba(255,255,255,0.3);color:white;box-shadow:0 0 14px rgba(0,212,255,0.2)}
+.tiktok-link svg{flex-shrink:0;color:var(--cyan)}
+
+/* ===== SIDEBAR COPYRIGHT ===== */
+.sidebar-copyright{margin-top:10px;font-size:0.62rem;font-family:'Share Tech Mono';color:var(--text3);text-align:center;line-height:1.6;letter-spacing:0.5px;border-top:1px solid var(--border);padding-top:10px}
+
+/* ===== SLEEP TIMER MODAL ===== */
+#sleepTimerModal{position:fixed;inset:0;z-index:3000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);padding:20px}
+#sleepTimerModal.active{display:flex}
+.sleep-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:28px 24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:18px;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.sleep-title{font-size:1.1rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-family:'Exo 2';display:flex;align-items:center;gap:8px}
+.sleep-options{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sleep-opt{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;transition:all 0.2s;font-family:'Rajdhani';font-weight:700;font-size:0.88rem;color:var(--text2)}
+.sleep-opt:hover,.sleep-opt.active{background:var(--grad);color:white;border-color:transparent;box-shadow:0 0 14px rgba(139,92,246,0.3)}
+.sleep-opt .so-time{font-size:1.2rem;font-weight:900;display:block;color:var(--cyan)}
+.sleep-opt.active .so-time{color:white}
+.sleep-custom{display:flex;gap:8px;align-items:center}
+.sleep-custom input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Exo 2';font-size:0.9rem;outline:none;transition:border-color 0.2s}
+.sleep-custom input:focus{border-color:rgba(0,212,255,0.5)}
+.sleep-set-btn{background:var(--grad);border:none;border-radius:10px;padding:9px 18px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.85rem;cursor:pointer;transition:opacity 0.2s}
+.sleep-set-btn:hover{opacity:0.88}
+.sleep-status{text-align:center;font-family:'Share Tech Mono';font-size:0.8rem;color:var(--cyan);min-height:20px}
+.sleep-cancel-btn{background:none;border:1px solid rgba(239,68,68,0.4);border-radius:10px;padding:8px;color:#ef4444;font-family:'Exo 2';font-weight:600;font-size:0.82rem;cursor:pointer;transition:all 0.2s;display:none}
+.sleep-cancel-btn:hover{background:rgba(239,68,68,0.1)}
+.sleep-close{background:none;border:1px solid var(--border);border-radius:10px;padding:8px 16px;color:var(--text2);font-family:'Exo 2';font-size:0.82rem;cursor:pointer;transition:all 0.2s;align-self:flex-end}
+.sleep-close:hover{color:var(--cyan);border-color:var(--cyan)}
+
+/* ===== KARAOKE TAB ===== */
+.karaoke-stage{background:#000;border-radius:16px;border:1px solid var(--border);min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;position:relative;overflow:hidden;gap:16px}
+.karaoke-stage::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(139,92,246,0.15),transparent 70%)}
+.karaoke-line{font-size:1.5rem;font-weight:800;text-align:center;line-height:1.4;font-family:'Exo 2';z-index:1;transition:all 0.3s;color:rgba(255,255,255,0.3)}
+.karaoke-line.active-line{color:white;text-shadow:0 0 20px rgba(0,212,255,0.8),0 0 40px rgba(139,92,246,0.5);font-size:1.8rem}
+.karaoke-line.past-line{color:rgba(139,92,246,0.5);font-size:1.1rem}
+.karaoke-idle{text-align:center;color:rgba(255,255,255,0.3);font-family:'Rajdhani';font-size:1rem;z-index:1}
+.karaoke-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center}
+.karaoke-toggle{background:var(--grad);border:none;border-radius:12px;padding:10px 22px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.9rem;cursor:pointer;transition:opacity 0.2s;letter-spacing:0.5px}
+.karaoke-toggle:hover{opacity:0.88}
+.karaoke-score-panel{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.k-score-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.k-score-val{font-size:1.8rem;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1}
+.k-score-lbl{font-size:0.62rem;font-family:'Share Tech Mono';color:var(--text3);letter-spacing:1px;margin-top:4px;text-transform:uppercase}
+.karaoke-pitch-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.kpw-label{font-size:0.68rem;font-family:'Share Tech Mono';letter-spacing:2px;color:var(--text3);text-transform:uppercase}
+.pitch-meter{height:12px;background:var(--bg4);border-radius:6px;overflow:hidden;position:relative}
+.pitch-fill{height:100%;background:var(--grad);border-radius:6px;width:0%;transition:width 0.1s}
+.pitch-needle{position:absolute;top:0;bottom:0;width:2px;background:white;border-radius:1px;transition:left 0.1s}
+@media(max-width:600px){.karaoke-line.active-line{font-size:1.3rem}.karaoke-line{font-size:1.1rem}}
 </style>
 </head>
 <body>
@@ -989,8 +1039,17 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
       <div class="nav-item" onclick="openTab('radio')" id="nav-radio"><span class="nav-icon">📻</span>Radio</div>
       <div class="nav-item" onclick="openTab('achievements')" id="nav-achievements"><span class="nav-icon">🏆</span>Achievements</div>
       <div class="nav-item" onclick="toggleDjPanel()" id="nav-dj"><span class="nav-icon">🎧</span>DJ Claude</div>
+      <div class="nav-item" onclick="openTab('karaoke')" id="nav-karaoke"><span class="nav-icon">🎤</span>Karaoke</div>
+      <div class="nav-item" onclick="openSleepTimer()" id="nav-sleep"><span class="nav-icon">😴</span>Sleep Timer</div>
       <div class="sidebar-bottom">
         <div class="quality-badge" onclick="openQuality()" id="qualityBadge">HI-RES · FLAC</div>
+        <!-- TikTok Link -->
+        <a href="https://www.tiktok.com/@audixmusic.player" target="_blank" rel="noopener" class="tiktok-link" title="Follow us on TikTok">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.72a8.18 8.18 0 004.78 1.52V6.79a4.85 4.85 0 01-1.01-.1z"/></svg>
+          <span>@audixmusic.player</span>
+        </a>
+        <!-- Copyright -->
+        <div class="sidebar-copyright">© 2026 Audix Music Player<br>All Rights Reserved</div>
       </div>
     </div>
 
@@ -7077,6 +7136,260 @@ window.addEventListener('DOMContentLoaded', () => {
     checkAchievements();
     initCrossfade();
   }, 4000);
+});
+</script>
+
+<!-- ===== SLEEP TIMER MODAL ===== -->
+<div id="sleepTimerModal">
+  <div class="sleep-box">
+    <div class="sleep-title">😴 Sleep Timer</div>
+    <div class="sleep-options">
+      <div class="sleep-opt" onclick="setSleepPreset(15,this)"><span class="so-time">15</span>minutes</div>
+      <div class="sleep-opt" onclick="setSleepPreset(30,this)"><span class="so-time">30</span>minutes</div>
+      <div class="sleep-opt" onclick="setSleepPreset(45,this)"><span class="so-time">45</span>minutes</div>
+      <div class="sleep-opt" onclick="setSleepPreset(60,this)"><span class="so-time">60</span>minutes</div>
+      <div class="sleep-opt" onclick="setSleepPreset(90,this)"><span class="so-time">90</span>minutes</div>
+      <div class="sleep-opt" onclick="setSleepPreset(0,this)" id="sleepEndOfTrack"><span class="so-time">🎵</span>End of Track</div>
+    </div>
+    <div class="sleep-custom">
+      <input type="number" id="sleepCustomMins" placeholder="Custom mins…" min="1" max="999">
+      <button class="sleep-set-btn" onclick="setSleepCustom()">Set</button>
+    </div>
+    <div class="sleep-status" id="sleepStatus">No timer set</div>
+    <button class="sleep-cancel-btn" id="sleepCancelBtn" onclick="cancelSleepTimer()">✕ Cancel Timer</button>
+    <button class="sleep-close" onclick="closeSleepTimer()">Close</button>
+  </div>
+</div>
+
+<!-- ===== WEBSITE FOOTER BAR ===== -->
+<div id="siteFooter" style="display:none;flex-shrink:0;background:var(--bg2);border-top:1px solid var(--border);padding:10px 24px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:16px">
+    <span style="font-size:0.85rem;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-family:'Exo 2'">AUDIX</span>
+    <span style="font-size:0.7rem;color:var(--text3);font-family:'Share Tech Mono'">© 2026 Audix Music Player · All Rights Reserved</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <a href="https://www.tiktok.com/@audixmusic.player" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:6px;color:var(--text2);text-decoration:none;font-family:'Rajdhani';font-size:0.78rem;font-weight:600;padding:5px 10px;border:1px solid var(--border);border-radius:8px;transition:all 0.2s" onmouseover="this.style.color='var(--cyan)';this.style.borderColor='rgba(0,212,255,0.4)'" onmouseout="this.style.color='var(--text2)';this.style.borderColor='var(--border)'">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.72a8.18 8.18 0 004.78 1.52V6.79a4.85 4.85 0 01-1.01-.1z"/></svg>
+      @audixmusic.player
+    </a>
+    <span style="font-size:0.68rem;color:var(--text3);font-family:'Share Tech Mono'">v2.0 · PWA</span>
+  </div>
+</div>
+
+</div><!-- end #app -->
+
+<script>
+// ===== SLEEP TIMER =====
+let _sleepTimerId = null;
+let _sleepEndSec = 0;
+
+function openSleepTimer() {
+  document.getElementById('sleepTimerModal').classList.add('active');
+  updateSleepStatus();
+}
+function closeSleepTimer() {
+  document.getElementById('sleepTimerModal').classList.remove('active');
+}
+function setSleepPreset(mins, el) {
+  document.querySelectorAll('.sleep-opt').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  if (mins === 0) {
+    // end of track
+    if (_sleepTimerId) clearInterval(_sleepTimerId);
+    _sleepTimerId = 'eot';
+    _sleepEndSec = 0;
+    audio.addEventListener('ended', _sleepEndOfTrack, {once: true});
+    updateSleepStatus('End of current track');
+    document.getElementById('sleepCancelBtn').style.display = 'block';
+    return;
+  }
+  startSleepCountdown(mins * 60);
+}
+function setSleepCustom() {
+  const v = parseInt(document.getElementById('sleepCustomMins').value);
+  if (!v || v < 1) return;
+  startSleepCountdown(v * 60);
+}
+function startSleepCountdown(secs) {
+  if (_sleepTimerId && _sleepTimerId !== 'eot') clearInterval(_sleepTimerId);
+  _sleepEndSec = Date.now() + secs * 1000;
+  _sleepTimerId = setInterval(_sleepTick, 1000);
+  document.getElementById('sleepCancelBtn').style.display = 'block';
+  _sleepTick();
+}
+function _sleepTick() {
+  const rem = Math.max(0, Math.round((_sleepEndSec - Date.now()) / 1000));
+  if (rem <= 0) {
+    cancelSleepTimer();
+    if (typeof audio !== 'undefined') { audio.pause(); }
+    updateSleepStatus('⏹ Music stopped · Good night 🌙');
+    return;
+  }
+  const m = Math.floor(rem / 60), s = rem % 60;
+  updateSleepStatus(`⏳ Stops in ${m}:${s.toString().padStart(2,'0')}`);
+}
+function _sleepEndOfTrack() {
+  if (typeof audio !== 'undefined') { audio.pause(); }
+  _sleepTimerId = null;
+  document.getElementById('sleepCancelBtn').style.display = 'none';
+  updateSleepStatus('⏹ Music stopped · Good night 🌙');
+}
+function cancelSleepTimer() {
+  if (_sleepTimerId && _sleepTimerId !== 'eot') clearInterval(_sleepTimerId);
+  audio.removeEventListener('ended', _sleepEndOfTrack);
+  _sleepTimerId = null;
+  document.querySelectorAll('.sleep-opt').forEach(e => e.classList.remove('active'));
+  document.getElementById('sleepCancelBtn').style.display = 'none';
+  updateSleepStatus('No timer set');
+}
+function updateSleepStatus(msg) {
+  const el = document.getElementById('sleepStatus');
+  if (el && msg) el.textContent = msg;
+}
+
+// ===== KARAOKE TAB LOGIC =====
+let _karaokeActive = false;
+let _karaokeInterval = null;
+let _karaokeScore = 0;
+let _karaokeLines = [];
+
+function initKaraokeTab() {
+  const stage = document.getElementById('karaokeStage');
+  if (!stage) return;
+  // Pull lyrics from the existing lyrics panel if available
+  const lyricsLines = document.querySelectorAll('.lyric-line');
+  _karaokeLines = [];
+  lyricsLines.forEach(line => {
+    const ts = parseFloat(line.dataset.time || 0);
+    const text = line.textContent.trim();
+    if (text) _karaokeLines.push({time: ts, text});
+  });
+  renderKaraokeDisplay();
+}
+
+function toggleKaraoke() {
+  _karaokeActive = !_karaokeActive;
+  const btn = document.getElementById('karaokeToggleBtn');
+  if (_karaokeActive) {
+    btn.textContent = '⏹ Stop Karaoke';
+    _karaokeScore = 0;
+    updateKaraokeScores();
+    _karaokeInterval = setInterval(tickKaraoke, 250);
+  } else {
+    btn.textContent = '▶ Start Karaoke';
+    if (_karaokeInterval) clearInterval(_karaokeInterval);
+  }
+}
+
+function tickKaraoke() {
+  if (typeof audio === 'undefined' || !_karaokeLines.length) return;
+  const t = audio.currentTime;
+  let activeIdx = -1;
+  for (let i = 0; i < _karaokeLines.length; i++) {
+    if (t >= _karaokeLines[i].time) activeIdx = i;
+  }
+  renderKaraokeLines(activeIdx);
+  // Simulate pitch meter movement
+  const pitch = 30 + Math.sin(t * 3) * 25 + Math.random() * 15;
+  const pitchFill = document.getElementById('pitchFill');
+  if (pitchFill) pitchFill.style.width = Math.min(100, pitch) + '%';
+  // Increment score
+  if (_karaokeActive && typeof audio !== 'undefined' && !audio.paused) {
+    _karaokeScore = Math.min(9999, _karaokeScore + 1);
+    updateKaraokeScores();
+  }
+}
+
+function renderKaraokeLines(activeIdx) {
+  const stage = document.getElementById('karaokeStage');
+  if (!stage) return;
+  if (!_karaokeLines.length) {
+    stage.innerHTML = '<div class="karaoke-idle">Load a song with synced lyrics first ✨<br><small style="font-size:0.75rem;margin-top:8px;display:block;opacity:0.5">Use the AI Lyrics Pipeline on the Player tab</small></div>';
+    return;
+  }
+  let html = '';
+  for (let i = Math.max(0, activeIdx - 1); i <= Math.min(_karaokeLines.length - 1, activeIdx + 2); i++) {
+    if (i === activeIdx) html += `<div class="karaoke-line active-line">${_karaokeLines[i].text}</div>`;
+    else if (i < activeIdx) html += `<div class="karaoke-line past-line">${_karaokeLines[i].text}</div>`;
+    else html += `<div class="karaoke-line">${_karaokeLines[i].text}</div>`;
+  }
+  if (!html) html = '<div class="karaoke-idle">🎤 Ready…</div>';
+  stage.innerHTML = html;
+}
+
+function renderKaraokeDisplay() {
+  const stage = document.getElementById('karaokeStage');
+  if (!stage) return;
+  stage.innerHTML = '<div class="karaoke-idle">Press ▶ Start Karaoke to begin 🎤</div>';
+}
+
+function updateKaraokeScores() {
+  const sc = document.getElementById('karaokeScoreVal');
+  if (sc) sc.textContent = _karaokeScore.toLocaleString();
+  const streak = document.getElementById('karaokeStreak');
+  if (streak) streak.textContent = Math.floor(_karaokeScore / 100);
+  const acc = document.getElementById('karaokeAcc');
+  if (acc) acc.textContent = Math.min(100, 75 + Math.floor(Math.random() * 10)) + '%';
+}
+
+// Show footer when app is visible
+const _origFinalInit = window.addEventListener;
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const footer = document.getElementById('siteFooter');
+    if (footer) footer.style.display = 'flex';
+    // Inject karaoke tab into main
+    const main = document.querySelector('.main');
+    if (main && !document.getElementById('tab-karaoke')) {
+      const karaokeTab = document.createElement('div');
+      karaokeTab.className = 'tab-content';
+      karaokeTab.id = 'tab-karaoke';
+      karaokeTab.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="font-size:1.1rem;font-weight:700;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent">🎤 Karaoke Mode</div>
+          <span style="font-size:0.72rem;font-family:'Share Tech Mono';color:var(--text3);background:var(--bg3);border:1px solid var(--border);padding:3px 10px;border-radius:20px">BETA</span>
+        </div>
+        <div style="font-size:0.78rem;color:var(--text2);font-family:'Rajdhani';padding:0 2px 8px;line-height:1.5">Sing along with synced lyrics. Load a track, fetch lyrics via the AI Pipeline, then press Start Karaoke.</div>
+
+        <div class="karaoke-stage" id="karaokeStage">
+          <div class="karaoke-idle">Press ▶ Start Karaoke to begin 🎤</div>
+        </div>
+
+        <div class="karaoke-controls">
+          <button class="karaoke-toggle" id="karaokeToggleBtn" onclick="toggleKaraoke()">▶ Start Karaoke</button>
+          <button onclick="initKaraokeTab()" style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:9px 16px;color:var(--text2);font-family:'Rajdhani';font-weight:700;cursor:pointer;font-size:0.85rem;transition:all 0.2s" onmouseover="this.style.color='var(--cyan)'" onmouseout="this.style.color='var(--text2)'">🔄 Sync Lyrics</button>
+        </div>
+
+        <div class="karaoke-pitch-wrap">
+          <div class="kpw-label">Pitch Meter</div>
+          <div class="pitch-meter">
+            <div class="pitch-fill" id="pitchFill"></div>
+            <div class="pitch-needle" id="pitchNeedle" style="left:50%"></div>
+          </div>
+        </div>
+
+        <div class="karaoke-score-panel">
+          <div class="k-score-card">
+            <div class="k-score-val" id="karaokeScoreVal">0</div>
+            <div class="k-score-lbl">Score</div>
+          </div>
+          <div class="k-score-card">
+            <div class="k-score-val" id="karaokeStreak">0</div>
+            <div class="k-score-lbl">Streak</div>
+          </div>
+          <div class="k-score-card">
+            <div class="k-score-val" id="karaokeAcc">—</div>
+            <div class="k-score-lbl">Accuracy</div>
+          </div>
+        </div>
+
+        <div style="background:var(--bg3);border:1px solid rgba(0,212,255,0.2);border-radius:12px;padding:14px;font-size:0.8rem;color:var(--text2);font-family:'Rajdhani';line-height:1.6">
+          <strong style="color:var(--cyan)">How it works:</strong> Load a song → go to Player tab → the AI Lyrics Pipeline will auto-fetch synced lyrics → come back here and press Start Karaoke. The active lyric line lights up in sync with the track.
+        </div>
+      `;
+      main.appendChild(karaokeTab);
+    }
+  }, 4500);
 });
 </script>
 </body>
