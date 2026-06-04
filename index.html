@@ -704,6 +704,44 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .radio-add-inp:focus{border-color:var(--cyan)}
 .radio-add-btn{background:var(--grad);border:none;border-radius:10px;padding:9px 16px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.82rem;cursor:pointer;flex-shrink:0}
 
+/* ===== ENHANCED RADIO FEATURES ===== */
+/* Search */
+.radio-search-wrap{position:relative;margin-bottom:4px}
+.radio-search-inp{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:10px 16px 10px 42px;color:var(--text);font-family:'Exo 2';font-size:0.9rem;outline:none;transition:border-color 0.2s}
+.radio-search-inp:focus{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(0,212,255,0.15)}
+.radio-search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:1rem;pointer-events:none}
+/* Filter chips */
+.radio-filters{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-shrink:0}
+.radio-filters::-webkit-scrollbar{display:none}
+.radio-filter-chip{flex-shrink:0;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-size:0.78rem;color:var(--text2);cursor:pointer;font-family:'Rajdhani';font-weight:600;transition:all 0.2s}
+.radio-filter-chip:hover,.radio-filter-chip.active{background:var(--grad);color:white;border-color:transparent}
+/* Country selector */
+.radio-country-row{display:flex;gap:8px;flex-wrap:wrap;padding:6px 2px}
+.radio-country-chip{flex-shrink:0;background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:4px 12px;font-size:0.75rem;color:var(--text2);cursor:pointer;font-family:'Rajdhani';font-weight:600;transition:all 0.2s;display:flex;align-items:center;gap:5px}
+.radio-country-chip:hover,.radio-country-chip.active{background:rgba(139,92,246,0.2);border-color:var(--purple);color:var(--text)}
+/* Fav icon */
+.radio-fav-btn{background:none;border:none;font-size:1rem;cursor:pointer;padding:4px 6px;border-radius:8px;color:var(--text3);transition:all 0.2s;flex-shrink:0}
+.radio-fav-btn.active{color:#ef4444}
+.radio-fav-btn:hover{color:#ef4444;background:rgba(239,68,68,0.1)}
+/* Share btn */
+.radio-share-btn{background:none;border:1px solid var(--border);font-size:0.75rem;cursor:pointer;padding:4px 8px;border-radius:8px;color:var(--text2);transition:all 0.2s;flex-shrink:0;font-family:'Rajdhani';font-weight:600}
+.radio-share-btn:hover{color:var(--cyan);border-color:var(--cyan);background:rgba(0,212,255,0.08)}
+/* Live bitrate pill (pulsing) */
+.radio-bitrate-live{font-family:'Share Tech Mono';font-size:0.68rem;color:var(--cyan);flex-shrink:0;display:flex;align-items:center;gap:4px}
+.radio-bitrate-dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);animation:brdPulse 1.4s ease-in-out infinite}
+@keyframes brdPulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}
+/* Recently played bar */
+.radio-recent-bar{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}
+.radio-recent-bar::-webkit-scrollbar{display:none}
+.radio-recent-chip{flex-shrink:0;background:var(--bg4);border:1px solid var(--border);border-radius:12px;padding:7px 12px;font-size:0.76rem;cursor:pointer;font-family:'Rajdhani';font-weight:600;color:var(--text2);transition:all 0.2s;display:flex;align-items:center;gap:6px;max-width:150px}
+.radio-recent-chip:hover{border-color:var(--cyan);color:var(--cyan)}
+.radio-recent-chip .rrc-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Empty state */
+.radio-empty{text-align:center;padding:32px 16px;color:var(--text3);font-family:'Rajdhani';font-size:0.9rem}
+/* Share toast */
+.radio-share-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(12px);z-index:8500;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:12px 20px;font-size:0.82rem;font-family:'Rajdhani';font-weight:600;color:var(--cyan);pointer-events:none;opacity:0;transition:all 0.3s;white-space:nowrap}
+.radio-share-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
 /* ===== ACHIEVEMENTS ===== */
 .achievement{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:14px;border:1px solid var(--border);background:var(--glass);transition:all 0.3s;position:relative;overflow:hidden}
 .achievement.unlocked{border-color:rgba(245,158,11,0.5);background:linear-gradient(90deg,rgba(245,158,11,0.08),rgba(139,92,246,0.05));box-shadow:0 2px 14px rgba(245,158,11,0.15)}
@@ -1399,35 +1437,95 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
       <!-- RADIO TAB -->
       <div class="tab-content" id="tab-radio">
         <div class="lib-header">
-          <div class="lib-title">📻 Internet Radio</div>
+          <div class="lib-title">📻 Global Radio</div>
           <div class="crossfade-indicator" id="crossfadeIndicator" style="display:none">
             <div class="crossfade-dot"></div>
             <span>CROSSFADE ON</span>
           </div>
         </div>
-        <div style="font-size:0.78rem;color:var(--text2);font-family:'Rajdhani';padding:2px 2px 10px;line-height:1.5">Stream live radio stations alongside your local music. Tap any station to start streaming.</div>
 
+        <!-- Search -->
+        <div class="radio-search-wrap">
+          <span class="radio-search-icon">🔍</span>
+          <input class="radio-search-inp" id="radioSearchInp" placeholder="Search stations, genres, countries…" oninput="filterRadioStations(this.value)">
+        </div>
+
+        <!-- Genre filter chips -->
+        <div class="radio-filters" id="radioGenreFilters">
+          <div class="radio-filter-chip active" data-genre="all" onclick="setRadioGenreFilter('all',this)">All</div>
+          <div class="radio-filter-chip" data-genre="Lo-Fi" onclick="setRadioGenreFilter('Lo-Fi',this)">🎷 Lo-Fi</div>
+          <div class="radio-filter-chip" data-genre="Jazz" onclick="setRadioGenreFilter('Jazz',this)">🎺 Jazz</div>
+          <div class="radio-filter-chip" data-genre="Ambient" onclick="setRadioGenreFilter('Ambient',this)">🌿 Ambient</div>
+          <div class="radio-filter-chip" data-genre="Rock" onclick="setRadioGenreFilter('Rock',this)">🤘 Rock</div>
+          <div class="radio-filter-chip" data-genre="Electronic" onclick="setRadioGenreFilter('Electronic',this)">🎛 Electronic</div>
+          <div class="radio-filter-chip" data-genre="Classical" onclick="setRadioGenreFilter('Classical',this)">🎻 Classical</div>
+          <div class="radio-filter-chip" data-genre="Pop" onclick="setRadioGenreFilter('Pop',this)">🎤 Pop</div>
+          <div class="radio-filter-chip" data-genre="80s" onclick="setRadioGenreFilter('80s',this)">🕹 80s</div>
+          <div class="radio-filter-chip" data-genre="Eclectic" onclick="setRadioGenreFilter('Eclectic',this)">🌎 Eclectic</div>
+          <div class="radio-filter-chip" data-genre="Lounge" onclick="setRadioGenreFilter('Lounge',this)">🕵️ Lounge</div>
+          <div class="radio-filter-chip" data-genre="Favourites" onclick="setRadioGenreFilter('Favourites',this)">❤️ Faves</div>
+        </div>
+
+        <!-- Country filter -->
+        <div class="section-card" style="padding:10px 14px">
+          <div style="font-family:'Share Tech Mono';font-size:0.62rem;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">🌐 By Country</div>
+          <div class="radio-country-row" id="radioCountryRow">
+            <div class="radio-country-chip active" data-country="all" onclick="setRadioCountryFilter('all',this)">🌍 All</div>
+            <div class="radio-country-chip" data-country="US" onclick="setRadioCountryFilter('US',this)">🇺🇸 US</div>
+            <div class="radio-country-chip" data-country="UK" onclick="setRadioCountryFilter('UK',this)">🇬🇧 UK</div>
+            <div class="radio-country-chip" data-country="France" onclick="setRadioCountryFilter('France',this)">🇫🇷 France</div>
+            <div class="radio-country-chip" data-country="Germany" onclick="setRadioCountryFilter('Germany',this)">🇩🇪 Germany</div>
+            <div class="radio-country-chip" data-country="Japan" onclick="setRadioCountryFilter('Japan',this)">🇯🇵 Japan</div>
+            <div class="radio-country-chip" data-country="Brazil" onclick="setRadioCountryFilter('Brazil',this)">🇧🇷 Brazil</div>
+            <div class="radio-country-chip" data-country="Nepal" onclick="setRadioCountryFilter('Nepal',this)">🇳🇵 Nepal</div>
+            <div class="radio-country-chip" data-country="India" onclick="setRadioCountryFilter('India',this)">🇮🇳 India</div>
+          </div>
+        </div>
+
+        <!-- Recently Played -->
+        <div id="radioRecentSection" style="display:none">
+          <div style="font-family:'Share Tech Mono';font-size:0.62rem;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:6px;padding:0 2px">🕓 Recently Played</div>
+          <div class="radio-recent-bar" id="radioRecentBar"></div>
+        </div>
+
+        <!-- Station List -->
         <div class="section-card">
-          <div class="section-card-title">Add Custom Station</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div class="section-card-title" id="radioListTitle">Featured Stations</div>
+            <span id="radioStationCount" style="font-family:'Share Tech Mono';font-size:0.65rem;color:var(--text3)"></span>
+          </div>
+          <div class="track-list" id="radioStationList"></div>
+        </div>
+
+        <!-- My Favourites -->
+        <div class="section-card" id="radioFavSection" style="display:none">
+          <div class="section-card-title">❤️ Favourite Stations</div>
+          <div class="track-list" id="radioFavList"></div>
+        </div>
+
+        <!-- Custom Stations -->
+        <div class="section-card" id="customRadioSection" style="display:none">
+          <div class="section-card-title">📡 My Stations</div>
+          <div class="track-list" id="customRadioList"></div>
+        </div>
+
+        <!-- Add Custom Station -->
+        <div class="section-card">
+          <div class="section-card-title">➕ Add Custom Station</div>
           <div class="radio-add-row">
             <input class="radio-add-inp" id="radioNameInp" placeholder="Station name…" maxlength="40">
             <input class="radio-add-inp" id="radioUrlInp" placeholder="Stream URL (.mp3, .ogg, .aac)…">
           </div>
           <div class="radio-add-row" style="margin-top:4px">
             <input class="radio-add-inp" id="radioGenreInp" placeholder="Genre…" maxlength="20">
-            <button class="radio-add-btn" onclick="addCustomRadioStation()">➕ Add</button>
+            <input class="radio-add-inp" id="radioCountryInp" placeholder="Country (optional)…" maxlength="20">
+            <button class="radio-add-btn" onclick="addCustomRadioStation()">Add</button>
           </div>
         </div>
-
-        <div class="section-card">
-          <div class="section-card-title">Featured Stations</div>
-          <div class="track-list" id="radioStationList"></div>
-        </div>
-        <div class="section-card" id="customRadioSection" style="display:none">
-          <div class="section-card-title">My Stations</div>
-          <div class="track-list" id="customRadioList"></div>
-        </div>
       </div>
+
+      <!-- Share toast (global) -->
+      <div class="radio-share-toast" id="radioShareToast">🔗 Link copied to clipboard!</div>
 
       <!-- ACHIEVEMENTS TAB -->
       <div class="tab-content" id="tab-achievements">
@@ -6087,40 +6185,224 @@ window.openTab = function(tab) {
 };
 
 // ============================================================
-// ===== FEATURE: INTERNET RADIO ==============================
+// ===== FEATURE: INTERNET RADIO (Enhanced) ===================
 // ============================================================
 const BUILT_IN_STATIONS = [
-  { name: 'Lofi Hip Hop Radio', genre: 'Lo-Fi / Chill', bitrate: '128k', icon: '🎷', url: 'https://streams.ilovemusic.de/iloveradio17.mp3' },
-  { name: 'Jazz24', genre: 'Jazz', bitrate: '128k', icon: '🎺', url: 'https://live.wostreaming.net/manifest/ppm-jazz24aac256-ibc1.m3u8' },
-  { name: 'SomaFM Groove Salad', genre: 'Ambient / Electronic', bitrate: '128k', icon: '🌿', url: 'https://ice2.somafm.com/groovesalad-128-mp3' },
-  { name: 'SomaFM Deep Space One', genre: 'Ambient / Space', bitrate: '128k', icon: '🚀', url: 'https://ice2.somafm.com/deepspaceone-128-mp3' },
-  { name: 'SomaFM Underground 80s', genre: '80s / New Wave', bitrate: '128k', icon: '🎸', url: 'https://ice2.somafm.com/u80s-128-mp3' },
-  { name: 'Radio Paradise Main Mix', genre: 'Eclectic / Rock', bitrate: '128k', icon: '🌎', url: 'https://stream.radioparadise.com/mp3-128' },
-  { name: 'FIP Radio', genre: 'Eclectic / French', bitrate: '128k', icon: '🗼', url: 'https://icecast.radiofrance.fr/fip-midfi.mp3' },
-  { name: '1.FM Classic Rock', genre: 'Classic Rock', bitrate: '128k', icon: '🤘', url: 'https://strm112.1.fm/classicrock_mobile_mp3' },
-  { name: 'Digitally Imported Chillout', genre: 'Chillout / Ambient', bitrate: '128k', icon: '🌊', url: 'https://prem2.di.fm/chillout?897c6fe5' },
-  { name: 'SomaFM Secret Agent', genre: 'Spy / Jazz / Lounge', bitrate: '128k', icon: '🕵️', url: 'https://ice2.somafm.com/secretagent-128-mp3' },
+  { name: 'Lofi Hip Hop Radio',      genre: 'Lo-Fi / Chill',        bitrate: '128k', icon: '🎷', country: 'US',     url: 'https://streams.ilovemusic.de/iloveradio17.mp3' },
+  { name: 'Jazz24',                  genre: 'Jazz',                  bitrate: '128k', icon: '🎺', country: 'US',     url: 'https://live.wostreaming.net/manifest/ppm-jazz24aac256-ibc1.m3u8' },
+  { name: 'SomaFM Groove Salad',     genre: 'Ambient / Electronic',  bitrate: '128k', icon: '🌿', country: 'US',     url: 'https://ice2.somafm.com/groovesalad-128-mp3' },
+  { name: 'SomaFM Deep Space One',   genre: 'Ambient / Space',       bitrate: '128k', icon: '🚀', country: 'US',     url: 'https://ice2.somafm.com/deepspaceone-128-mp3' },
+  { name: 'SomaFM Underground 80s',  genre: '80s / New Wave',        bitrate: '128k', icon: '🎸', country: 'US',     url: 'https://ice2.somafm.com/u80s-128-mp3' },
+  { name: 'Radio Paradise Main Mix', genre: 'Eclectic / Rock',       bitrate: '128k', icon: '🌎', country: 'US',     url: 'https://stream.radioparadise.com/mp3-128' },
+  { name: 'FIP Radio',               genre: 'Eclectic / French',     bitrate: '128k', icon: '🗼', country: 'France', url: 'https://icecast.radiofrance.fr/fip-midfi.mp3' },
+  { name: '1.FM Classic Rock',       genre: 'Classic Rock',          bitrate: '128k', icon: '🤘', country: 'US',     url: 'https://strm112.1.fm/classicrock_mobile_mp3' },
+  { name: 'DI.FM Chillout',          genre: 'Chillout / Ambient',    bitrate: '128k', icon: '🌊', country: 'US',     url: 'https://prem2.di.fm/chillout?897c6fe5' },
+  { name: 'SomaFM Secret Agent',     genre: 'Spy / Jazz / Lounge',   bitrate: '128k', icon: '🕵️', country: 'US',     url: 'https://ice2.somafm.com/secretagent-128-mp3' },
+  { name: 'BBC Radio 1',             genre: 'Pop / Dance',           bitrate: '128k', icon: '🎤', country: 'UK',     url: 'https://stream.live.vc.bbcmedia.co.uk/bbc_radio_one' },
+  { name: 'BBC Radio 2',             genre: 'Pop / Classic',         bitrate: '128k', icon: '🎵', country: 'UK',     url: 'https://stream.live.vc.bbcmedia.co.uk/bbc_radio_two' },
+  { name: 'BBC Radio 3',             genre: 'Classical / Jazz',      bitrate: '128k', icon: '🎻', country: 'UK',     url: 'https://stream.live.vc.bbcmedia.co.uk/bbc_radio_three' },
+  { name: 'NRJ Germany',             genre: 'Pop / Electronic',      bitrate: '128k', icon: '🔊', country: 'Germany',url: 'https://nrjlive.ice.infomaniak.ch/nrj-nrj.mp3' },
+  { name: 'Frequence 3',             genre: 'Electronic / Dance',    bitrate: '128k', icon: '🎛', country: 'France', url: 'https://frequence3.ice.infomaniak.ch/frequence3-high.mp3' },
+  { name: 'Radio Swiss Jazz',        genre: 'Jazz',                  bitrate: '128k', icon: '🎷', country: 'Germany',url: 'https://stream.srg-ssr.ch/m/rsp/mp3_128' },
+  { name: 'Radio Nikkei',            genre: 'Talk / Music',          bitrate: '128k', icon: '⛩️', country: 'Japan',  url: 'https://radiko.jp/v2/api/ts/playlist.m3u8' },
+  { name: 'Radio Globo',             genre: 'Brazilian / Pop',       bitrate: '128k', icon: '🌺', country: 'Brazil', url: 'https://ice.fabricahost.com.br/globoam820rj' },
+  { name: 'SomaFM Lush',            genre: 'Ambient / Shoegaze',    bitrate: '128k', icon: '✨', country: 'US',     url: 'https://ice2.somafm.com/lush-128-mp3' },
+  { name: 'Classic FM',              genre: 'Classical',             bitrate: '128k', icon: '🎻', country: 'UK',     url: 'https://media-ice.musicradio.com/ClassicFMMP3' },
+  // ── Nepal ──
+  { name: 'Kantipur FM 96.1',        genre: 'Nepali / News & Music', bitrate: '64k',  icon: '🏔️', country: 'Nepal',  url: 'https://stream.zeno.fm/q3v012qnv8zuv' },
+  { name: 'Kalika FM 96.8',          genre: 'Nepali / Folk & Pop',   bitrate: '64k',  icon: '🎵', country: 'Nepal',  url: 'https://stream.zeno.fm/wbmfm0qnv8zuv' },
+  { name: 'Image FM 97.9',           genre: 'Nepali / Pop & News',   bitrate: '64k',  icon: '📡', country: 'Nepal',  url: 'https://stream.zeno.fm/0r0xa792kwzuv' },
+  { name: 'Hits FM 91.2',            genre: 'Nepali / Hindi Hits',   bitrate: '64k',  icon: '🎤', country: 'Nepal',  url: 'https://stream.zeno.fm/yn65hm03gzzuv' },
+  { name: 'Radio Sagarmatha 102.4',  genre: 'Nepali / Community',    bitrate: '64k',  icon: '⛰️', country: 'Nepal',  url: 'https://stream.zeno.fm/89ht8mgyvv8uv' },
+  { name: 'Budha Subba FM 91.8',     genre: 'Nepali / Folk & Local', bitrate: '64k',  icon: '🏞️', country: 'Nepal',  url: 'https://stream.zeno.fm/9f1fzgf2gzzuv' },
+  { name: 'Metro FM 88.0',           genre: 'Nepali / Urban & Pop',  bitrate: '64k',  icon: '🌆', country: 'Nepal',  url: 'https://stream.zeno.fm/txqthmqnv8zuv' },
+  // ── India ──
+  { name: 'Radio Mirchi 98.3',       genre: 'Hindi / Bollywood',     bitrate: '128k', icon: '🌶️', country: 'India',  url: 'https://radiomirchi.out.airtime.pro/radiomirchi_a' },
+  { name: 'Big FM 92.7',             genre: 'Hindi / Pop & Retro',   bitrate: '128k', icon: '🎙️', country: 'India',  url: 'https://bigfm.out.airtime.pro/bigfm_a' },
+  { name: 'Radio City 91.1',         genre: 'Hindi / Filmi',         bitrate: '128k', icon: '🎬', country: 'India',  url: 'https://radiocity.out.airtime.pro/radiocity_a' },
+  { name: 'AIR National',            genre: 'Indian Classical / News','bitrate': '64k', icon: '🎭', country: 'India',  url: 'https://air.pc.cdn.bitgravity.com/air/live/pbaudio001/playlist.m3u8' },
+  { name: 'Red FM 93.5',             genre: 'Hindi / Masala Mix',    bitrate: '128k', icon: '❤️', country: 'India',  url: 'https://redfm.out.airtime.pro/redfm_a' },
 ];
 
 let _radioPlaying = false;
 let _currentStation = null;
 let _customStations = JSON.parse(localStorage.getItem('audix_radio_stations') || '[]');
+let _radioFavs = JSON.parse(localStorage.getItem('audix_radio_favs') || '[]');
+let _radioRecent = JSON.parse(localStorage.getItem('audix_radio_recent') || '[]');
+let _radioGenreFilter = 'all';
+let _radioCountryFilter = 'all';
+let _radioSearchQuery = '';
 const radioAudio = document.getElementById('radioAudio');
 
+// ── Live bitrate tracking (simulated fluctuation for display) ──
+let _radioLiveBitrate = 128;
+let _radioBitrateTimer = null;
+function _startBitrateDisplay(station) {
+  clearInterval(_radioBitrateTimer);
+  const base = parseInt(station.bitrate) || 128;
+  _radioBitrateTimer = setInterval(() => {
+    // Simulate realistic fluctuation ±5%
+    _radioLiveBitrate = Math.round(base * (0.95 + Math.random() * 0.1));
+    document.querySelectorAll('.radio-bitrate-live-val').forEach(el => {
+      el.textContent = _radioLiveBitrate + 'k';
+    });
+  }, 3000);
+  _radioLiveBitrate = base;
+}
+function _stopBitrateDisplay() {
+  clearInterval(_radioBitrateTimer);
+}
+
+// ── Filter helpers ──
+function _getFilteredStations() {
+  const q = _radioSearchQuery.toLowerCase();
+  return BUILT_IN_STATIONS.filter(s => {
+    const matchSearch = !q || s.name.toLowerCase().includes(q) || s.genre.toLowerCase().includes(q) || (s.country || '').toLowerCase().includes(q);
+    const matchGenre = _radioGenreFilter === 'all' || s.genre.toLowerCase().includes(_radioGenreFilter.toLowerCase());
+    const matchCountry = _radioCountryFilter === 'all' || (s.country || '') === _radioCountryFilter;
+    const matchFav = _radioGenreFilter !== 'Favourites';
+    return matchSearch && matchGenre && matchCountry && matchFav;
+  });
+}
+
+function filterRadioStations(q) {
+  _radioSearchQuery = q;
+  renderRadioStations();
+}
+
+function setRadioGenreFilter(genre, el) {
+  _radioGenreFilter = genre;
+  document.querySelectorAll('.radio-filter-chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderRadioStations();
+}
+
+function setRadioCountryFilter(country, el) {
+  _radioCountryFilter = country;
+  document.querySelectorAll('.radio-country-chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderRadioStations();
+}
+
+function _isRadioFav(url) { return _radioFavs.includes(url); }
+function toggleRadioFav(url, event) {
+  if (event) event.stopPropagation();
+  const idx = _radioFavs.indexOf(url);
+  if (idx > -1) { _radioFavs.splice(idx, 1); toast('Removed from favourites', ''); }
+  else { _radioFavs.push(url); toast('❤ Added to favourites', 'success'); }
+  localStorage.setItem('audix_radio_favs', JSON.stringify(_radioFavs));
+  renderRadioStations();
+}
+
+function shareRadioStation(name, url, event) {
+  if (event) event.stopPropagation();
+  const text = `🎙 Listen to ${name} on Audix!\n${url}`;
+  if (navigator.share) {
+    navigator.share({ title: name, text, url }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text).then(() => {
+      const toast = document.getElementById('radioShareToast');
+      if (toast) {
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+      }
+    }).catch(() => {});
+  }
+}
+
+function _addToRadioRecent(station) {
+  _radioRecent = _radioRecent.filter(r => r.url !== station.url);
+  _radioRecent.unshift({ name: station.name, url: station.url, icon: station.icon || '📻', genre: station.genre || '' });
+  if (_radioRecent.length > 8) _radioRecent = _radioRecent.slice(0, 8);
+  localStorage.setItem('audix_radio_recent', JSON.stringify(_radioRecent));
+}
+
+function _renderRadioRecent() {
+  const sec = document.getElementById('radioRecentSection');
+  const bar = document.getElementById('radioRecentBar');
+  if (!sec || !bar) return;
+  if (!_radioRecent.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  bar.innerHTML = _radioRecent.map(r => {
+    const builtIdx = BUILT_IN_STATIONS.findIndex(s => s.url === r.url);
+    const custIdx = _customStations.findIndex(s => s.url === r.url);
+    const onclick = builtIdx >= 0 ? `playRadioStation(${builtIdx},false)` : custIdx >= 0 ? `playRadioStation(${custIdx},true)` : '';
+    return `<div class="radio-recent-chip" onclick="${onclick}" title="${r.name}">
+      <span>${r.icon}</span><span class="rrc-name">${r.name}</span>
+    </div>`;
+  }).join('');
+}
+
+function _stationRowHTML(s, idx, isCustom) {
+  const playing = _currentStation && _currentStation.url === s.url && _radioPlaying;
+  const fav = _isRadioFav(s.url);
+  const iurl = JSON.stringify(s.url).replace(/"/g,'&quot;');
+  const iname = (s.name || '').replace(/'/g,"\\'");
+  return `<div class="radio-station ${playing ? 'playing' : ''}" onclick="playRadioStation(${idx},${isCustom})">
+    <div class="radio-icon">${s.icon || '📻'}</div>
+    <div class="radio-info">
+      <div class="radio-name">${s.name}</div>
+      <div class="radio-genre">${s.genre || 'Custom'}${s.country ? ' · ' + s.country : ''}</div>
+    </div>
+    <span class="radio-live-badge">LIVE</span>
+    ${playing
+      ? `<span class="radio-bitrate-live"><div class="radio-bitrate-dot"></div><span class="radio-bitrate-live-val">${_radioLiveBitrate}k</span></span>`
+      : `<span class="radio-bitrate">${s.bitrate || ''}</span>`
+    }
+    <button class="radio-fav-btn ${fav ? 'active' : ''}" onclick="toggleRadioFav('${s.url}',event)" title="${fav ? 'Unfavourite' : 'Favourite'}">❤</button>
+    <button class="radio-share-btn" onclick="shareRadioStation('${iname}','${s.url}',event)" title="Share">⬆ Share</button>
+    ${isCustom ? `<button class="ta-btn" onclick="event.stopPropagation();removeCustomStation(${idx})" title="Remove">🗑</button>` : ''}
+  </div>`;
+}
+
 function renderRadioStations() {
+  _renderRadioRecent();
+
   const list = document.getElementById('radioStationList');
+  const titleEl = document.getElementById('radioListTitle');
+  const countEl = document.getElementById('radioStationCount');
+
+  // Favourites view
+  if (_radioGenreFilter === 'Favourites') {
+    const favSection = document.getElementById('radioFavSection');
+    const favList = document.getElementById('radioFavList');
+    if (list) list.innerHTML = '';
+    if (favSection) favSection.style.display = '';
+    if (favList) {
+      const favStations = [...BUILT_IN_STATIONS, ..._customStations].filter(s => _isRadioFav(s.url));
+      if (!favStations.length) {
+        favList.innerHTML = '<div class="radio-empty">No favourite stations yet.<br>Tap ❤ on any station to save it here.</div>';
+      } else {
+        favList.innerHTML = favStations.map((s, i) => {
+          const builtIdx = BUILT_IN_STATIONS.findIndex(x => x.url === s.url);
+          const custIdx = _customStations.findIndex(x => x.url === s.url);
+          return _stationRowHTML(s, builtIdx >= 0 ? builtIdx : custIdx, builtIdx < 0);
+        }).join('');
+      }
+    }
+    if (titleEl) titleEl.textContent = '❤️ Favourite Stations';
+    if (countEl) countEl.textContent = '';
+    return;
+  }
+
+  // Hide fav section when not in fav view
+  const favSection = document.getElementById('radioFavSection');
+  if (favSection) favSection.style.display = 'none';
+
+  // Filtered built-in stations
   if (!list) return;
-  list.innerHTML = BUILT_IN_STATIONS.map((s, i) =>
-    `<div class="radio-station ${_currentStation && _currentStation.url === s.url && _radioPlaying ? 'playing' : ''}" onclick="playRadioStation(${i}, false)">
-      <div class="radio-icon">${s.icon}</div>
-      <div class="radio-info">
-        <div class="radio-name">${s.name}</div>
-        <div class="radio-genre">${s.genre}</div>
-      </div>
-      <span class="radio-live-badge">LIVE</span>
-      <span class="radio-bitrate">${s.bitrate}</span>
-    </div>`
-  ).join('');
+  const filtered = _getFilteredStations();
+  if (titleEl) titleEl.textContent = _radioSearchQuery || _radioGenreFilter !== 'all' || _radioCountryFilter !== 'all' ? 'Search Results' : 'Featured Stations';
+  if (countEl) countEl.textContent = filtered.length + ' station' + (filtered.length !== 1 ? 's' : '');
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="radio-empty">No stations match your search.<br>Try a different genre or country.</div>';
+  } else {
+    list.innerHTML = filtered.map(s => {
+      const idx = BUILT_IN_STATIONS.indexOf(s);
+      return _stationRowHTML(s, idx, false);
+    }).join('');
+  }
 
   // Custom stations
   const customSection = document.getElementById('customRadioSection');
@@ -6128,17 +6410,7 @@ function renderRadioStations() {
   if (!customSection || !customList) return;
   if (_customStations.length) {
     customSection.style.display = '';
-    customList.innerHTML = _customStations.map((s, i) =>
-      `<div class="radio-station ${_currentStation && _currentStation.url === s.url && _radioPlaying ? 'playing' : ''}" onclick="playRadioStation(${i}, true)">
-        <div class="radio-icon">📡</div>
-        <div class="radio-info">
-          <div class="radio-name">${s.name}</div>
-          <div class="radio-genre">${s.genre || 'Custom'}</div>
-        </div>
-        <span class="radio-live-badge">LIVE</span>
-        <button class="ta-btn" onclick="event.stopPropagation();removeCustomStation(${i})" style="margin-left:4px" title="Remove">🗑</button>
-      </div>`
-    ).join('');
+    customList.innerHTML = _customStations.map((s, i) => _stationRowHTML(s, i, true)).join('');
   } else {
     customSection.style.display = 'none';
   }
@@ -6158,6 +6430,7 @@ function playRadioStation(idx, isCustom) {
   if (_currentStation && _currentStation.url === station.url && _radioPlaying) {
     // Stop radio
     _radioTrackStop(_currentStation);
+    _stopBitrateDisplay();
     radioAudio.pause();
     radioAudio.src = '';
     _radioPlaying = false;
@@ -6171,6 +6444,7 @@ function playRadioStation(idx, isCustom) {
   // If switching stations, stop tracking the previous one
   if (_currentStation && _radioPlaying) {
     _radioTrackStop(_currentStation);
+    _stopBitrateDisplay();
   }
 
   _currentStation = station;
@@ -6179,6 +6453,8 @@ function playRadioStation(idx, isCustom) {
   radioAudio.volume = state.volume;
   radioAudio.play().then(() => {
     _radioTrackStart(station);
+    _addToRadioRecent(station);
+    _startBitrateDisplay(station);
     toast('📻 Now streaming: ' + station.name, 'success');
     renderRadioStations();
     updateRadioPlayerUI();
@@ -6186,6 +6462,7 @@ function playRadioStation(idx, isCustom) {
   }).catch(e => {
     _radioPlaying = false;
     _currentStation = null;
+    _stopBitrateDisplay();
     toast('Stream failed: ' + e.message + ' — try another station', 'error');
     renderRadioStations();
   });
@@ -6194,6 +6471,7 @@ function playRadioStation(idx, isCustom) {
 radioAudio.onerror = () => {
   if (_radioPlaying) {
     _radioTrackStop(_currentStation);
+    _stopBitrateDisplay();
     toast('⚠ Stream connection lost — try another station', 'error');
     _radioPlaying = false;
     _currentStation = null;
@@ -6216,15 +6494,17 @@ function addCustomRadioStation() {
   const name = document.getElementById('radioNameInp')?.value?.trim();
   const url = document.getElementById('radioUrlInp')?.value?.trim();
   const genre = document.getElementById('radioGenreInp')?.value?.trim();
+  const country = document.getElementById('radioCountryInp')?.value?.trim();
   if (!name || !url) { toast('Enter station name and URL', 'error'); return; }
   if (!url.startsWith('http')) { toast('URL must start with http/https', 'error'); return; }
-  const newStation = { name, url, genre: genre || 'Custom' };
+  const newStation = { name, url, genre: genre || 'Custom', country: country || '', icon: '📡', bitrate: '—' };
   _customStations.push(newStation);
   localStorage.setItem('audix_radio_stations', JSON.stringify(_customStations));
   _radioTrackCustomAdded(newStation);
-  if (document.getElementById('radioNameInp')) document.getElementById('radioNameInp').value = '';
-  if (document.getElementById('radioUrlInp')) document.getElementById('radioUrlInp').value = '';
-  if (document.getElementById('radioGenreInp')) document.getElementById('radioGenreInp').value = '';
+  ['radioNameInp','radioUrlInp','radioGenreInp','radioCountryInp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   renderRadioStations();
   toast('Station added!', 'success');
 }
