@@ -1956,7 +1956,9 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
         <div class="id3-art-hint">
           <b>Tap artwork</b> to change it<br>
           Supports JPG, PNG, WebP<br>
-          <span style="color:var(--text3)">Saved locally in the app</span>
+          <span style="color:var(--text3)">Saved locally in the app</span><br>
+          <button onclick="generateAICoverArt()" id="genArtBtn" style="margin-top:8px;background:linear-gradient(135deg,#8b5cf6,#00d4ff);border:none;border-radius:8px;padding:6px 14px;color:white;font-family:'Rajdhani';font-weight:700;font-size:0.78rem;cursor:pointer;letter-spacing:0.5px;display:inline-flex;align-items:center;gap:6px">🎨 AI Generate</button>
+          <div id="genArtStatus" style="font-size:0.65rem;color:var(--text3);font-family:'Share Tech Mono';margin-top:4px"></div>
         </div>
         <input type="file" id="id3ArtInput" accept="image/*" style="display:none" onchange="handleId3ArtChange(event)">
       </div>
@@ -8392,6 +8394,64 @@ async function translateVisibleLyrics() {
 
   if (statusEl) statusEl.textContent = _translateOn ? '✓ ON' : '';
 }
+
+// ═══════════════════════════════════════════════════════════════
+// ── AI COVER ART GENERATOR (Pollinations.ai — no key needed) ──
+// ═══════════════════════════════════════════════════════════════
+async function generateAICoverArt() {
+  const btn    = document.getElementById('genArtBtn');
+  const status = document.getElementById('genArtStatus');
+  const title  = document.getElementById('id3Title')?.value?.trim()
+               || '';
+  const artist = document.getElementById('id3Artist')?.value?.trim()
+               || '';
+  const genre  = document.getElementById('id3Genre')?.value?.trim() || '';
+
+  if (!title && !artist) {
+    if (status) status.textContent = 'Fill in Title or Artist first';
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = '\u23f3 Generating\u2026'; }
+  if (status) status.textContent = 'Asking AI for cover art\u2026';
+
+  try {
+    const parts = [];
+    if (artist) parts.push('artist "' + artist + '"');
+    if (title)  parts.push('song "' + title + '"');
+    if (genre)  parts.push(genre + ' music');
+    const prompt = 'album cover art for ' + parts.join(', ') + ', professional music artwork, vibrant colors, high quality, no text, no words';
+
+    const encoded  = encodeURIComponent(prompt);
+    const seed     = Math.floor(Math.random() * 999999);
+    const imageUrl = 'https://image.pollinations.ai/prompt/' + encoded + '?width=512&height=512&seed=' + seed + '&nologo=true&enhance=true';
+
+    if (status) status.textContent = 'Downloading image\u2026';
+
+    const r = await fetch(imageUrl);
+    if (!r.ok) throw new Error('Image fetch failed');
+    const blob = await r.blob();
+    const dataUrl = await new Promise(function(res, rej) {
+      const reader = new FileReader();
+      reader.onload  = function() { res(reader.result); };
+      reader.onerror = function() { rej(new Error('FileReader failed')); };
+      reader.readAsDataURL(blob);
+    });
+
+    _id3NewArtDataUrl = dataUrl;
+    const preview = document.getElementById('id3ArtPreview');
+    if (preview) {
+      preview.innerHTML = '<img src="' + dataUrl + '" style="width:100%;height:100%;object-fit:cover;border-radius:10px">';
+    }
+    if (status) status.textContent = '\u2713 Done! Hit Save to apply.';
+  } catch(e) {
+    if (status) status.textContent = '\u2717 Failed \u2014 check connection';
+    console.error('[Audix] AI cover art error:', e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '\U0001f3a8 AI Generate'; }
+  }
+}
+
 </script>
 </body>
 </html>
