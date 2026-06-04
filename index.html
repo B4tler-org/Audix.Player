@@ -1486,6 +1486,25 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
           <div class="section-card-title">Featured Stations</div>
           <div class="radio-card-grid" id="radioStationList"></div>
         </div>
+
+        <!-- DISCOVER NEPAL STATIONS -->
+        <div class="section-card">
+          <div class="section-card-title" style="display:flex;align-items:center;justify-content:space-between">
+            <span>🇳🇵 Discover Nepal Stations</span>
+            <button id="discoverLoadBtn" onclick="loadNepalStations()" style="background:var(--grad);border:none;border-radius:8px;padding:5px 12px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.72rem;cursor:pointer;letter-spacing:0.5px">Load All</button>
+          </div>
+          <div style="position:relative;margin:10px 0 4px">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:0.95rem">🔍</span>
+            <input id="nepalSearchInp" class="radio-add-inp" placeholder="Search Nepali stations…" oninput="filterNepalStations(this.value)" style="padding-left:36px;width:100%">
+          </div>
+          <div id="nepalDiscoverList" class="radio-card-grid" style="margin-top:8px">
+            <div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text3);font-family:'Rajdhani';font-size:0.9rem">Tap "Load All" to browse all Nepali radio stations 🎙️</div>
+          </div>
+          <div id="nepalLoadMore" style="display:none;text-align:center;margin-top:10px">
+            <button onclick="showMoreNepal()" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:8px 20px;color:var(--text2);font-family:'Rajdhani';font-weight:600;font-size:0.82rem;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--cyan)';this.style.color='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">Show More ↓</button>
+          </div>
+        </div>
+
         <div class="section-card" id="customRadioSection" style="display:none">
           <div class="section-card-title">My Stations</div>
           <div class="radio-card-grid" id="customRadioList"></div>
@@ -6209,11 +6228,11 @@ const BUILT_IN_STATIONS = [
   { name: 'Digitally Imported Chillout', genre: 'Chillout / Ambient', bitrate: '128k', icon: '🌊', url: 'https://prem2.di.fm/chillout?897c6fe5' },
   { name: 'SomaFM Secret Agent', genre: 'Spy / Jazz / Lounge', bitrate: '128k', icon: '🕵️', url: 'https://ice2.somafm.com/secretagent-128-mp3' },
   // ── Nepali Stations ──
-  { name: 'Kantipur FM', genre: 'Nepali / News & Music', bitrate: 'Live', icon: '🇳🇵', url: 'https://radio-broadcast.ekantipur.com/stream', coverGradient: 'linear-gradient(135deg,#c41e1e,#8b0000)', coverText: 'KF', coverSub: 'Kantipur FM' },
-  { name: 'Kalika FM', genre: 'Nepali / Folk & Pop', bitrate: 'Live', icon: '🎵', url: 'http://kalika-stream.softnep.com:7740', coverGradient: 'linear-gradient(135deg,#1a6b3c,#0f4a2a)', coverText: 'KL', coverSub: 'Kalika FM' },
-  { name: 'Nepali ko Radio', genre: 'Nepali / Hits', bitrate: 'Live', icon: '📻', url: 'http://streaming.webhostnepal.com:9888/', coverGradient: 'linear-gradient(135deg,#003893,#dc143c)', coverText: 'NR', coverSub: 'Nepali ko Radio' },
-  { name: 'Nepali Sanchar Radio', genre: 'Nepali / News & Entertainment', bitrate: 'Live', icon: '📡', url: 'https://onlineradio.websoftitnepal.com/8048/stream', coverGradient: 'linear-gradient(135deg,#6a0dad,#3a0070)', coverText: 'NS', coverSub: 'Sanchar Radio' },
-  { name: 'Hits FM 91.2', genre: 'Nepali / Hits & Pop', bitrate: '128k', icon: '🎤', url: 'https://usa15.fastcast4u.com/proxy/hitsfm912', coverGradient: 'linear-gradient(135deg,#ff6b00,#cc2200)', coverText: '91.2', coverSub: 'Hits FM' },
+  { name: 'Kantipur FM', genre: 'Nepali / News & Music', bitrate: 'Live', icon: '🇳🇵', url: 'https://stream.zeno.fm/6uh6g4mrnj8uv', coverGradient: 'linear-gradient(135deg,#c41e1e,#8b0000)', coverText: 'KF', coverSub: 'Kantipur FM' },
+  { name: 'Kalika FM', genre: 'Nepali / Folk & Pop', bitrate: 'Live', icon: '🎵', url: 'https://stream.zeno.fm/w78a98fmqf8uv', coverGradient: 'linear-gradient(135deg,#1a6b3c,#0f4a2a)', coverText: 'KL', coverSub: 'Kalika FM' },
+  { name: 'Nepali ko Radio', genre: 'Nepali / Hits', bitrate: 'Live', icon: '📻', url: 'https://stream.zeno.fm/ts2xwk4w828uv', coverGradient: 'linear-gradient(135deg,#003893,#dc143c)', coverText: 'NR', coverSub: 'Nepali ko Radio' },
+  { name: 'Nepali Sanchar Radio', genre: 'Nepali / News & Entertainment', bitrate: 'Live', icon: '📡', url: 'https://stream.zeno.fm/5d0c9edg1y8uv', coverGradient: 'linear-gradient(135deg,#6a0dad,#3a0070)', coverText: 'NS', coverSub: 'Sanchar Radio' },
+  { name: 'Hits FM 91.2', genre: 'Nepali / Hits & Pop', bitrate: '128k', icon: '🎤', url: 'https://stream.zeno.fm/v7yw6j5jrj8uv', coverGradient: 'linear-gradient(135deg,#ff6b00,#cc2200)', coverText: '91.2', coverSub: 'Hits FM' },
 ];
 
 let _radioPlaying = false;
@@ -6492,6 +6511,164 @@ function removeCustomStation(idx) {
   localStorage.setItem('audix_radio_stations', JSON.stringify(_customStations));
   renderRadioStations();
 }
+
+// ============================================================
+// ===== FEATURE: DISCOVER NEPAL STATIONS (Radio Browser) =====
+// ============================================================
+let _nepalStationsAll = [];
+let _nepalStationsFiltered = [];
+let _nepalPageSize = 12;
+let _nepalShown = 12;
+let _nepalLoaded = false;
+
+const NEPAL_GRADIENTS = [
+  'linear-gradient(135deg,#c41e1e,#8b0000)',
+  'linear-gradient(135deg,#003893,#dc143c)',
+  'linear-gradient(135deg,#1a6b3c,#0f4a2a)',
+  'linear-gradient(135deg,#6a0dad,#3a0070)',
+  'linear-gradient(135deg,#ff6b00,#cc2200)',
+  'linear-gradient(135deg,#0077b6,#023e8a)',
+  'linear-gradient(135deg,#2d6a4f,#1b4332)',
+  'linear-gradient(135deg,#9b2226,#641220)',
+  'linear-gradient(135deg,#7b2d8b,#4a0e5e)',
+  'linear-gradient(135deg,#f4a261,#e76f51)',
+];
+
+async function loadNepalStations() {
+  const btn = document.getElementById('discoverLoadBtn');
+  const list = document.getElementById('nepalDiscoverList');
+  if (_nepalLoaded && _nepalStationsAll.length) {
+    renderNepalGrid(_nepalStationsFiltered.slice(0, _nepalShown));
+    return;
+  }
+  btn.textContent = 'Loading…';
+  btn.disabled = true;
+  list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--cyan);font-family:Rajdhani;font-size:0.9rem">🔄 Fetching stations from Radio Browser…</div>';
+  try {
+    const resp = await fetch('https://de1.api.radio-browser.info/json/stations/bycountryexact/Nepal?limit=200&order=clickcount&reverse=true&hidebroken=true', {
+      headers: { 'User-Agent': 'AudixPlayer/2.0' }
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    // Filter to ones with working HTTPS URLs and dedupe by name
+    const seen = new Set();
+    _nepalStationsAll = data
+      .filter(s => s.url_resolved && (s.url_resolved.startsWith('https://') || s.url_resolved.startsWith('http://')) && s.name)
+      .filter(s => {
+        const key = s.name.trim().toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .map((s, i) => ({
+        name: s.name.trim(),
+        genre: (s.tags || s.language || 'Nepali').split(',')[0].trim() || 'Nepali',
+        bitrate: s.bitrate ? s.bitrate + 'k' : 'Live',
+        icon: '📻',
+        url: s.url_resolved,
+        favicon: s.favicon || '',
+        coverGradient: NEPAL_GRADIENTS[i % NEPAL_GRADIENTS.length],
+        coverText: s.name.trim().slice(0, 2).toUpperCase(),
+        coverSub: s.name.trim().slice(0, 10),
+        _fromBrowser: true,
+        _browserIdx: i
+      }));
+    _nepalStationsFiltered = [..._nepalStationsAll];
+    _nepalShown = _nepalPageSize;
+    _nepalLoaded = true;
+    renderNepalGrid(_nepalStationsFiltered.slice(0, _nepalShown));
+    btn.textContent = '✓ ' + _nepalStationsAll.length + ' Stations';
+    btn.disabled = false;
+    toast('📻 Loaded ' + _nepalStationsAll.length + ' Nepali stations!', 'success');
+  } catch(e) {
+    list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#ef4444;font-family:Rajdhani">Failed to load stations — check connection</div>';
+    btn.textContent = '↺ Retry';
+    btn.disabled = false;
+    _nepalLoaded = false;
+  }
+}
+
+function renderNepalGrid(stations) {
+  const list = document.getElementById('nepalDiscoverList');
+  const moreBtn = document.getElementById('nepalLoadMore');
+  if (!stations.length) {
+    list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text3);font-family:Rajdhani">No stations found</div>';
+    if (moreBtn) moreBtn.style.display = 'none';
+    return;
+  }
+  list.innerHTML = stations.map((s, i) => {
+    const isPlaying = _currentStation && _currentStation.url === s.url && _radioPlaying;
+    const artInner = s.favicon
+      ? `<img src="${s.favicon}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        + `<div style="display:none;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%"><div class="radio-card-art-text">${s.coverText}</div><div class="radio-card-art-sub">${s.coverSub}</div></div>`
+      : `<div class="radio-card-art-text">${s.coverText}</div><div class="radio-card-art-sub">${s.coverSub}</div>`;
+    return `<div class="radio-card ${isPlaying ? 'playing' : ''}" onclick="openRadioPlayerFromBrowser(${s._browserIdx})">
+      <div class="radio-card-art" style="background:${s.coverGradient}">
+        <div class="radio-card-art-inner" style="background:${s.favicon ? 'rgba(0,0,0,0.3)' : s.coverGradient}">
+          <div class="radio-card-art-spin"></div>
+          ${artInner}
+        </div>
+      </div>
+      <div class="radio-card-info">
+        <div class="radio-card-name">${s.name}</div>
+        <div class="radio-card-genre">${s.genre}</div>
+        <div class="radio-card-footer">
+          <span class="radio-card-live">● LIVE</span>
+          <span class="radio-card-bitrate">${s.bitrate}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  if (moreBtn) moreBtn.style.display = _nepalShown < _nepalStationsFiltered.length ? '' : 'none';
+}
+
+function filterNepalStations(query) {
+  if (!_nepalLoaded) return;
+  const q = query.toLowerCase().trim();
+  _nepalStationsFiltered = q
+    ? _nepalStationsAll.filter(s => s.name.toLowerCase().includes(q) || s.genre.toLowerCase().includes(q))
+    : [..._nepalStationsAll];
+  _nepalShown = _nepalPageSize;
+  renderNepalGrid(_nepalStationsFiltered.slice(0, _nepalShown));
+}
+
+function showMoreNepal() {
+  _nepalShown += _nepalPageSize;
+  renderNepalGrid(_nepalStationsFiltered.slice(0, _nepalShown));
+}
+
+function openRadioPlayerFromBrowser(browserIdx) {
+  const s = _nepalStationsAll[browserIdx];
+  if (!s) return;
+  openRadioPlayerDirect(s);
+}
+
+function openRadioPlayerDirect(s) {
+  _rpStation = s;
+  _rpIsCustom = false;
+  document.getElementById('rpStationName').textContent = s.name;
+  document.getElementById('rpStationGenre').textContent = s.genre;
+  document.getElementById('rpBitrate').textContent = s.bitrate || '';
+  const circle = document.getElementById('rpArtCircle');
+  const artText = document.getElementById('rpArtText');
+  const artSub = document.getElementById('rpArtSub');
+  const coverBg = document.getElementById('rpCoverBg');
+  const coverWrap = document.getElementById('rpCoverWrap');
+  circle.style.background = s.coverGradient || 'var(--bg4)';
+  artText.textContent = s.favicon ? '📻' : (s.coverText || s.icon || '📻');
+  artSub.textContent = s.coverSub || '';
+  coverBg.style.background = s.coverGradient || 'var(--bg3)';
+  coverWrap.style.background = s.coverGradient || 'var(--bg3)';
+  if (s.favicon) {
+    // Show favicon in art circle if available
+    artText.innerHTML = `<img src="${s.favicon}" style="width:48px;height:48px;border-radius:50%;object-fit:cover" onerror="this.outerHTML='📻'">`;
+  }
+  const isThisPlaying = _currentStation && _currentStation.url === s.url && _radioPlaying;
+  _rpSyncUI(isThisPlaying ? 'playing' : 'stopped');
+  document.getElementById('rpVolSlider').value = state.volume;
+  document.getElementById('radioPlayerModal').classList.add('active');
+}
+
 
 // ============================================================
 // ===== RADIO STATS TRACKING =================================
