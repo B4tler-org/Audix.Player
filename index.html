@@ -8200,15 +8200,226 @@ if (!window._audixTabHooked) {
 }
 window.openTab = function(tab) {
   if (window._origOpenTab) window._origOpenTab(tab);
-  if (tab === 'heatmap') setTimeout(renderHeatmap, 100);
-  if (tab === 'backup') setTimeout(() => renderBackupSummary(getBackupData()), 100);
+  if (tab === 'heatmap')  setTimeout(renderHeatmap, 100);
+  if (tab === 'backup')   setTimeout(() => renderBackupSummary(getBackupData()), 100);
+  if (tab === 'karaoke')  setTimeout(initKaraokeTab, 150);
   // Update mobile bn-item active
   document.querySelectorAll('.bn-item').forEach(b => {
-    if (b.id === 'bn-' + tab) b.classList.add('active');
+    b.classList.toggle('active', b.id === 'bn-' + tab);
   });
 };
 
 document.getElementById('quizHighScore') && (document.getElementById('quizHighScore').textContent = 'Best: ' + _quizHighScore);
+
+// ═══════════════════════════════════════════════════════════════
+// ── OFFLINE LYRICS CACHE (localStorage, keyed by track id) ────
+// ═══════════════════════════════════════════════════════════════
+function _lyricsStorageKey(trackId) {
+  return 'audix_lrc_' + String(trackId);
+}
+function saveLyricsOffline(trackId, lyricsResult) {
+  try {
+    localStorage.setItem(_lyricsStorageKey(trackId), JSON.stringify(lyricsResult));
+  } catch(e) { /* storage full — ignore */ }
+}
+function loadLyricsOffline(trackId) {
+  try {
+    const raw = localStorage.getItem(_lyricsStorageKey(trackId));
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+// Patch triggerIdentification to check cache before network fetch
+const _origTriggerIdentification = window.triggerIdentification || triggerIdentification;
+window.triggerIdentification = async function() {
+  // Try offline cache first
+  const track = (typeof state !== 'undefined') && state.tracks[state.currentIdx];
+  if (track) {
+    const cached = loadLyricsOffline(track.id);
+    if (cached && (cached.synced || cached.plain)) {
+      if (cached.synced) {
+        _lyricsData   = parseLRC(cached.synced);
+        _lyricsSynced = true;
+      } else {
+        _lyricsData    = [];
+        _lyricsSynced  = false;
+        _lyricsRawText = cached.plain;
+      }
+      renderLyrics();
+      // Still run the rest of pipeline for metadata, but skip lyrics fetch
+      // by monkey-patching fetchLRCLIBLyrics to return cached result once
+      const _origFetch = window.fetchLRCLIBLyrics;
+      window.fetchLRCLIBLyrics = async () => { window.fetchLRCLIBLyrics = _origFetch; return cached; };
+    }
+  }
+  return _origTriggerIdentification.apply(this, arguments);
+};
+
+// Patch fetchLRCLIBLyrics to save result to offline cache after fetch
+const _origFetchLRCLIBLyrics = window.fetchLRCLIBLyrics || fetchLRCLIBLyrics;
+window.fetchLRCLIBLyrics = async function(title, artist, album, duration) {
+  const result = await _origFetchLRCLIBLyrics.apply(this, arguments);
+  if (result && (result.synced || result.plain)) {
+    const track = (typeof state !== 'undefined') && state.tracks[state.currentIdx];
+    if (track) saveLyricsOffline(track.id, result);
+  }
+  return result;
+};
+
+// ═══════════════════════════════════════════════════════════════
+// ── MEDIA SESSION (lock-screen / notification panel + artwork) ─
+// ═══════════════════════════════════════════════════════════════
+function updateMediaSession() {
+  if (!('mediaSession' in navigator)) return;
+  const track = (typeof state !== 'undefined') && state.tracks[state.currentIdx];
+  if (!track) return;
+
+  const artUrl = (typeof _artCache !== 'undefined') && _artCache.get(String(track.id));
+  const artwork = artUrl
+    ? [{ src: artUrl, sizes: '512x512', type: 'image/jpeg' }]
+    : [{ src: 'https://b4tler-org.github.io/Audix.Player/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' }];
+
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title:  track.name   || 'Unknown',
+    artist: track.artist || 'Unknown Artist',
+    album:  track.album  || '',
+    artwork
+  });
+
+  navigator.mediaSession.setActionHandler('play',         () => { audio.play(); state.isPlaying = true; updatePlayerUI(); });
+  navigator.mediaSession.setActionHandler('pause',        () => { audio.pause(); state.isPlaying = false; updatePlayerUI(); });
+  navigator.mediaSession.setActionHandler('previoustrack',() => { if(typeof prevTrack!=='undefined') prevTrack(); });
+  navigator.mediaSession.setActionHandler('nexttrack',    () => { if(typeof nextTrack!=='undefined') nextTrack(); });
+  navigator.mediaSession.setActionHandler('seekbackward', (d) => { audio.currentTime = Math.max(0, audio.currentTime - (d.seekOffset || 10)); });
+  navigator.mediaSession.setActionHandler('seekforward',  (d) => { audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + (d.seekOffset || 10)); });
+  try {
+    navigator.mediaSession.setActionHandler('seekto', (d) => {
+      if (d.seekTime != null) audio.currentTime = d.seekTime;
+    });
+  } catch(e) {}
+}
+
+// Hook into updatePlayerUI and setPlayerArt to keep media session in sync
+const _origUpdatePlayerUI = window.updatePlayerUI || updatePlayerUI;
+window.updatePlayerUI = function() {
+  _origUpdatePlayerUI.apply(this, arguments);
+  updateMediaSession();
+};
+
+// Also update artwork when art loads (it loads async after metadata)
+const _origSetPlayerArt = window.setPlayerArt || setPlayerArt;
+window.setPlayerArt = function(dataUrl) {
+  _origSetPlayerArt.apply(this, arguments);
+  // Small delay to let _artCache update first
+  setTimeout(updateMediaSession, 100);
+};
+
+// Update playback state in media session
+if (typeof audio !== 'undefined') {
+  audio.addEventListener('play',  () => { if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'; });
+  audio.addEventListener('pause', () => { if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'; });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── KARAOKE — use _lyricsData directly, re-init on tab open ───
+// ═══════════════════════════════════════════════════════════════
+function initKaraokeTab() {
+  const stage = document.getElementById('karaokeStage');
+  if (!stage) return;
+
+  _karaokeLines = [];
+
+  // Prefer the live _lyricsData array (timestamped) if available
+  if (typeof _lyricsData !== 'undefined' && _lyricsData.length) {
+    _karaokeLines = _lyricsData.map(l => ({ time: l.time, text: l.text }));
+  } else {
+    // Fall back to reading DOM lines (plain lyrics)
+    document.querySelectorAll('.lyric-line').forEach(line => {
+      const ts   = parseFloat(line.dataset.time || 0);
+      const text = (line.dataset.text || line.childNodes[0]?.textContent || '').trim();
+      if (text) _karaokeLines.push({ time: ts, text });
+    });
+  }
+
+  renderKaraokeDisplay();
+
+  // Show helpful message if no lyrics loaded yet
+  if (!_karaokeLines.length) {
+    stage.innerHTML = '<div class="karaoke-idle">No lyrics loaded yet ✨<br><small style="font-size:0.75rem;margin-top:8px;display:block;opacity:0.5">Load a song on the Player tab first — lyrics fetch automatically</small></div>';
+  }
+}
+
+// Also re-init karaoke when lyrics are freshly loaded
+const _origRenderLyrics = window.renderLyrics || renderLyrics;
+window.renderLyrics = function() {
+  _origRenderLyrics.apply(this, arguments);
+  // If karaoke tab is active, refresh it immediately
+  if (document.getElementById('tab-karaoke')?.classList.contains('active')) {
+    setTimeout(initKaraokeTab, 100);
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// ── LYRICS TRANSLATION — MyMemory free API (no key needed) ────
+// ═══════════════════════════════════════════════════════════════
+async function translateVisibleLyrics() {
+  const langSelect = document.getElementById('translateLangSelect');
+  const lang = langSelect?.value || 'en';
+  const lines = document.querySelectorAll('.lyric-line');
+  const statusEl = document.getElementById('translateStatus');
+
+  if (!lines.length) {
+    if (statusEl) statusEl.textContent = 'No lyrics loaded';
+    return;
+  }
+  if (statusEl) statusEl.textContent = 'Translating…';
+
+  // Collect unique non-empty line texts
+  const texts = [];
+  lines.forEach(line => {
+    const t = (line.dataset.text || line.childNodes[0]?.textContent || '').trim();
+    if (t) texts.push(t);
+  });
+  const unique = [...new Set(texts)].filter(t => t.length > 1);
+  const toTranslate = unique.filter(t => !_translateCache[lang + ':' + t]);
+
+  // Translate in small batches via MyMemory (free, no key, ~500 chars/req)
+  for (const text of toTranslate) {
+    if (_translateCache[lang + ':' + text]) continue;
+    try {
+      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=autodetect|${lang}`;
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('Network error');
+      const data = await r.json();
+      const translated = data?.responseData?.translatedText;
+      if (translated && translated !== text) {
+        _translateCache[lang + ':' + text] = translated;
+      } else {
+        _translateCache[lang + ':' + text] = text; // fallback: keep original
+      }
+    } catch(e) {
+      _translateCache[lang + ':' + text] = text;
+    }
+  }
+
+  // Inject translations into DOM
+  lines.forEach(line => {
+    const text = (line.dataset.text || line.childNodes[0]?.textContent || '').trim();
+    let transEl = line.querySelector('.lyric-line-translation');
+    if (!transEl) {
+      transEl = document.createElement('div');
+      transEl.className = 'lyric-line-translation';
+      line.appendChild(transEl);
+    }
+    const translated = _translateCache[lang + ':' + text];
+    if (translated && translated !== text) {
+      transEl.textContent = translated;
+      transEl.classList.toggle('visible', _translateOn);
+    }
+  });
+
+  if (statusEl) statusEl.textContent = _translateOn ? '✓ ON' : '';
+}
 </script>
 </body>
 </html>
