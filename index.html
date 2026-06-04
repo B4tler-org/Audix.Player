@@ -380,7 +380,33 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .bn-icon{font-size:1.3rem;line-height:1}
 .bn-item.active .bn-icon{filter:drop-shadow(0 0 6px var(--cyan))}
 
-/* ===== IDENTIFICATION PIPELINE ===== */
+/* ===== ID3 TAG EDITOR MODAL ===== */
+#id3Modal{position:fixed;inset:0;z-index:6000;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;backdrop-filter:blur(12px);padding:16px}
+#id3Modal.active{display:flex}
+.id3-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;animation:modalIn 0.3s ease;position:relative}
+.id3-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.id3-title{font-size:1rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-family:'Exo 2';letter-spacing:0.5px}
+.id3-close{background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text2);cursor:pointer;font-size:0.9rem;transition:all 0.2s}
+.id3-close:hover{color:var(--cyan);border-color:var(--cyan)}
+.id3-body{padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.id3-art-row{display:flex;gap:14px;align-items:center}
+.id3-art-preview{width:80px;height:80px;border-radius:12px;background:var(--bg4);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:2rem;flex-shrink:0;overflow:hidden;cursor:pointer;transition:border-color 0.2s;position:relative}
+.id3-art-preview:hover{border-color:var(--cyan)}
+.id3-art-preview img{width:100%;height:100%;object-fit:cover;border-radius:10px}
+.id3-art-hint{font-size:0.72rem;color:var(--text2);font-family:'Rajdhani';line-height:1.5}
+.id3-art-hint b{color:var(--cyan)}
+.id3-field{display:flex;flex-direction:column;gap:5px}
+.id3-label{font-size:0.65rem;font-family:'Share Tech Mono';letter-spacing:2px;color:var(--text3);text-transform:uppercase}
+.id3-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--text);font-family:'Exo 2';font-size:0.88rem;outline:none;transition:border-color 0.2s}
+.id3-input:focus{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(0,212,255,0.1)}
+.id3-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.id3-footer{display:flex;gap:8px;padding:14px 20px 18px;border-top:1px solid var(--border);flex-shrink:0}
+.id3-save-btn{flex:1;background:var(--grad);border:none;border-radius:10px;padding:11px;color:white;font-family:'Exo 2';font-weight:700;font-size:0.9rem;cursor:pointer;transition:opacity 0.2s;letter-spacing:0.5px}
+.id3-save-btn:hover{opacity:0.88}
+.id3-cancel-btn{background:none;border:1px solid var(--border);border-radius:10px;padding:11px 16px;color:var(--text2);font-family:'Exo 2';font-weight:600;font-size:0.85rem;cursor:pointer;transition:all 0.2s}
+.id3-cancel-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.id3-divider{font-size:0.62rem;font-family:'Share Tech Mono';letter-spacing:2px;color:var(--text3);text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.id3-divider::before,.id3-divider::after{content:'';flex:1;height:1px;background:var(--border)}
 .id-pipeline{background:var(--bg3);border:1px solid var(--border);border-radius:16px;overflow:hidden}
 .id-pipeline-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
 .id-pipeline-title{display:flex;align-items:center;gap:8px;font-family:'Rajdhani';font-weight:700;font-size:0.85rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--text2)}
@@ -1480,6 +1506,82 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 </div>
 
 
+<!-- ID3 TAG EDITOR MODAL -->
+<div id="id3Modal">
+  <div class="id3-box">
+    <div class="id3-header">
+      <div class="id3-title">✏️ Edit Track Tags</div>
+      <button class="id3-close" onclick="closeId3Editor()">✕</button>
+    </div>
+    <div class="id3-body">
+
+      <!-- Album Art -->
+      <div class="id3-art-row">
+        <div class="id3-art-preview" id="id3ArtPreview" onclick="document.getElementById('id3ArtInput').click()" title="Click to change art">
+          <span id="id3ArtEmoji">🎵</span>
+        </div>
+        <div class="id3-art-hint">
+          <b>Tap artwork</b> to change it<br>
+          Supports JPG, PNG, WebP<br>
+          <span style="color:var(--text3)">Saved locally in the app</span>
+        </div>
+        <input type="file" id="id3ArtInput" accept="image/*" style="display:none" onchange="handleId3ArtChange(event)">
+      </div>
+
+      <div class="id3-divider">Track Info</div>
+
+      <!-- Title -->
+      <div class="id3-field">
+        <div class="id3-label">Title</div>
+        <input class="id3-input" id="id3Title" placeholder="Track title…" maxlength="200">
+      </div>
+
+      <!-- Artist -->
+      <div class="id3-field">
+        <div class="id3-label">Artist</div>
+        <input class="id3-input" id="id3Artist" placeholder="Artist name…" maxlength="200">
+      </div>
+
+      <!-- Album -->
+      <div class="id3-field">
+        <div class="id3-label">Album</div>
+        <input class="id3-input" id="id3Album" placeholder="Album name…" maxlength="200">
+      </div>
+
+      <div class="id3-row">
+        <!-- Year -->
+        <div class="id3-field">
+          <div class="id3-label">Year</div>
+          <input class="id3-input" id="id3Year" placeholder="e.g. 2024" maxlength="4" type="number" min="1900" max="2099">
+        </div>
+        <!-- Genre -->
+        <div class="id3-field">
+          <div class="id3-label">Genre</div>
+          <input class="id3-input" id="id3Genre" placeholder="e.g. Pop" maxlength="60">
+        </div>
+      </div>
+
+      <div class="id3-row">
+        <!-- BPM -->
+        <div class="id3-field">
+          <div class="id3-label">BPM</div>
+          <input class="id3-input" id="id3Bpm" placeholder="e.g. 120" maxlength="6" type="number" min="1" max="999">
+        </div>
+        <!-- Track # -->
+        <div class="id3-field">
+          <div class="id3-label">Track #</div>
+          <input class="id3-input" id="id3TrackNum" placeholder="e.g. 3" maxlength="4" type="number" min="1" max="999">
+        </div>
+      </div>
+
+    </div>
+    <div class="id3-footer">
+      <button class="id3-cancel-btn" onclick="closeId3Editor()">Cancel</button>
+      <button class="id3-save-btn" onclick="saveId3Tags()">💾 Save Tags</button>
+    </div>
+  </div>
+</div>
+
 <!-- QUALITY MODAL -->
 <div id="qualityModal">
   <div class="quality-box" style="position:relative">
@@ -2381,6 +2483,7 @@ function renderTrackList() {
       <div class="track-dur">${fmtTime(t.duration||0)}</div>
       <div class="track-actions">
         <button class="ta-btn ${isFav?'fav-active':''}" onclick="event.stopPropagation();toggleTrackFav('${t.id}')" title="Favourite">${isFav?'♥':'♡'}</button>
+        <button class="ta-btn" onclick="event.stopPropagation();openId3Editor('${t.id}')" title="Edit Tags">✏️</button>
         <button class="ta-btn" onclick="event.stopPropagation();openPlaylistModalFor('${t.id}')" title="Add to Playlist">➕</button>
         <button class="ta-btn" onclick="event.stopPropagation();removeTrack('${t.id}')" title="Remove">🗑</button>
       </div>
@@ -2405,6 +2508,107 @@ function removeTrack(id){
   idbDeleteArt(id).catch(()=>{});
   _artCache.delete(String(id));
   toast('Track removed','');
+}
+
+// ========== ID3 TAG EDITOR ==========
+let _id3EditingId = null;
+let _id3NewArtDataUrl = null; // holds newly chosen art before save
+
+function openId3Editor(trackId) {
+  const track = state.tracks.find(t => String(t.id) === String(trackId));
+  if (!track) return;
+  _id3EditingId = String(trackId);
+  _id3NewArtDataUrl = null;
+
+  // Populate fields
+  document.getElementById('id3Title').value    = track.name    || '';
+  document.getElementById('id3Artist').value   = track.artist  || '';
+  document.getElementById('id3Album').value    = track.album   || '';
+  document.getElementById('id3Year').value     = track.year    !== '—' ? (track.year || '') : '';
+  document.getElementById('id3Genre').value    = track.genre   !== '—' ? (track.genre || '') : '';
+  document.getElementById('id3Bpm').value      = track.bpm     !== '—' ? (track.bpm || '') : '';
+  document.getElementById('id3TrackNum').value = track.trackNum || '';
+
+  // Album art
+  const preview = document.getElementById('id3ArtPreview');
+  const cached  = _artCache.get(String(trackId));
+  if (cached) {
+    preview.innerHTML = `<img src="${cached}" style="width:100%;height:100%;object-fit:cover;border-radius:10px">`;
+  } else {
+    preview.innerHTML = `<span id="id3ArtEmoji">${track.emoji || '🎵'}</span>`;
+  }
+
+  document.getElementById('id3ArtInput').value = '';
+  document.getElementById('id3Modal').classList.add('active');
+}
+
+function closeId3Editor() {
+  document.getElementById('id3Modal').classList.remove('active');
+  _id3EditingId = null;
+  _id3NewArtDataUrl = null;
+}
+
+function handleId3ArtChange(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { toast('Please select an image file', 'error'); return; }
+  if (file.size > 5 * 1024 * 1024) { toast('Image too large — max 5 MB', 'error'); return; }
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    _id3NewArtDataUrl = ev.target.result;
+    const preview = document.getElementById('id3ArtPreview');
+    preview.innerHTML = `<img src="${_id3NewArtDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:10px">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveId3Tags() {
+  if (!_id3EditingId) return;
+  const track = state.tracks.find(t => String(t.id) === String(_id3EditingId));
+  if (!track) return;
+
+  const title    = document.getElementById('id3Title').value.trim();
+  const artist   = document.getElementById('id3Artist').value.trim();
+  const album    = document.getElementById('id3Album').value.trim();
+  const year     = document.getElementById('id3Year').value.trim();
+  const genre    = document.getElementById('id3Genre').value.trim();
+  const bpm      = document.getElementById('id3Bpm').value.trim();
+  const trackNum = document.getElementById('id3TrackNum').value.trim();
+
+  if (!title) { toast('Title cannot be empty', 'error'); return; }
+
+  // Apply changes to in-memory track
+  track.name     = title;
+  track.artist   = artist || 'Unknown Artist';
+  track.album    = album  || 'Unknown Album';
+  track.year     = year   || '—';
+  track.genre    = genre  || '—';
+  track.bpm      = bpm    || '—';
+  track.trackNum = trackNum || '';
+
+  // Save album art if changed
+  if (_id3NewArtDataUrl) {
+    _artCache.set(_id3EditingId, _id3NewArtDataUrl);
+    idbSaveArt(_id3EditingId, _id3NewArtDataUrl).catch(() => {});
+    // Update player if this is the current track
+    if (state.currentIdx >= 0 && String(state.tracks[state.currentIdx].id) === _id3EditingId) {
+      setPlayerArt(_id3NewArtDataUrl);
+    }
+  }
+
+  // Persist metadata to IndexedDB
+  const meta = { ...track }; delete meta.url;
+  idbSaveMeta(meta).catch(() => {});
+
+  // Update player UI if this is the current track
+  if (state.currentIdx >= 0 && String(state.tracks[state.currentIdx].id) === _id3EditingId) {
+    updatePlayerUI();
+  }
+
+  renderTrackList();
+  closeId3Editor();
+  toast('✓ Tags saved for "' + title + '"', 'success');
 }
 function filterPlaylist(filter,el){
   state.currentFilter=filter;
