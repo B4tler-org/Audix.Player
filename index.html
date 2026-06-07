@@ -669,7 +669,7 @@
     <div id="achievement-toast-container"></div>
   </div>
 
-  <!-- Scripts -->
+  <!-- Scripts (non-module) -->
   <script src="js/utils.js"></script>
   <script src="js/library.js"></script>
   <script src="js/radio.js"></script>
@@ -678,20 +678,9 @@
   <script src="js/player.js"></script>
   <script src="js/profile.js"></script>
   <script src="js/notifications.js"></script>
-  <script src="js/app.js"></script>
 
-  <!-- Firebase modules (auth, achievements, settings) -->
-  <script type="module">
-    import Auth from './js/auth.js';
-    import Achievements from './js/achievements.js';
-    import Settings from './js/settings.js';
-    window.Auth = Auth;
-    window.Achievements = Achievements;
-    window.Settings = Settings;
-    await Auth.init();
-    if (typeof Settings !== 'undefined') Settings.init();
-    if (typeof Achievements !== 'undefined') await Achievements.init();
-  </script>
+  <!-- Main app as ES module (imports Firebase auth/achievements/settings) -->
+  <script type="module" src="js/app.js"></script>
 
   <!-- Service Worker Registration -->
   <script>
