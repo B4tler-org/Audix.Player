@@ -15,41 +15,14 @@ const Settings = {
   },
 
   load() {
-    const userId = (typeof Auth !== 'undefined') ? Auth.getUserId() : null;
-    if (!userId) {
-      // Load from localStorage as fallback
-      const raw = localStorage.getItem('audix_settings');
-      if (raw) {
-        try { this.prefs = JSON.parse(raw); } catch (e) {}
-      }
-      return;
+    const raw = localStorage.getItem('audix_settings');
+    if (raw) {
+      try { this.prefs = JSON.parse(raw); } catch (e) {}
     }
-    // Load from IndexedDB
-    return new Promise((resolve) => {
-      if (!Auth.db) { resolve(); return; }
-      const tx = Auth.db.transaction('userSettings', 'readonly');
-      const store = tx.objectStore('userSettings');
-      const req = store.get(userId);
-      req.onsuccess = () => {
-        if (req.result && req.result.prefs) {
-          this.prefs = { ...this.prefs, ...req.result.prefs };
-        }
-        resolve();
-      };
-      req.onerror = () => resolve();
-    });
   },
 
   save() {
-    const userId = (typeof Auth !== 'undefined') ? Auth.getUserId() : null;
-    // Always save to localStorage for quick access
     localStorage.setItem('audix_settings', JSON.stringify(this.prefs));
-    if (userId && Auth.db) {
-      const tx = Auth.db.transaction('userSettings', 'readwrite');
-      const store = tx.objectStore('userSettings');
-      store.put({ userId, prefs: this.prefs, updatedAt: Date.now() });
-    }
-    // Apply to achievements
     if (typeof Achievements !== 'undefined') {
       Achievements.sfxEnabled = this.prefs.sfxEnabled;
     }
@@ -110,8 +83,11 @@ const Settings = {
     try {
       await Auth.updateProfile(Auth.currentUser.id, { username });
       input.value = '';
+
+      // Real-time broadcast
+      Auth.broadcastProfileUpdate();
+
       if (typeof Utils !== 'undefined') Utils.toast('Username updated');
-      if (typeof Profile !== 'undefined') Profile.updateDisplay();
     } catch (err) {
       if (typeof Utils !== 'undefined') Utils.toast(err.message, 'error');
     }

@@ -1,5 +1,6 @@
 /* ============================================
    PROFILE MANAGER
+   Real-time UI sync across all components
    ============================================ */
 
 const Profile = {
@@ -9,13 +10,11 @@ const Profile = {
   },
 
   bindEvents() {
-    // PFP upload
     const pfpInput = document.getElementById('pfp-input');
     if (pfpInput) {
       pfpInput.addEventListener('change', (e) => this.changePfp(e.target.files[0]));
     }
 
-    // Logout
     const logoutBtn = document.getElementById('btn-logout');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', () => {
@@ -34,10 +33,15 @@ const Profile = {
       return;
     }
     try {
-      const url = URL.createObjectURL(file);
-      await Auth.updateProfile(Auth.currentUser.id, { profilePic: url });
+      // Convert to base64 for persistence
+      const dataUrl = await Utils.fileToDataURL(file);
+      await Auth.updateProfile(Auth.currentUser.id, { profilePic: dataUrl });
+
+      // Real-time UI update
       this.updateDisplay();
-      if (typeof Auth !== 'undefined') Auth.updateUI();
+      Auth.updateUI();
+      Auth.broadcastProfileUpdate();
+
       if (typeof Utils !== 'undefined') Utils.toast('Profile picture updated');
     } catch (err) {
       if (typeof Utils !== 'undefined') Utils.toast('Failed to update picture', 'error');
@@ -56,7 +60,7 @@ const Profile = {
 
     if (!user) {
       if (pfpImg) pfpImg.classList.add('hidden');
-      if (placeholder) placeholder.classList.remove('hidden');
+      if (placeholder) { placeholder.classList.remove('hidden'); placeholder.textContent = '👤'; }
       if (usernameEl) usernameEl.textContent = 'Guest';
       if (emailEl) emailEl.textContent = '—';
       if (joinedEl) joinedEl.textContent = '—';

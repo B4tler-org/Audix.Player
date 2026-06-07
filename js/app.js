@@ -1,22 +1,22 @@
 /* ============================================
    APP ROUTER & INITIALIZER
-   Auth-first initialization
+   Auth-first, then all modules
    ============================================ */
 
 const App = {
   currentPage: 'home',
 
   async init() {
-    console.log('[App] init() starting...');
+    console.log('[App] init()');
     this.bindNav();
     this.bindMobileMenu();
 
-    // Initialize Auth FIRST (creates DB, restores session)
+    // Auth FIRST (creates DB, restores session)
     if (typeof Auth !== 'undefined') {
       await Auth.init();
     }
 
-    // Then initialize all other modules
+    // Initialize all modules
     this.initModules();
 
     this.handleRoute();
@@ -39,14 +39,12 @@ const App = {
   initModules() {
     console.log('[App] initModules()');
 
-    // Library depends on Auth.db being ready
     if (typeof Library !== 'undefined') {
       Library.init().then(() => {
-        console.log('[App] Library ready with', Library.songs.length, 'songs');
-        // Player reads from Library.songs
+        console.log('[App] Library ready:', Library.songs.length, 'songs');
         if (typeof Player !== 'undefined') {
           Player.init();
-          if (Library.songs.length > 0) {
+          if (Library.songs.length > 0 && Player.currentIndex === -1) {
             console.log('[App] Auto-loading first track');
             Player.loadTrack(0);
           }
@@ -60,6 +58,7 @@ const App = {
     if (typeof Achievements !== 'undefined') Achievements.init();
     if (typeof Profile !== 'undefined') Profile.init();
     if (typeof Settings !== 'undefined') Settings.init();
+    if (typeof Notifications !== 'undefined') Notifications.init();
   },
 
   bindNav() {
@@ -111,7 +110,6 @@ const App = {
 
     document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.page === page));
 
-    // Track achievements
     const map = {
       home: 'homeOpens', equalizer: 'eqOpens', quiz: 'quizOpens', library: 'libraryOpens',
       radio: 'radioOpens', support: 'supportOpens', achievements: 'achievementsOpens',
@@ -122,7 +120,6 @@ const App = {
       Achievements.track(map[page]);
     }
 
-    // Page-specific init
     if (page === 'achievements' && typeof Achievements !== 'undefined') Achievements.render();
     if (page === 'radio' && typeof Radio !== 'undefined') Radio.render();
     if (page === 'quiz' && typeof Quiz !== 'undefined') Quiz.updateUI('start');

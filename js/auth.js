@@ -6,15 +6,15 @@
 const Auth = {
   currentUser: null,
   db: null,
-  googleClientId: '478887203737-db4cr9gjp22bqvl941k5fl11ef45q22s.apps.googleusercontent.com', 
+  // Client ID stored in code only, NEVER displayed in UI
+  googleClientId: '478887203737db4cr9gjp22bqvl941k5fl11ef45q22s.apps.googleusercontent.com',
 
   async init() {
-    console.log('[Auth] init() starting...');
+    console.log('[Auth] init()');
     await this.openDB();
     await this.restoreSession();
     this.bindEvents();
     this.renderGoogleButton();
-    console.log('[Auth] init() complete. User:', this.currentUser ? this.currentUser.email : 'none');
   },
 
   openDB() {
@@ -24,14 +24,11 @@ const Auth = {
       req.onsuccess = () => { this.db = req.result; resolve(); };
       req.onupgradeneeded = (e) => {
         const db = e.target.result;
-        console.log('[Auth] DB upgrade to v2...');
-        // Users store
         if (!db.objectStoreNames.contains('users')) {
           const usersStore = db.createObjectStore('users', { keyPath: 'id', autoIncrement: true });
           usersStore.createIndex('email', 'email', { unique: true });
           usersStore.createIndex('googleId', 'googleId', { unique: false });
         }
-        // Per-user data stores
         if (!db.objectStoreNames.contains('userSongs')) {
           db.createObjectStore('userSongs', { keyPath: 'id', autoIncrement: true });
         }
@@ -41,7 +38,9 @@ const Auth = {
         if (!db.objectStoreNames.contains('userSettings')) {
           db.createObjectStore('userSettings', { keyPath: 'userId' });
         }
-        // Migrate old songs store if exists
+        if (!db.objectStoreNames.contains('userLyrics')) {
+          db.createObjectStore('userLyrics', { keyPath: 'id', autoIncrement: true });
+        }
         if (!db.objectStoreNames.contains('songs')) {
           db.createObjectStore('songs', { keyPath: 'id', autoIncrement: true });
         }
@@ -49,7 +48,6 @@ const Auth = {
     });
   },
 
-  // Simple hash function (SHA-256 based, NOT for production security)
   async hashPassword(password, salt) {
     const encoder = new TextEncoder();
     const data = encoder.encode(password + salt);
@@ -63,12 +61,16 @@ const Auth = {
   },
 
   async register(username, email, password) {
-    console.log('[Auth] Registering user:', email);
     if (!email || !password || password.length < 6) {
       throw new Error('Email required and password must be at least 6 characters');
     }
     if (!username || username.length < 3) {
       throw new Error('Username must be at least 3 characters');
+    }
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new Error('Please enter a valid email address');
     }
 
     return new Promise(async (resolve, reject) => {
@@ -96,7 +98,6 @@ const Auth = {
         const addReq = store.add(user);
         addReq.onsuccess = () => {
           user.id = addReq.result;
-          console.log('[Auth] User registered with id:', user.id);
           resolve(user);
         };
         addReq.onerror = () => reject(addReq.error);
@@ -106,7 +107,6 @@ const Auth = {
   },
 
   async login(email, password) {
-    console.log('[Auth] Login attempt:', email);
     if (!email || !password) {
       throw new Error('Email and password are required');
     }
@@ -128,7 +128,6 @@ const Auth = {
           reject(new Error('Incorrect password'));
           return;
         }
-        console.log('[Auth] Login successful for:', email);
         resolve(user);
       };
       req.onerror = () => reject(req.error);
@@ -136,8 +135,6 @@ const Auth = {
   },
 
   async googleLogin(credential) {
-    console.log('[Auth] Google login attempt');
-    // Decode JWT from Google
     const payload = this.parseJwt(credential);
     if (!payload || !payload.sub) {
       throw new Error('Invalid Google credential');
@@ -157,28 +154,22 @@ const Auth = {
       req.onsuccess = () => {
         let user = req.result;
         if (user) {
-          // Update existing Google user
           user.profilePic = profilePic;
           user.email = email;
           user.username = username;
           store.put(user);
-          console.log('[Auth] Google user updated:', email);
           resolve(user);
         } else {
-          // Check if email already exists
           const emailIndex = store.index('email');
           const emailReq = emailIndex.get(email);
           emailReq.onsuccess = () => {
             if (emailReq.result) {
-              // Link Google to existing account
               user = emailReq.result;
               user.googleId = googleId;
               user.profilePic = profilePic;
               store.put(user);
-              console.log('[Auth] Linked Google to existing user:', email);
               resolve(user);
             } else {
-              // Create new Google user
               const newUser = {
                 username,
                 email,
@@ -191,7 +182,6 @@ const Auth = {
               const addReq = store.add(newUser);
               addReq.onsuccess = () => {
                 newUser.id = addReq.result;
-                console.log('[Auth] New Google user created:', email);
                 resolve(newUser);
               };
               addReq.onerror = () => reject(addReq.error);
@@ -234,30 +224,32 @@ const Auth = {
       sessionStorage.setItem('audix_session', JSON.stringify(session));
     }
     this.updateUI();
-    console.log('[Auth] Session set for user:', user.email);
+    // Broadcast profile change to all UI components
+    this.broadcastProfileUpdate();
   },
 
   async restoreSession() {
     const session = localStorage.getItem('audix_session') || sessionStorage.getItem('audix_session');
     if (!session) {
-      console.log('[Auth] No session found');
       this.showLoginModal();
       return;
     }
     try {
       const data = JSON.parse(session);
-      // Verify user still exists in DB
       const user = await this.getUserById(data.userId);
       if (user) {
         this.currentUser = user;
         this.updateUI();
-        console.log('[Auth] Session restored for:', user.email);
+        this.hideLoginModal();
+        // Load user data
+        if (typeof Library !== 'undefined') await Library.loadUserSongs();
+        if (typeof Achievements !== 'undefined') await Achievements.loadUserAchievements();
+        if (typeof Settings !== 'undefined') await Settings.load();
+        this.broadcastProfileUpdate();
       } else {
-        console.log('[Auth] Stored session user not found, clearing');
         this.logout();
       }
     } catch (e) {
-      console.error('[Auth] Session restore error:', e);
       this.logout();
     }
   },
@@ -274,11 +266,9 @@ const Auth = {
   },
 
   logout() {
-    console.log('[Auth] Logging out...');
     this.currentUser = null;
     localStorage.removeItem('audix_session');
     sessionStorage.removeItem('audix_session');
-    // Stop audio
     if (typeof Player !== 'undefined' && Player.audio) {
       Player.audio.pause();
       Player.audio.src = '';
@@ -292,13 +282,13 @@ const Auth = {
     return new Promise((resolve, reject) => {
       if (!this.currentUser) { reject(new Error('Not logged in')); return; }
       const userId = this.currentUser.id;
-      const tx = this.db.transaction(['users', 'userSongs', 'userAchievements', 'userSettings'], 'readwrite');
+      const tx = this.db.transaction(['users', 'userSongs', 'userAchievements', 'userSettings', 'userLyrics'], 'readwrite');
 
       tx.objectStore('users').delete(userId);
       tx.objectStore('userAchievements').delete(userId);
       tx.objectStore('userSettings').delete(userId);
+      tx.objectStore('userLyrics').delete(userId);
 
-      // Delete user songs
       const songsStore = tx.objectStore('userSongs');
       const allReq = songsStore.getAll();
       allReq.onsuccess = () => {
@@ -309,7 +299,6 @@ const Auth = {
       };
 
       tx.oncomplete = () => {
-        console.log('[Auth] Account deleted for user:', userId);
         this.logout();
         resolve();
       };
@@ -327,7 +316,6 @@ const Auth = {
         if (!user) { reject(new Error('User not found')); return; }
         Object.assign(user, updates);
         store.put(user);
-        // Update current user if it's the same
         if (this.currentUser && this.currentUser.id === userId) {
           this.currentUser = user;
           this.setSession(user, true);
@@ -391,12 +379,11 @@ const Auth = {
           const user = await this.login(email, password);
           this.setSession(user, rememberMe);
           this.hideLoginModal();
-          if (typeof Utils !== 'undefined') Utils.toast('Welcome back, ' + user.username + '!');
-          // Reload user data
+          Utils.toast('Welcome back, ' + user.username + '!');
           if (typeof Library !== 'undefined') await Library.loadUserSongs();
           if (typeof Achievements !== 'undefined') await Achievements.loadUserAchievements();
         } catch (err) {
-          if (typeof Utils !== 'undefined') Utils.toast(err.message, 'error');
+          Utils.toast(err.message, 'error');
         }
       });
     }
@@ -411,16 +398,16 @@ const Auth = {
         const password = document.getElementById('regPassword').value;
         const confirm = document.getElementById('regPasswordConfirm').value;
         if (password !== confirm) {
-          if (typeof Utils !== 'undefined') Utils.toast('Passwords do not match', 'error');
+          Utils.toast('Passwords do not match', 'error');
           return;
         }
         try {
           const user = await this.register(username, email, password);
           this.setSession(user, true);
           this.hideLoginModal();
-          if (typeof Utils !== 'undefined') Utils.toast('Account created! Welcome, ' + username + '!');
+          Utils.toast('Account created! Welcome, ' + username + '!');
         } catch (err) {
-          if (typeof Utils !== 'undefined') Utils.toast(err.message, 'error');
+          Utils.toast(err.message, 'error');
         }
       });
     }
@@ -437,11 +424,6 @@ const Auth = {
   renderGoogleButton() {
     const container = document.getElementById('googleSignInBtn');
     if (!container) return;
-    if (this.googleClientId === 'YOUR_GOOGLE_CLIENT_ID') {
-      container.innerHTML = '<p style="color:var(--text-secondary);font-size:0.8rem;text-align:center;">Google Login requires a Client ID.<br>See README for setup.</p>';
-      return;
-    }
-    // Render Google Sign-In button
     if (typeof google !== 'undefined' && google.accounts) {
       google.accounts.id.initialize({
         client_id: this.googleClientId,
@@ -450,8 +432,12 @@ const Auth = {
       google.accounts.id.renderButton(container, {
         theme: 'filled_black',
         size: 'large',
-        width: '100%'
+        width: '100%',
+        text: 'continue_with'
       });
+    } else {
+      // Google script not loaded yet, retry
+      setTimeout(() => this.renderGoogleButton(), 500);
     }
   },
 
@@ -460,11 +446,11 @@ const Auth = {
       const user = await this.googleLogin(response.credential);
       this.setSession(user, true);
       this.hideLoginModal();
-      if (typeof Utils !== 'undefined') Utils.toast('Welcome, ' + user.username + '!');
+      Utils.toast('Welcome, ' + user.username + '!');
       if (typeof Library !== 'undefined') await Library.loadUserSongs();
       if (typeof Achievements !== 'undefined') await Achievements.loadUserAchievements();
     } catch (err) {
-      if (typeof Utils !== 'undefined') Utils.toast('Google login failed: ' + err.message, 'error');
+      Utils.toast('Google login failed: ' + err.message, 'error');
     }
   },
 
@@ -481,7 +467,6 @@ const Auth = {
   updateUI() {
     const isLoggedIn = !!this.currentUser;
 
-    // Header avatar
     const avatarBtn = document.getElementById('userAvatarBtn');
     const headerPfp = document.getElementById('headerPfp');
     if (avatarBtn && headerPfp) {
@@ -495,7 +480,6 @@ const Auth = {
       }
     }
 
-    // Sidebar user
     const sidebarUser = document.getElementById('sidebarUser');
     const sidebarPfp = document.getElementById('sidebarPfp');
     const sidebarUsername = document.getElementById('sidebarUsername');
@@ -516,15 +500,33 @@ const Auth = {
       }
     }
 
-    // Login modal visibility
     if (isLoggedIn) {
       this.hideLoginModal();
     } else {
       this.showLoginModal();
     }
 
-    // Update profile page if visible
     if (typeof Profile !== 'undefined') Profile.updateDisplay();
+    if (typeof Notifications !== 'undefined') Notifications.updateProfileInfo();
+  },
+
+  broadcastProfileUpdate() {
+    // Update all UI components that show user info
+    if (typeof Profile !== 'undefined') Profile.updateDisplay();
+    if (typeof Notifications !== 'undefined') Notifications.updateProfileInfo();
+
+    // Update sidebar
+    const sidebarUsername = document.getElementById('sidebarUsername');
+    const sidebarEmail = document.getElementById('sidebarEmail');
+    const sidebarPfp = document.getElementById('sidebarPfp');
+    if (this.currentUser) {
+      if (sidebarUsername) sidebarUsername.textContent = this.currentUser.username;
+      if (sidebarEmail) sidebarEmail.textContent = this.currentUser.email;
+      if (sidebarPfp && this.currentUser.profilePic) {
+        sidebarPfp.src = this.currentUser.profilePic;
+        sidebarPfp.classList.remove('hidden');
+      }
+    }
   },
 
   getUserId() {
@@ -532,7 +534,6 @@ const Auth = {
   }
 };
 
-// Global handler for Google callback (called by GIS library)
 window.handleGoogleCredentialResponse = (response) => {
   if (typeof Auth !== 'undefined') {
     Auth.handleGoogleResponse(response);

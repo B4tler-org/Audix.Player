@@ -1,6 +1,7 @@
 /* ============================================
    AUDIO PLAYER CORE
-   Reads from Library.songs as single source of truth
+   Reads from Library.songs (single source of truth)
+   Syncs with Notifications panel
    ============================================ */
 
 const Player = {
@@ -15,15 +16,13 @@ const Player = {
   lyricsOpen: false,
 
   init() {
-    console.log('[Player] init() starting...');
+    console.log('[Player] init()');
     this.audio = document.getElementById('audio-player');
     this.bindEvents();
     this.loadState();
     this.startVibeCanvas();
-    console.log('[Player] init() complete. currentIndex:', this.currentIndex);
   },
 
-  // Centralized song access — always reads from Library.songs
   get songs() {
     return (typeof Library !== 'undefined' && Library.songs) ? Library.songs : [];
   },
@@ -38,6 +37,7 @@ const Player = {
     const btnDownload = document.getElementById('btn-download-cover');
     const btnShare = document.getElementById('btn-share');
     const btnLyrics = document.getElementById('btn-lyrics-toggle');
+    const btnEditLyrics = document.getElementById('btn-edit-lyrics');
 
     if (btnPlay) btnPlay.addEventListener('click', () => this.togglePlay());
     if (btnPrev) btnPrev.addEventListener('click', () => this.prev());
@@ -48,6 +48,7 @@ const Player = {
     if (btnDownload) btnDownload.addEventListener('click', () => this.downloadCover());
     if (btnShare) btnShare.addEventListener('click', () => this.share());
     if (btnLyrics) btnLyrics.addEventListener('click', () => this.toggleLyrics());
+    if (btnEditLyrics) btnEditLyrics.addEventListener('click', () => this.editLyrics());
 
     this.audio.addEventListener('timeupdate', () => this.updateProgress());
     this.audio.addEventListener('loadedmetadata', () => {
@@ -64,6 +65,7 @@ const Player = {
       if (vinyl) vinyl.classList.add('playing');
       this.listenStart = Date.now();
       if (typeof Equalizer !== 'undefined') Equalizer.setup(this.audio);
+      if (typeof Notifications !== 'undefined') Notifications.updateDisplay();
     });
     this.audio.addEventListener('pause', () => {
       this.isPlaying = false;
@@ -76,6 +78,7 @@ const Player = {
         if (typeof Achievements !== 'undefined') Achievements.track('listenMinutes', Math.floor(mins));
         this.listenStart = 0;
       }
+      if (typeof Notifications !== 'undefined') Notifications.updateDisplay();
     });
     this.audio.addEventListener('error', (e) => {
       console.error('[Player] Audio error:', e);
@@ -84,9 +87,9 @@ const Player = {
   },
 
   playFromLibrary(index) {
-    console.log('[Player] playFromLibrary called with index:', index, 'songs count:', this.songs.length);
+    console.log('[Player] playFromLibrary(', index, ')');
     if (index < 0 || index >= this.songs.length) {
-      console.warn('[Player] Invalid index:', index, 'songs.length:', this.songs.length);
+      console.warn('[Player] Invalid index:', index);
       return;
     }
     this.currentIndex = index;
@@ -97,15 +100,13 @@ const Player = {
 
   loadTrack(index) {
     const songs = this.songs;
-    console.log('[Player] loadTrack(', index, ') — songs available:', songs.length);
-    if (!songs.length || index < 0 || index >= songs.length) {
-      console.warn('[Player] Cannot load track — invalid index or empty library');
-      return;
-    }
+    console.log('[Player] loadTrack(', index, ') — songs:', songs.length);
+    if (!songs.length || index < 0 || index >= songs.length) return;
     this.currentIndex = index;
     const song = songs[index];
     if (!song || !song.url) {
-      console.warn('[Player] Song at index', index, 'has no URL');
+      console.warn('[Player] Song has no URL');
+      if (typeof Utils !== 'undefined') Utils.toast('Cannot play: audio data missing', 'error');
       return;
     }
 
@@ -138,10 +139,17 @@ const Player = {
       id3Badge.classList.toggle('visible', !!(song.artist && song.title && song.title !== 'Unknown Title'));
     }
 
+    // Load lyrics
     const lyricsContent = document.getElementById('lyrics-content');
-    if (lyricsContent) lyricsContent.innerHTML = '<p class="lyrics-placeholder">Loading lyrics...</p>';
+    if (lyricsContent) {
+      if (song.lyrics) {
+        lyricsContent.textContent = song.lyrics;
+      } else {
+        lyricsContent.innerHTML = '<p class="lyrics-placeholder">Loading lyrics...</p>';
+        this.fetchLyrics(song.artist, song.title, song);
+      }
+    }
 
-    this.fetchLyrics(song.artist, song.title);
     if (typeof Achievements !== 'undefined') {
       Achievements.track('plays');
       Achievements.track('id3Plays');
@@ -152,11 +160,13 @@ const Player = {
       Achievements.track('earlyPlays');
       Achievements.track('nightPlays');
     }
+
+    // Update notifications
+    if (typeof Notifications !== 'undefined') Notifications.updateDisplay();
   },
 
   play() {
-    const songs = this.songs;
-    if (!this.audio.src && songs.length) {
+    if (!this.audio.src && this.songs.length) {
       this.loadTrack(0);
     }
     if (this.audio.src) {
@@ -232,7 +242,7 @@ const Player = {
     if (currentTime) currentTime.textContent = Utils.formatTime(this.audio.currentTime);
   },
 
-  async fetchLyrics(artist, title) {
+  async fetchLyrics(artist, title, song) {
     const lyricsContent = document.getElementById('lyrics-content');
     if (!lyricsContent) return;
 
@@ -240,6 +250,8 @@ const Player = {
       lyricsContent.innerHTML = '<p class="lyrics-placeholder">No lyrics available (missing tags).</p>';
       return;
     }
+
+    // Try LRCLIB first
     try {
       const q = encodeURIComponent(`${artist} ${title}`);
       const res = await fetch(`https://lrclib.net/api/search?q=${q}`);
@@ -247,12 +259,53 @@ const Player = {
       if (data && data.length > 0) {
         const lyrics = data[0].plainLyrics || data[0].syncedLyrics || 'No lyrics found.';
         lyricsContent.textContent = lyrics;
+        song.lyrics = lyrics;
+        if (typeof Library !== 'undefined') Library.updateSong(song);
         if (typeof Achievements !== 'undefined') Achievements.track('lyricsLoaded');
-      } else {
-        lyricsContent.innerHTML = '<p class="lyrics-placeholder">No lyrics found on LRCLIB.</p>';
+        return;
       }
-    } catch (e) {
-      lyricsContent.innerHTML = '<p class="lyrics-placeholder">Lyrics service unavailable.</p>';
+    } catch (e) {}
+
+    lyricsContent.innerHTML = '<p class="lyrics-placeholder">No lyrics found. Click Edit to add manually.</p>';
+  },
+
+  editLyrics() {
+    const song = this.songs[this.currentIndex];
+    if (!song) return;
+
+    const lyricsContent = document.getElementById('lyrics-content');
+    const btnEdit = document.getElementById('btn-edit-lyrics');
+    if (!lyricsContent || !btnEdit) return;
+
+    if (btnEdit.textContent === 'Edit') {
+      // Switch to edit mode
+      const currentText = song.lyrics || lyricsContent.textContent || '';
+      lyricsContent.innerHTML = `
+        <div class="lyrics-edit">
+          <textarea id="lyrics-textarea">${currentText.replace(/</g, '&lt;')}</textarea>
+          <button class="btn-primary btn-small" id="btn-save-lyrics">Save Lyrics</button>
+        </div>
+      `;
+      btnEdit.textContent = 'Cancel';
+
+      document.getElementById('btn-save-lyrics')?.addEventListener('click', () => {
+        const textarea = document.getElementById('lyrics-textarea');
+        if (textarea) {
+          song.lyrics = textarea.value;
+          if (typeof Library !== 'undefined') Library.updateSong(song);
+          lyricsContent.textContent = song.lyrics;
+          btnEdit.textContent = 'Edit';
+          if (typeof Utils !== 'undefined') Utils.toast('Lyrics saved');
+        }
+      });
+    } else {
+      // Cancel edit mode
+      if (song.lyrics) {
+        lyricsContent.textContent = song.lyrics;
+      } else {
+        lyricsContent.innerHTML = '<p class="lyrics-placeholder">Play a song to load lyrics...</p>';
+      }
+      btnEdit.textContent = 'Edit';
     }
   },
 

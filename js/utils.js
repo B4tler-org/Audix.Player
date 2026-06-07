@@ -1,5 +1,5 @@
 /* ============================================
-   UTILS & CONSTANTS
+   UTILS, CONSTANTS & AI TITLE CLEANER
    ============================================ */
 
 const Utils = {
@@ -10,11 +10,9 @@ const Utils = {
     return `${m}:${s.toString().padStart(2, '0')}`;
   },
 
-  // FIXED: Was "async function generateSFX(type)" which is invalid inside object literal
   async generateSFX(type) {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      // Resume context if suspended (browser autoplay policy)
       if (ctx.state === 'suspended') await ctx.resume();
       const t = ctx.currentTime;
       const osc = ctx.createOscillator();
@@ -29,16 +27,14 @@ const Utils = {
         osc.frequency.setValueAtTime(784, t + 0.2);
         gain.gain.setValueAtTime(0.15, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-        osc.start(t);
-        osc.stop(t + 0.4);
+        osc.start(t); osc.stop(t + 0.4);
       } else if (type === 'error') {
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(150, t);
         osc.frequency.linearRampToValueAtTime(100, t + 0.3);
         gain.gain.setValueAtTime(0.1, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-        osc.start(t);
-        osc.stop(t + 0.3);
+        osc.start(t); osc.stop(t + 0.3);
       } else if (type === 'unlock') {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(440, t);
@@ -47,15 +43,19 @@ const Utils = {
         osc.frequency.setValueAtTime(880, t + 0.3);
         gain.gain.setValueAtTime(0.15, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
-        osc.start(t);
-        osc.stop(t + 0.6);
+        osc.start(t); osc.stop(t + 0.6);
       } else if (type === 'tick') {
         osc.type = 'square';
         osc.frequency.setValueAtTime(800, t);
         gain.gain.setValueAtTime(0.05, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
-        osc.start(t);
-        osc.stop(t + 0.05);
+        osc.start(t); osc.stop(t + 0.05);
+      } else if (type === 'favorite') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, t);
+        gain.gain.setValueAtTime(0.1, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+        osc.start(t); osc.stop(t + 0.15);
       }
     } catch (e) {
       console.warn('SFX failed:', e);
@@ -72,28 +72,111 @@ const Utils = {
     setTimeout(() => el.remove(), 3000);
   },
 
-  generateQR(text) {
-    const container = document.getElementById('qrcode');
-    if (!container) return;
-    container.innerHTML = '';
-    if (typeof QRCode !== 'undefined') {
-      new QRCode(container, {
-        text: text || 'https://github.com/',
-        width: 180,
-        height: 180,
-        colorDark: '#0f0f1a',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-      });
-    }
-  },
-
   debounce(fn, ms) {
     let timer;
     return (...args) => {
       clearTimeout(timer);
       timer = setTimeout(() => fn(...args), ms);
     };
+  },
+
+  // ============================================
+  // AI TITLE CLEANER
+  // ============================================
+  cleanTitle(filename) {
+    // Remove file extension
+    let name = filename.replace(/\.[^/.]+$/, '');
+
+    // Remove track numbers: "01. ", "1 - ", "01 -", "1.", "01)", "(1)"
+    name = name.replace(/^(\d+[.\)\-\s]+)+/, '');
+    name = name.replace(/^\(\d+\)\s*/, '');
+
+    // Remove common suffixes/tags
+    const suffixes = [
+      /\s*\[\d{3}kbps\]/gi,
+      /\s*\[\d{3}\s*Kbps\]/gi,
+      /\s*\(Official\)/gi,
+      /\s*\(Official Video\)/gi,
+      /\s*\(Official Audio\)/gi,
+      /\s*\(Lyrics\)/gi,
+      /\s*\(Lyric Video\)/gi,
+      /\s*\(Audio\)/gi,
+      /\s*\(Video\)/gi,
+      /\s*\(HD\)/gi,
+      /\s*\(HQ\)/gi,
+      /\s*\(Remix\)/gi,
+      /\s*\(Cover\)/gi,
+      /\s*\(Live\)/gi,
+      /\s*\(Acoustic\)/gi,
+      /\s*\(Instrumental\)/gi,
+      /\s*\(Extended\)/gi,
+      /\s*\(Radio Edit\)/gi,
+      /\s*\[Explicit\]/gi,
+      /\s*\[Clean\]/gi,
+      /\s*\(feat\..*?\)/gi,
+      /\s*\(ft\..*?\)/gi,
+      /\s*\[.*?\]/g,
+    ];
+    suffixes.forEach(rx => { name = name.replace(rx, ''); });
+
+    // Trim whitespace
+    name = name.trim();
+
+    // Try to split by " - " or " – " or " — "
+    const separators = [' - ', ' – ', ' — ', ' _ ', ' | ', ' • '];
+    let artist = '';
+    let title = name;
+
+    for (const sep of separators) {
+      const idx = name.indexOf(sep);
+      if (idx > 0) {
+        artist = name.substring(0, idx).trim();
+        title = name.substring(idx + sep.length).trim();
+        break;
+      }
+    }
+
+    // If no separator found, try "Artist -Title" (no space after dash)
+    if (!artist && name.includes('-')) {
+      const parts = name.split('-');
+      if (parts.length === 2) {
+        artist = parts[0].trim();
+        title = parts[1].trim();
+      }
+    }
+
+    return {
+      title: title || name,
+      artist: artist || 'Unknown Artist',
+      raw: name
+    };
+  },
+
+  // File to ArrayBuffer helper
+  fileToArrayBuffer(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(file);
+    });
+  },
+
+  // ArrayBuffer to Blob URL
+  arrayBufferToBlobURL(arrayBuffer, type = 'audio/mpeg') {
+    if (!arrayBuffer) return null;
+    const blob = new Blob([arrayBuffer], { type });
+    return URL.createObjectURL(blob);
+  },
+
+  // Image file to base64 data URL
+  fileToDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
   }
 };
 
@@ -102,7 +185,8 @@ const SFX = {
   success: () => Utils.generateSFX('success'),
   error: () => Utils.generateSFX('error'),
   unlock: () => Utils.generateSFX('unlock'),
-  tick: () => Utils.generateSFX('tick')
+  tick: () => Utils.generateSFX('tick'),
+  favorite: () => Utils.generateSFX('favorite')
 };
 
 const DEFAULT_RADIO_STATIONS = [
