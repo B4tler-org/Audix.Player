@@ -1,369 +1,229 @@
 /* ============================================
-   AUTHENTICATION SYSTEM — v2.0
-   Enhanced user data: XP, Level, Achievements, Rewards
+   AUTHENTICATION SYSTEM — v3.0
+   Firebase Auth + Firestore
    ============================================ */
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut,
+  onAuthStateChanged,
+  updateProfile as fbUpdateProfile,
+  deleteUser,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  RecaptchaVerifier,
+  signInWithPhoneNumber
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDN_EWDxVXQiEXB0GV9esg3RZJIRrvMkpg",
+  authDomain: "audix-cf5dd.firebaseapp.com",
+  projectId: "audix-cf5dd",
+  storageBucket: "audix-cf5dd.firebasestorage.app",
+  messagingSenderId: "251879225148",
+  appId: "1:251879225148:web:59de2af7eba8bb631e9039",
+  measurementId: "G-858KTP0X10"
+};
+
+const app = initializeApp(firebaseConfig);
+const firebaseAuth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
 
 const Auth = {
   currentUser: null,
-  db: null,
-  googleClientId: '478887203737-be11eh6eds98e9k7btjir1h1oh45um6s.apps.googleusercontent.com',
+  userData: null,
+  confirmationResult: null,
 
   async init() {
     console.log('[Auth] init()');
-    await this.openDB();
-    await this.restoreSession();
     this.bindEvents();
     this.renderGoogleButton();
-  },
 
-  openDB() {
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open('AudixDB', 3); // Version bump for gamification store
-      req.onerror = () => reject(req.error);
-      req.onsuccess = () => { this.db = req.result; resolve(); };
-      req.onupgradeneeded = (e) => {
-        const db = e.target.result;
-        if (!db.objectStoreNames.contains('users')) {
-          const usersStore = db.createObjectStore('users', { keyPath: 'id', autoIncrement: true });
-          usersStore.createIndex('email', 'email', { unique: true });
-          usersStore.createIndex('googleId', 'googleId', { unique: false });
-        }
-        if (!db.objectStoreNames.contains('userSongs')) {
-          db.createObjectStore('userSongs', { keyPath: 'id', autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains('userAchievements')) {
-          db.createObjectStore('userAchievements', { keyPath: 'userId' });
-        }
-        if (!db.objectStoreNames.contains('userSettings')) {
-          db.createObjectStore('userSettings', { keyPath: 'userId' });
-        }
-        if (!db.objectStoreNames.contains('userLyrics')) {
-          db.createObjectStore('userLyrics', { keyPath: 'id', autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains('songs')) {
-          db.createObjectStore('songs', { keyPath: 'id', autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains('userGamification')) {
-          db.createObjectStore('userGamification', { keyPath: 'userId' });
-        }
-      };
+    onAuthStateChanged(firebaseAuth, async (user) => {
+      if (user) {
+        this.currentUser = user;
+        await this.loadUserData(user.uid);
+        this.hideLoginModal();
+        this.updateUI();
+        if (typeof Library !== 'undefined') await Library.loadUserSongs();
+        if (typeof Achievements !== 'undefined') await Achievements.loadUserAchievements();
+      } else {
+        this.currentUser = null;
+        this.userData = null;
+        this.showLoginModal();
+        this.updateUI();
+      }
     });
   },
 
-  async hashPassword(password, salt) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password + salt);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  },
-
-  generateSalt() {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  },
-
-  async register(username, email, password) {
-    if (!email || !password || password.length < 6) {
-      throw new Error('Email required and password must be at least 6 characters');
-    }
-    if (!username || username.length < 3) {
-      throw new Error('Username must be at least 3 characters');
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw new Error('Please enter a valid email address');
-    }
-
-    return new Promise(async (resolve, reject) => {
-      const tx = this.db.transaction('users', 'readwrite');
-      const store = tx.objectStore('users');
-      const index = store.index('email');
-      const req = index.get(email);
-
-      req.onsuccess = async () => {
-        if (req.result) {
-          reject(new Error('Email already registered'));
-          return;
-        }
-        const salt = this.generateSalt();
-        const passwordHash = await this.hashPassword(password, salt);
-        const user = {
-          username,
-          email,
-          passwordHash,
-          salt,
-          profilePic: null,
-          createdAt: Date.now(),
-          googleId: null,
+  async loadUserData(uid) {
+    try {
+      const ref = doc(db, 'users', uid);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        this.userData = snap.data();
+      } else {
+        this.userData = {
+          username: this.currentUser.displayName || this.currentUser.email.split('@')[0],
+          email: this.currentUser.email,
+          profilePic: this.currentUser.photoURL || null,
+          createdAt: serverTimestamp(),
           xp: 0,
           level: 1,
           achievements: [],
           unlockedRewards: []
         };
-        const addReq = store.add(user);
-        addReq.onsuccess = () => {
-          user.id = addReq.result;
-          resolve(user);
-        };
-        addReq.onerror = () => reject(addReq.error);
-      };
-      req.onerror = () => reject(req.error);
+        await setDoc(ref, this.userData);
+      }
+    } catch (e) {
+      console.error('[Auth] loadUserData error:', e);
+    }
+  },
+
+  async register(username, email, password) {
+    if (!username || username.length < 3) throw new Error('Username must be at least 3 characters');
+    if (!email || !password || password.length < 6) throw new Error('Email required and password must be at least 6 characters');
+
+    const cred = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+    await fbUpdateProfile(cred.user, { displayName: username });
+
+    await setDoc(doc(db, 'users', cred.user.uid), {
+      username,
+      email,
+      profilePic: null,
+      createdAt: serverTimestamp(),
+      xp: 0,
+      level: 1,
+      achievements: [],
+      unlockedRewards: []
     });
+
+    return cred.user;
   },
 
   async login(email, password) {
-    if (!email || !password) {
-      throw new Error('Email and password are required');
-    }
-
-    return new Promise(async (resolve, reject) => {
-      const tx = this.db.transaction('users', 'readonly');
-      const store = tx.objectStore('users');
-      const index = store.index('email');
-      const req = index.get(email);
-
-      req.onsuccess = async () => {
-        const user = req.result;
-        if (!user) {
-          reject(new Error('User not found'));
-          return;
-        }
-        const hash = await this.hashPassword(password, user.salt);
-        if (hash !== user.passwordHash) {
-          reject(new Error('Incorrect password'));
-          return;
-        }
-        resolve(user);
-      };
-      req.onerror = () => reject(req.error);
-    });
+    if (!email || !password) throw new Error('Email and password are required');
+    const cred = await signInWithEmailAndPassword(firebaseAuth, email, password);
+    return cred.user;
   },
 
-  async googleLogin(credential) {
-    const payload = this.parseJwt(credential);
-    if (!payload || !payload.sub) {
-      throw new Error('Invalid Google credential');
+  async googleLogin() {
+    const cred = await signInWithPopup(firebaseAuth, googleProvider);
+    const user = cred.user;
+    const ref = doc(db, 'users', user.uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      await setDoc(ref, {
+        username: user.displayName || user.email.split('@')[0],
+        email: user.email,
+        profilePic: user.photoURL || null,
+        createdAt: serverTimestamp(),
+        xp: 0,
+        level: 1,
+        achievements: [],
+        unlockedRewards: []
+      });
     }
-
-    const googleId = payload.sub;
-    const email = payload.email;
-    const username = payload.name || email.split('@')[0];
-    const profilePic = payload.picture || null;
-
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction('users', 'readwrite');
-      const store = tx.objectStore('users');
-      const index = store.index('googleId');
-      const req = index.get(googleId);
-
-      req.onsuccess = () => {
-        let user = req.result;
-        if (user) {
-          user.profilePic = profilePic;
-          user.email = email;
-          user.username = username;
-          store.put(user);
-          resolve(user);
-        } else {
-          const emailIndex = store.index('email');
-          const emailReq = emailIndex.get(email);
-          emailReq.onsuccess = () => {
-            if (emailReq.result) {
-              user = emailReq.result;
-              user.googleId = googleId;
-              user.profilePic = profilePic;
-              store.put(user);
-              resolve(user);
-            } else {
-              const newUser = {
-                username,
-                email,
-                passwordHash: null,
-                salt: null,
-                profilePic,
-                createdAt: Date.now(),
-                googleId,
-                xp: 0,
-                level: 1,
-                achievements: [],
-                unlockedRewards: []
-              };
-              const addReq = store.add(newUser);
-              addReq.onsuccess = () => {
-                newUser.id = addReq.result;
-                resolve(newUser);
-              };
-              addReq.onerror = () => reject(addReq.error);
-            }
-          };
-        }
-      };
-      req.onerror = () => reject(req.error);
-    });
+    return user;
   },
 
-  parseJwt(token) {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      return JSON.parse(jsonPayload);
-    } catch (e) {
-      console.error('[Auth] JWT parse error:', e);
-      return null;
+  async sendPhoneOTP(phoneNumber) {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(firebaseAuth, 'recaptcha-container', {
+        size: 'invisible'
+      });
     }
+    this.confirmationResult = await signInWithPhoneNumber(firebaseAuth, phoneNumber, window.recaptchaVerifier);
+    return this.confirmationResult;
   },
 
-  setSession(user, rememberMe = true) {
-    this.currentUser = user;
-    const session = {
-      userId: user.id,
-      email: user.email,
-      username: user.username,
-      profilePic: user.profilePic,
-      googleId: user.googleId,
-      timestamp: Date.now(),
-      rememberMe
-    };
-    if (rememberMe) {
-      localStorage.setItem('audix_session', JSON.stringify(session));
-    } else {
-      sessionStorage.setItem('audix_session', JSON.stringify(session));
+  async verifyPhoneOTP(otp) {
+    if (!this.confirmationResult) throw new Error('No OTP sent yet');
+    const cred = await this.confirmationResult.confirm(otp);
+    const user = cred.user;
+    const ref = doc(db, 'users', user.uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      await setDoc(ref, {
+        username: user.phoneNumber,
+        email: '',
+        profilePic: null,
+        createdAt: serverTimestamp(),
+        xp: 0,
+        level: 1,
+        achievements: [],
+        unlockedRewards: []
+      });
+    }
+    return user;
+  },
+
+  async logout() {
+    await signOut(firebaseAuth);
+    this.currentUser = null;
+    this.userData = null;
+    localStorage.removeItem('audix_session');
+    sessionStorage.removeItem('audix_session');
+  },
+
+  async updateProfile(updates) {
+    if (!this.currentUser) throw new Error('Not logged in');
+    const ref = doc(db, 'users', this.currentUser.uid);
+    await updateDoc(ref, updates);
+    this.userData = { ...this.userData, ...updates };
+    if (updates.username || updates.profilePic) {
+      await fbUpdateProfile(this.currentUser, {
+        displayName: updates.username || this.currentUser.displayName,
+        photoURL: updates.profilePic || this.currentUser.photoURL
+      });
     }
     this.updateUI();
     this.broadcastProfileUpdate();
+    return this.userData;
   },
 
-  async restoreSession() {
-    const session = localStorage.getItem('audix_session') || sessionStorage.getItem('audix_session');
-    if (!session) {
-      this.showLoginModal();
-      return;
-    }
-    try {
-      const data = JSON.parse(session);
-      const user = await this.getUserById(data.userId);
-      if (user) {
-        this.currentUser = user;
-        this.updateUI();
-        this.hideLoginModal();
-        if (typeof Library !== 'undefined') await Library.loadUserSongs();
-        if (typeof Achievements !== 'undefined') await Achievements.loadUserAchievements();
-        if (typeof Settings !== 'undefined') await Settings.load();
-        // Load gamification
-        if (typeof Gamification !== 'undefined') Gamification.load();
-        this.broadcastProfileUpdate();
-      } else {
-        this.logout();
-      }
-    } catch (e) {
-      this.logout();
-    }
+  async changePassword(oldPassword, newPassword) {
+    if (!this.currentUser) throw new Error('Not logged in');
+    if (!newPassword || newPassword.length < 6) throw new Error('New password must be at least 6 characters');
+    const credential = EmailAuthProvider.credential(this.currentUser.email, oldPassword);
+    await reauthenticateWithCredential(this.currentUser, credential);
+    await updatePassword(this.currentUser, newPassword);
   },
 
-  getUserById(id) {
-    return new Promise((resolve) => {
-      if (!this.db) { resolve(null); return; }
-      const tx = this.db.transaction('users', 'readonly');
-      const store = tx.objectStore('users');
-      const req = store.get(id);
-      req.onsuccess = () => resolve(req.result || null);
-      req.onerror = () => resolve(null);
-    });
+  async deleteAccount() {
+    if (!this.currentUser) throw new Error('Not logged in');
+    const uid = this.currentUser.uid;
+    await deleteDoc(doc(db, 'users', uid));
+    await deleteDoc(doc(db, 'achievements', uid));
+    await deleteUser(this.currentUser);
   },
 
-  logout() {
-    this.currentUser = null;
-    localStorage.removeItem('audix_session');
-    sessionStorage.removeItem('audix_session');
-    if (typeof Player !== 'undefined' && Player.audio) {
-      Player.audio.pause();
-      Player.audio.src = '';
-    }
-    this.updateUI();
-    this.showLoginModal();
-    if (typeof Utils !== 'undefined') Utils.toast('Logged out successfully');
+  getUserId() {
+    return this.currentUser ? this.currentUser.uid : null;
   },
 
-  deleteAccount() {
-    return new Promise((resolve, reject) => {
-      if (!this.currentUser) { reject(new Error('Not logged in')); return; }
-      const userId = this.currentUser.id;
-      const tx = this.db.transaction(['users', 'userSongs', 'userAchievements', 'userSettings', 'userLyrics', 'userGamification'], 'readwrite');
-
-      tx.objectStore('users').delete(userId);
-      tx.objectStore('userAchievements').delete(userId);
-      tx.objectStore('userSettings').delete(userId);
-      tx.objectStore('userLyrics').delete(userId);
-      tx.objectStore('userGamification').delete(userId);
-
-      const songsStore = tx.objectStore('userSongs');
-      const allReq = songsStore.getAll();
-      allReq.onsuccess = () => {
-        const songs = allReq.result || [];
-        songs.forEach(song => {
-          if (song.userId === userId) songsStore.delete(song.id);
-        });
-      };
-
-      tx.oncomplete = () => {
-        this.logout();
-        resolve();
-      };
-      tx.onerror = () => reject(tx.error);
-    });
+  getUsername() {
+    return this.userData?.username || this.currentUser?.displayName || 'User';
   },
 
-  updateProfile(userId, updates) {
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction('users', 'readwrite');
-      const store = tx.objectStore('users');
-      const req = store.get(userId);
-      req.onsuccess = () => {
-        const user = req.result;
-        if (!user) { reject(new Error('User not found')); return; }
-        Object.assign(user, updates);
-        store.put(user);
-        if (this.currentUser && this.currentUser.id === userId) {
-          this.currentUser = user;
-          this.setSession(user, true);
-        }
-        resolve(user);
-      };
-      req.onerror = () => reject(req.error);
-    });
-  },
-
-  changePassword(userId, oldPassword, newPassword) {
-    return new Promise(async (resolve, reject) => {
-      if (!newPassword || newPassword.length < 6) {
-        reject(new Error('New password must be at least 6 characters'));
-        return;
-      }
-      const tx = this.db.transaction('users', 'readwrite');
-      const store = tx.objectStore('users');
-      const req = store.get(userId);
-      req.onsuccess = async () => {
-        const user = req.result;
-        if (!user || !user.passwordHash) {
-          reject(new Error('Password change not available for Google accounts'));
-          return;
-        }
-        const oldHash = await this.hashPassword(oldPassword, user.salt);
-        if (oldHash !== user.passwordHash) {
-          reject(new Error('Current password is incorrect'));
-          return;
-        }
-        const newSalt = this.generateSalt();
-        user.passwordHash = await this.hashPassword(newPassword, newSalt);
-        user.salt = newSalt;
-        store.put(user);
-        resolve();
-      };
-      req.onerror = () => reject(req.error);
-    });
+  getProfilePic() {
+    return this.userData?.profilePic || this.currentUser?.photoURL || null;
   },
 
   bindEvents() {
@@ -382,14 +242,9 @@ const Auth = {
         e.preventDefault();
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value;
-        const rememberMe = document.getElementById('rememberMe').checked;
         try {
-          const user = await this.login(email, password);
-          this.setSession(user, rememberMe);
-          this.hideLoginModal();
-          Utils.toast('Welcome back, ' + user.username + '!');
-          if (typeof Library !== 'undefined') await Library.loadUserSongs();
-          if (typeof Achievements !== 'undefined') await Achievements.loadUserAchievements();
+          await this.login(email, password);
+          Utils.toast('Welcome back!');
         } catch (err) {
           Utils.toast(err.message, 'error');
         }
@@ -404,14 +259,9 @@ const Auth = {
         const email = document.getElementById('regEmail').value.trim();
         const password = document.getElementById('regPassword').value;
         const confirm = document.getElementById('regPasswordConfirm').value;
-        if (password !== confirm) {
-          Utils.toast('Passwords do not match', 'error');
-          return;
-        }
+        if (password !== confirm) { Utils.toast('Passwords do not match', 'error'); return; }
         try {
-          const user = await this.register(username, email, password);
-          this.setSession(user, true);
-          this.hideLoginModal();
+          await this.register(username, email, password);
           Utils.toast('Account created! Welcome, ' + username + '!');
         } catch (err) {
           Utils.toast(err.message, 'error');
@@ -421,42 +271,26 @@ const Auth = {
 
     const avatarBtn = document.getElementById('userAvatarBtn');
     if (avatarBtn) {
-      avatarBtn.addEventListener('click', () => {
-        window.location.hash = 'profile';
-      });
+      avatarBtn.addEventListener('click', () => { window.location.hash = 'profile'; });
     }
   },
 
   renderGoogleButton() {
     const container = document.getElementById('googleSignInBtn');
     if (!container) return;
-    if (typeof google !== 'undefined' && google.accounts) {
-      google.accounts.id.initialize({
-        client_id: this.googleClientId,
-        callback: (response) => this.handleGoogleResponse(response)
-      });
-      google.accounts.id.renderButton(container, {
-        theme: 'filled_black',
-        size: 'large',
-        width: '100%',
-        text: 'continue_with'
-      });
-    } else {
-      setTimeout(() => this.renderGoogleButton(), 500);
-    }
-  },
+    container.innerHTML = `<button class="btn-google" id="firebaseGoogleBtn" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 16px;background:#fff;color:#333;border:none;border-radius:8px;font-size:14px;cursor:pointer;justify-content:center;">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Continue with Google
+    </button>`;
 
-  async handleGoogleResponse(response) {
-    try {
-      const user = await this.googleLogin(response.credential);
-      this.setSession(user, true);
-      this.hideLoginModal();
-      Utils.toast('Welcome, ' + user.username + '!');
-      if (typeof Library !== 'undefined') await Library.loadUserSongs();
-      if (typeof Achievements !== 'undefined') await Achievements.loadUserAchievements();
-    } catch (err) {
-      Utils.toast('Google login failed: ' + err.message, 'error');
-    }
+    document.getElementById('firebaseGoogleBtn').addEventListener('click', async () => {
+      try {
+        await this.googleLogin();
+        Utils.toast('Welcome!');
+      } catch (err) {
+        Utils.toast('Google login failed: ' + err.message, 'error');
+      }
+    });
   },
 
   showLoginModal() {
@@ -476,12 +310,13 @@ const Auth = {
     const headerPfp = document.getElementById('headerPfp');
     if (avatarBtn && headerPfp) {
       avatarBtn.classList.toggle('hidden', !isLoggedIn);
-      if (this.currentUser && this.currentUser.profilePic) {
-        headerPfp.src = this.currentUser.profilePic;
+      const pic = this.getProfilePic();
+      if (pic) {
+        headerPfp.src = pic;
         headerPfp.classList.remove('hidden');
       } else {
         headerPfp.classList.add('hidden');
-        avatarBtn.textContent = this.currentUser ? this.currentUser.username.charAt(0).toUpperCase() : '';
+        avatarBtn.textContent = isLoggedIn ? this.getUsername().charAt(0).toUpperCase() : '';
       }
     }
 
@@ -491,24 +326,15 @@ const Auth = {
     const sidebarEmail = document.getElementById('sidebarEmail');
     if (sidebarUser) {
       sidebarUser.classList.toggle('hidden', !isLoggedIn);
-      if (this.currentUser) {
+      if (isLoggedIn) {
+        const pic = this.getProfilePic();
         if (sidebarPfp) {
-          if (this.currentUser.profilePic) {
-            sidebarPfp.src = this.currentUser.profilePic;
-            sidebarPfp.classList.remove('hidden');
-          } else {
-            sidebarPfp.classList.add('hidden');
-          }
+          if (pic) { sidebarPfp.src = pic; sidebarPfp.classList.remove('hidden'); }
+          else sidebarPfp.classList.add('hidden');
         }
-        if (sidebarUsername) sidebarUsername.textContent = this.currentUser.username;
-        if (sidebarEmail) sidebarEmail.textContent = this.currentUser.email;
+        if (sidebarUsername) sidebarUsername.textContent = this.getUsername();
+        if (sidebarEmail) sidebarEmail.textContent = this.currentUser.email || '';
       }
-    }
-
-    if (isLoggedIn) {
-      this.hideLoginModal();
-    } else {
-      this.showLoginModal();
     }
 
     if (typeof Profile !== 'undefined') Profile.updateDisplay();
@@ -518,27 +344,21 @@ const Auth = {
   broadcastProfileUpdate() {
     if (typeof Profile !== 'undefined') Profile.updateDisplay();
     if (typeof Notifications !== 'undefined') Notifications.updateProfileInfo();
-
     const sidebarUsername = document.getElementById('sidebarUsername');
     const sidebarEmail = document.getElementById('sidebarEmail');
     const sidebarPfp = document.getElementById('sidebarPfp');
-    if (this.currentUser) {
-      if (sidebarUsername) sidebarUsername.textContent = this.currentUser.username;
-      if (sidebarEmail) sidebarEmail.textContent = this.currentUser.email;
-      if (sidebarPfp && this.currentUser.profilePic) {
-        sidebarPfp.src = this.currentUser.profilePic;
+    if (this.userData) {
+      if (sidebarUsername) sidebarUsername.textContent = this.getUsername();
+      if (sidebarEmail) sidebarEmail.textContent = this.currentUser?.email || '';
+      const pic = this.getProfilePic();
+      if (sidebarPfp && pic) {
+        sidebarPfp.src = pic;
         sidebarPfp.classList.remove('hidden');
       }
     }
-  },
-
-  getUserId() {
-    return this.currentUser ? this.currentUser.id : null;
   }
 };
 
-window.handleGoogleCredentialResponse = (response) => {
-  if (typeof Auth !== 'undefined') {
-    Auth.handleGoogleResponse(response);
-  }
-};
+export { db, firebaseAuth };
+window.Auth = Auth;
+export default Auth;

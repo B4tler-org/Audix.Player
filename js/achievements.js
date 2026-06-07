@@ -1,7 +1,9 @@
 /* ============================================
-   ACHIEVEMENTS SYSTEM v2.0 — Gamification Upgrade
-   XP Rewards, Functional/Cosmetic/Content Rewards
+   ACHIEVEMENTS SYSTEM v3.0 — Firebase Firestore
    ============================================ */
+
+import { db } from './auth.js';
+import { doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const Achievements = {
   list: [
@@ -60,10 +62,8 @@ const Achievements = {
   unlocked: new Set(),
   unlockedRewards: new Set(),
   sfxEnabled: true,
-  db: null,
 
   async init() {
-    this.db = (typeof Auth !== 'undefined' && Auth.db) ? Auth.db : null;
     await this.loadUserAchievements();
     this.render();
     this.updateRewardsUI();
@@ -71,9 +71,9 @@ const Achievements = {
 
   async loadUserAchievements() {
     const userId = (typeof Auth !== 'undefined') ? Auth.getUserId() : null;
-    console.log('[Achievements] loadUserAchievements for userId:', userId);
 
     if (!userId) {
+      // Guest: use localStorage
       const raw = localStorage.getItem('audix_achievements_guest');
       if (raw) {
         try {
@@ -84,37 +84,31 @@ const Achievements = {
         } catch (e) {}
       }
       this.state.unlockedCount = this.unlocked.size;
-      console.log('[Achievements] Guest loaded:', this.unlocked.size, 'unlocked');
       return;
     }
 
-    return new Promise((resolve) => {
-      if (!this.db) { resolve(); return; }
-      const tx = this.db.transaction('userAchievements', 'readonly');
-      const store = tx.objectStore('userAchievements');
-      const req = store.get(userId);
-      req.onsuccess = () => {
-        if (req.result) {
-          this.state = req.result.state || {};
-          this.unlocked = new Set(req.result.unlocked || []);
-          this.unlockedRewards = new Set(req.result.unlockedRewards || []);
-          this.state.unlockedCount = this.unlocked.size;
-          console.log('[Achievements] Loaded from DB:', this.unlocked.size, 'unlocked');
-        } else {
-          console.log('[Achievements] No DB data found, starting fresh');
-          this.state = {};
-          this.unlocked = new Set();
-          this.unlockedRewards = new Set();
-        }
-        resolve();
-      };
-      req.onerror = () => { console.error('[Achievements] DB load error'); resolve(); };
-    });
+    // Logged in: use Firestore
+    try {
+      const ref = doc(db, 'achievements', userId);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        const data = snap.data();
+        this.state = data.state || {};
+        this.unlocked = new Set(data.unlocked || []);
+        this.unlockedRewards = new Set(data.unlockedRewards || []);
+        this.state.unlockedCount = this.unlocked.size;
+      } else {
+        this.state = {};
+        this.unlocked = new Set();
+        this.unlockedRewards = new Set();
+      }
+    } catch (e) {
+      console.error('[Achievements] Firestore load error:', e);
+    }
   },
 
   async saveUserAchievements() {
     const userId = (typeof Auth !== 'undefined') ? Auth.getUserId() : null;
-    this.state.unlockedCount = this.unlocked.size;
 
     if (!userId) {
       localStorage.setItem('audix_achievements_guest', JSON.stringify({
@@ -125,77 +119,58 @@ const Achievements = {
       return;
     }
 
-    if (!this.db) return;
-    const tx = this.db.transaction('userAchievements', 'readwrite');
-    const store = tx.objectStore('userAchievements');
-    store.put({
-      userId,
-      state: this.state,
-      unlocked: Array.from(this.unlocked),
-      unlockedRewards: Array.from(this.unlockedRewards),
-      updatedAt: Date.now()
-    });
+    try {
+      const ref = doc(db, 'achievements', userId);
+      await setDoc(ref, {
+        state: this.state,
+        unlocked: Array.from(this.unlocked),
+        unlockedRewards: Array.from(this.unlockedRewards)
+      }, { merge: true });
+    } catch (e) {
+      console.error('[Achievements] Firestore save error:', e);
+    }
   },
 
-  track(key, value = 1) {
-    this.state[key] = (this.state[key] || 0) + value;
-    this.check();
-    this.saveUserAchievements();
-  },
-
-  set(key, value) {
-    this.state[key] = value;
-    this.check();
-    this.saveUserAchievements();
-  },
-
-  check() {
+  async track(statKey, value = 1) {
+    this.state[statKey] = (this.state[statKey] || 0) + value;
     this.state.unlockedCount = this.unlocked.size;
-    let newUnlock = false;
-    this.list.forEach(ach => {
+    await this.checkUnlocks();
+    await this.saveUserAchievements();
+  },
+
+  async checkUnlocks() {
+    for (const ach of this.list) {
       if (!this.unlocked.has(ach.id) && ach.condition(this.state)) {
         this.unlocked.add(ach.id);
-        this.unlockReward(ach);
+        this.unlockedRewards.add(ach.rewardId);
         this.showUnlock(ach);
-        newUnlock = true;
-      }
-    });
-    if (newUnlock) {
-      this.state.unlockedCount = this.unlocked.size;
-      this.saveUserAchievements();
-      this.render();
-      this.updateRewardsUI();
-    }
-  },
-
-  unlockReward(ach) {
-    if (ach.rewardId) {
-      this.unlockedRewards.add(ach.rewardId);
-      // Grant XP
-      if (ach.xpReward && typeof Gamification !== 'undefined') {
-        Gamification.addXP(ach.xpReward, 'achievement');
-      }
-      // Show reward toast
-      if (typeof Utils !== 'undefined') {
-        Utils.achievementToast(`🎁 Reward Unlocked: ${this.getRewardName(ach.rewardId)}!`);
+        // Award XP
+        if (typeof Auth !== 'undefined' && Auth.userData) {
+          const newXp = (Auth.userData.xp || 0) + ach.xpReward;
+          await Auth.updateProfile({ xp: newXp });
+        }
       }
     }
+    this.state.unlockedCount = this.unlocked.size;
+    this.render();
+    this.updateRewardsUI();
   },
 
   getRewardName(rewardId) {
     const names = {
-      'hint': 'Quiz Hint', 'fifty_fifty': '50/50 Mode', 'skip_question': 'Skip Question',
-      'neon_theme': 'Neon Theme', 'dark_theme': 'Dark Theme', 'glass_theme': 'Glass Theme',
-      'gradient_theme': 'Gradient Theme', 'profile_frame_1': 'Profile Frame',
-      'hidden_playlist_1': 'Hidden Playlist', 'karaoke_effect_1': 'Karaoke Effect',
-      'badge_style_1': 'Badge Style', 'extra_station_1': 'Extra Radio Station',
-      'extra_station_2': 'Extra Station 2', 'extra_station_3': 'Extra Station 3',
-      'advanced_search': 'Advanced Search', 'secret_song_1': 'Secret Song',
-      'lyric_theme_1': 'Lyric Theme', 'night_mode_eq': 'Night Mode EQ',
+      'hint': 'Hint Power-Up', 'neon_theme': 'Neon Theme', 'fifty_fifty': '50/50 Power-Up',
+      'dark_theme': 'Dark Theme', 'hidden_playlist_1': 'Hidden Playlist 1',
+      'skip_question': 'Skip Question', 'glass_theme': 'Glass Theme',
+      'karaoke_effect_1': 'Karaoke Effect', 'badge_style_1': 'Badge Style',
+      'extra_station_1': 'Extra Station', 'advanced_search': 'Advanced Search',
+      'secret_song_1': 'Secret Song', 'quiz_hint': 'Quiz Hint',
+      'profile_frame_1': 'Profile Frame', 'lyric_theme_1': 'Lyric Theme',
+      'extra_station_2': 'Extra Station 2', 'gradient_theme': 'Gradient Theme',
+      'extra_station_3': 'Extra Station 3', 'night_mode_eq': 'Night Mode EQ',
       'concert_eq': 'Concert EQ', 'player_skin_1': 'Player Skin',
-      'advanced_eq': 'Advanced EQ', 'hidden_playlist_2': 'Night Playlist',
+      'advanced_eq': 'Advanced EQ', 'hidden_playlist_2': 'Hidden Playlist 2',
       'animated_frame': 'Animated Frame', 'ai_cleaner_v2': 'AI Cleaner v2',
-      'exclusive_lyric_theme': 'Exclusive Lyrics', 'bass_boost_eq': 'Bass Boost EQ',
+      'exclusive_lyric_theme': 'Exclusive Lyric Theme', 'bass_boost_eq': 'Bass Boost EQ',
       'smart_playlist': 'Smart Playlist', 'quiz_easy_mode': 'Easy Quiz Mode',
       'supporter_badge': 'Supporter Badge', 'secret_song_2': 'Secret Song 2',
       'privacy_badge': 'Privacy Badge', 'feedback_feature': 'Feedback Feature',
@@ -216,9 +191,7 @@ const Achievements = {
 
   showUnlock(ach) {
     if (this.sfxEnabled) {
-      try {
-        if (typeof SFX !== 'undefined' && SFX.unlock) SFX.unlock();
-      } catch (e) { console.warn('Achievement SFX failed:', e); }
+      try { if (typeof SFX !== 'undefined' && SFX.unlock) SFX.unlock(); } catch (e) {}
     }
     if (typeof Utils !== 'undefined' && Utils.toast) {
       Utils.toast(`🏆 Achievement Unlocked: ${ach.title}! +${ach.xpReward} XP`, 'success');
@@ -236,23 +209,18 @@ const Achievements = {
     const totalXp = document.getElementById('total-xp');
     if (totalXp) {
       let xp = 0;
-      this.list.forEach(ach => {
-        if (this.unlocked.has(ach.id)) xp += (ach.xpReward || 0);
-      });
+      this.list.forEach(ach => { if (this.unlocked.has(ach.id)) xp += (ach.xpReward || 0); });
       totalXp.textContent = xp;
     }
-
     grid.innerHTML = this.list.map(ach => {
       const isUnlocked = this.unlocked.has(ach.id);
-      return `
-        <div class="achievement-card ${isUnlocked ? 'unlocked' : ''}">
-          <div class="ach-icon">${ach.icon}</div>
-          <div class="ach-title">${ach.title}</div>
-          <div class="ach-desc">${ach.desc}</div>
-          <div class="ach-xp">+${ach.xpReward} XP</div>
-          ${!isUnlocked ? '<div class="ach-lock">🔒</div>' : ''}
-        </div>
-      `;
+      return `<div class="achievement-card ${isUnlocked ? 'unlocked' : ''}">
+        <div class="ach-icon">${ach.icon}</div>
+        <div class="ach-title">${ach.title}</div>
+        <div class="ach-desc">${ach.desc}</div>
+        <div class="ach-xp">+${ach.xpReward} XP</div>
+        ${!isUnlocked ? '<div class="ach-lock">🔒</div>' : ''}
+      </div>`;
     }).join('');
   },
 
@@ -263,53 +231,24 @@ const Achievements = {
       rewardsList.innerHTML = '<span style="color:var(--text-secondary);font-size:0.8rem;">Complete achievements to unlock rewards!</span>';
       return;
     }
-    rewardsList.innerHTML = Array.from(this.unlockedRewards).map(rid => `
-      <div class="reward-tag">✨ ${this.getRewardName(rid)}</div>
-    `).join('');
-
-    // Unlock UI elements based on rewards
+    rewardsList.innerHTML = Array.from(this.unlockedRewards).map(rid =>
+      `<div class="reward-tag">✨ ${this.getRewardName(rid)}</div>`
+    ).join('');
     this.applyRewardUnlocks();
   },
 
   applyRewardUnlocks() {
-    // EQ Presets
-    if (this.hasReward('night_mode_eq')) {
-      const btn = document.getElementById('preset-night');
-      if (btn) btn.classList.add('unlocked');
-    }
-    if (this.hasReward('concert_eq')) {
-      const btn = document.getElementById('preset-concert');
-      if (btn) btn.classList.add('unlocked');
-    }
-    // Quiz tools
-    if (this.hasReward('quiz_hint')) {
-      const btn = document.getElementById('btn-hint');
-      if (btn) btn.classList.remove('hidden');
-    }
-    if (this.hasReward('fifty_fifty')) {
-      const btn = document.getElementById('btn-fifty');
-      if (btn) btn.classList.remove('hidden');
-    }
-    if (this.hasReward('skip_question')) {
-      const btn = document.getElementById('btn-skip');
-      if (btn) btn.classList.remove('hidden');
-    }
-    // Themes
-    if (this.hasReward('neon_theme')) {
-      const btn = document.getElementById('theme-neon');
-      if (btn) btn.classList.add('unlocked');
-    }
-    if (this.hasReward('dark_theme')) {
-      const btn = document.getElementById('theme-dark');
-      if (btn) btn.classList.add('unlocked');
-    }
-    if (this.hasReward('glass_theme')) {
-      const btn = document.getElementById('theme-glass');
-      if (btn) btn.classList.add('unlocked');
-    }
-    if (this.hasReward('gradient_theme')) {
-      const btn = document.getElementById('theme-gradient');
-      if (btn) btn.classList.add('unlocked');
-    }
+    if (this.hasReward('night_mode_eq')) { const b = document.getElementById('preset-night'); if (b) b.classList.add('unlocked'); }
+    if (this.hasReward('concert_eq')) { const b = document.getElementById('preset-concert'); if (b) b.classList.add('unlocked'); }
+    if (this.hasReward('quiz_hint')) { const b = document.getElementById('btn-hint'); if (b) b.classList.remove('hidden'); }
+    if (this.hasReward('fifty_fifty')) { const b = document.getElementById('btn-fifty'); if (b) b.classList.remove('hidden'); }
+    if (this.hasReward('skip_question')) { const b = document.getElementById('btn-skip'); if (b) b.classList.remove('hidden'); }
+    if (this.hasReward('neon_theme')) { const b = document.getElementById('theme-neon'); if (b) b.classList.add('unlocked'); }
+    if (this.hasReward('dark_theme')) { const b = document.getElementById('theme-dark'); if (b) b.classList.add('unlocked'); }
+    if (this.hasReward('glass_theme')) { const b = document.getElementById('theme-glass'); if (b) b.classList.add('unlocked'); }
+    if (this.hasReward('gradient_theme')) { const b = document.getElementById('theme-gradient'); if (b) b.classList.add('unlocked'); }
   }
 };
+
+window.Achievements = Achievements;
+export default Achievements;
