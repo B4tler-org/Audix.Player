@@ -13,6 +13,115 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiQXVkaXggTXVzaWMgUGxheWVyIiwic2hvcnRfbmFtZSI6IkF1ZGl4Iiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMwZjBmMWEiLCJ0aGVtZV9jb2xvciI6IiMwZjBmMWEifQ==">
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Admin Panel Styles */
+.admin-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.admin-stat-card { background: var(--bg-card); border: 1px solid var(--glass-border, rgba(255,255,255,0.05)); border-radius: 12px; padding: 16px; text-align: center; }
+.admin-stat-num { font-size: 2rem; font-weight: 700; color: var(--accent); }
+.admin-stat-label { font-size: 0.8rem; color: #888; margin-top: 4px; }
+.admin-table-wrap { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.admin-table th { text-align: left; padding: 10px; background: rgba(255,255,255,0.03); color: var(--accent); font-weight: 600; }
+.admin-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.admin-user-cell { display: flex; align-items: center; gap: 8px; }
+.admin-user-pic { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+.admin-empty { color: #666; font-size: 0.9rem; padding: 16px; }
+.admin-ach-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+.admin-ach-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.admin-ach-name { width: 180px; font-size: 0.8rem; }
+.admin-ach-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+.admin-ach-bar span { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.admin-ach-pct { width: 40px; text-align: right; font-size: 0.75rem; color: #888; }
+.admin-ach-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; }
+.admin-ach-badge.unlocked { background: rgba(46,204,113,0.15); color: #2ecc71; }
+.admin-ach-badge.locked { background: rgba(231,76,60,0.15); color: #e74c3c; }
+.admin-section { margin-bottom: 32px; }
+.admin-section h3 { font-size: 1.1rem; margin-bottom: 12px; color: var(--accent); }
+.admin-toggle { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.admin-toggle input[type="checkbox"] { width: 18px; height: 18px; }
+.admin-textarea { width: 100%; background: var(--bg-base); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; color: #fff; font-family: inherit; resize: vertical; }
+.admin-btn-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+/* Achievement Detail Modal */
+.achievement-detail-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.achievement-detail-content { background: var(--bg-card); border: 1px solid var(--glass-border, rgba(255,255,255,0.1)); border-radius: 16px; padding: 24px; max-width: 420px; width: 100%; }
+.detail-header { text-align: center; margin-bottom: 16px; }
+.detail-icon { font-size: 3rem; margin-bottom: 8px; }
+.detail-header h2 { margin: 0 0 8px; font-size: 1.3rem; }
+.detail-status { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+.detail-status.unlocked { background: rgba(46,204,113,0.15); color: #2ecc71; }
+.detail-status.locked { background: rgba(231,76,60,0.15); color: #e74c3c; }
+.detail-desc { color: #aaa; font-size: 0.9rem; margin-bottom: 16px; text-align: center; }
+.detail-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; font-size: 0.85rem; }
+.detail-stats div { background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 8px; }
+.detail-reward { grid-column: 1 / -1; color: var(--accent); }
+.detail-progress-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; }
+.detail-progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
+.ach-close-detail { display: block; margin: 16px auto 0; padding: 8px 20px; background: var(--accent); color: #fff; border: none; border-radius: 20px; cursor: pointer; font-size: 0.85rem; }
+
+/* Achievement Filters */
+.ach-filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.ach-filter-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #888; cursor: pointer; font-size: 0.8rem; }
+.ach-filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.ach-filter-btn:hover { color: #fff; }
+
+/* Achievement Card Improvements */
+.achievement-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+.achievement-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.ach-icon { font-size: 1.5rem; width: 40px; text-align: center; }
+.ach-info { flex: 1; }
+.ach-info h4 { margin: 0 0 4px; font-size: 0.95rem; }
+.ach-info p { margin: 0 0 8px; font-size: 0.8rem; color: #888; }
+.ach-meta { display: flex; gap: 8px; margin-bottom: 6px; }
+.ach-xp { font-size: 0.75rem; color: var(--accent); font-weight: 600; }
+.ach-status { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; }
+.ach-status.unlocked { background: rgba(46,204,113,0.15); color: #2ecc71; }
+.ach-status.locked { background: rgba(231,76,60,0.15); color: #e74c3c; }
+.ach-reward { font-size: 0.75rem; color: #f1c40f; margin-bottom: 6px; }
+.ach-progress-bar { height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+.ach-progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
+.ach-progress-text { font-size: 0.7rem; color: #666; text-align: right; }
+.empty-achievements { color: #666; text-align: center; padding: 24px; }
+
+/* Maintenance Overlay */
+.maintenance-overlay { position: fixed; inset: 0; background: var(--bg-deep); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+.maintenance-overlay .logo { font-size: 4rem; margin-bottom: 16px; }
+.maintenance-overlay h2 { margin-bottom: 12px; }
+.maintenance-overlay p { color: #888; max-width: 400px; }
+
+/* Song list items in library */
+.song-list { display: flex; flex-direction: column; gap: 8px; }
+.song-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--bg-card); border-radius: 10px; cursor: pointer; transition: background 0.2s; }
+.song-item:hover { background: rgba(255,255,255,0.03); }
+.song-thumb-wrap { width: 44px; height: 44px; flex-shrink: 0; }
+.song-thumb { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+.song-thumb-placeholder { width: 100%; height: 100%; border-radius: 8px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: var(--accent); }
+.song-info { flex: 1; min-width: 0; }
+.song-title { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-artist { font-size: 0.8rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-actions { display: flex; gap: 6px; }
+.btn-icon { width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+.btn-icon:hover { background: rgba(255,255,255,0.1); }
+.btn-favorite { color: #e74c3c; }
+
+/* Rewards list */
+.reward-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; background: rgba(241,196,15,0.1); color: #f1c40f; font-size: 0.75rem; margin: 4px; }
+.reward-badge.admin { background: rgba(155,89,182,0.15); color: #9b59b6; }
+.no-rewards { color: #666; font-size: 0.85rem; }
+
+/* Toast improvements */
+.toast { padding: 10px 16px; border-radius: 8px; margin-bottom: 8px; font-size: 0.85rem; animation: slideIn 0.3s ease; }
+.toast-info { background: rgba(52,152,219,0.15); color: #3498db; }
+.toast-success { background: rgba(46,204,113,0.15); color: #2ecc71; }
+.toast-error { background: rgba(231,76,60,0.15); color: #e74c3c; }
+.toast-xp { background: rgba(241,196,15,0.15); color: #f1c40f; font-weight: 600; }
+.toast-levelup { background: rgba(155,89,182,0.2); color: #bb8fce; font-weight: 600; text-align: center; }
+.toast.fade-out { animation: fadeOut 0.3s ease forwards; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+</style>
 </head>
 <body>
   <div id="app">
@@ -68,6 +177,9 @@
         <li class="nav-divider"></li>
         <li><a href="#profile" class="nav-link" data-page="profile"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Profile</a></li>
         <li><a href="#settings" class="nav-link" data-page="settings"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.17 15a1.65 1.65 0 0 0-1.51-1H2a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.17 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V2a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Settings</a></li>
+        <!-- Admin Link (hidden by default) -->
+        <li class="nav-divider admin-nav-divider hidden"></li>
+        <li><a href="#admin" class="nav-link hidden" data-page="admin"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Admin</a></li>
         <li class="nav-divider"></li>
         <li><a href="#about" class="nav-link" data-page="about"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> About</a></li>
         <li><a href="#privacy" class="nav-link" data-page="privacy"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Privacy</a></li>
@@ -81,6 +193,13 @@
 
     <!-- Overlay for mobile -->
     <div class="overlay" id="overlay"></div>
+
+    <!-- Maintenance Overlay (shown when maintenance mode active) -->
+    <div class="maintenance-overlay hidden" id="maintenanceOverlay">
+      <div class="logo">&#9836;</div>
+      <h2>Under Maintenance</h2>
+      <p id="maintenanceOverlayMessage">Audix is under maintenance. We will be back soon!</p>
+    </div>
 
     <!-- Login Modal — Simplified: Google Sign-In only -->
     <div class="modal-overlay hidden" id="loginModal">
@@ -97,6 +216,14 @@
           </button>
           <p class="auth-hint">Your music and progress are securely synced to the cloud.</p>
         </div>
+      </div>
+    </div>
+
+    <!-- Achievement Detail Modal -->
+    <div class="modal-overlay hidden" id="achievementDetailModal">
+      <div class="modal-content achievement-detail-content">
+        <div id="achievementDetailContent"></div>
+        <button class="ach-close-detail">Close</button>
       </div>
     </div>
 
@@ -398,7 +525,14 @@
           <h4>Your Rewards</h4>
           <div class="rewards-list" id="rewardsList"></div>
         </div>
-        <div class="achievements-grid" id="achievements-grid"></div>
+        <!-- Achievement Filters -->
+        <div class="ach-filters">
+          <button class="ach-filter-btn active" data-filter="all">All</button>
+          <button class="ach-filter-btn" data-filter="unlocked">Unlocked</button>
+          <button class="ach-filter-btn" data-filter="locked">Locked</button>
+          <button class="ach-filter-btn" data-filter="near">Near Completion</button>
+        </div>
+        <div class="achievements-grid" id="achievements-grid" data-filter="all"></div>
         <footer class="page-footer">
           <p class="footer-ai">Proudly built with the help of ChatGPT, Kimi AI, and Claude.</p>
         </footer>
@@ -591,6 +725,64 @@
           <p class="footer-ai">Proudly built with the help of ChatGPT, Kimi AI, and Claude.</p>
         </footer>
       </section>
+
+      <!-- ADMIN PAGE -->
+      <section id="page-admin" class="page">
+        <div class="page-header"><h2>Admin Panel</h2><p>System management & analytics</p></div>
+        <div class="admin-container">
+          <!-- Dashboard -->
+          <div class="admin-section">
+            <h3>Dashboard</h3>
+            <div id="admin-dashboard"></div>
+          </div>
+
+          <!-- Maintenance Mode -->
+          <div class="admin-section">
+            <h3>Maintenance Mode</h3>
+            <div class="admin-toggle">
+              <input type="checkbox" id="toggleMaintenance">
+              <label for="toggleMaintenance">Enable Maintenance Mode</label>
+            </div>
+            <label style="font-size:0.85rem;color:#888;display:block;margin-bottom:6px;">Maintenance Message</label>
+            <textarea id="maintenanceMessage" class="admin-textarea" rows="2">Audix is under maintenance. We will be back soon!</textarea>
+            <p class="admin-empty" style="margin-top:8px;">Only admins can bypass maintenance mode.</p>
+          </div>
+
+          <!-- User Management -->
+          <div class="admin-section">
+            <h3>User Management</h3>
+            <div class="admin-btn-row">
+              <button class="btn-secondary" id="btn-refresh-users">Refresh Users</button>
+            </div>
+            <div id="admin-users-list">
+              <p class="admin-empty">Click Refresh to load users from Firestore.</p>
+            </div>
+          </div>
+
+          <!-- Song Management -->
+          <div class="admin-section">
+            <h3>Song Management</h3>
+            <div class="admin-btn-row">
+              <button class="btn-secondary" id="btn-refresh-songs">Refresh Songs</button>
+              <button class="btn-secondary" id="btn-refresh-stats">Refresh Stats</button>
+            </div>
+            <div id="admin-songs-list">
+              <p class="admin-empty">Click Refresh to load songs from Library.</p>
+            </div>
+          </div>
+
+          <!-- Achievement Management -->
+          <div class="admin-section">
+            <h3>Achievement Management</h3>
+            <div id="admin-achievement-stats">
+              <p class="admin-empty">Achievement stats loading...</p>
+            </div>
+          </div>
+        </div>
+        <footer class="page-footer">
+          <p class="footer-ai">Proudly built with the help of ChatGPT, Kimi AI, and Claude.</p>
+        </footer>
+      </section>
     </main>
 
     <!-- Footer -->
@@ -654,6 +846,7 @@
   <script src="js/profile.js"></script>
   <script src="js/settings.js"></script>
   <script src="js/notifications.js"></script>
+  <script src="js/admin.js"></script>
   <script src="js/app.js"></script>
 
   <!-- Service Worker Registration -->
