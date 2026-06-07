@@ -6,7 +6,7 @@
 const Auth = {
   currentUser: null,
   db: null,
-  googleClientId: '478887203737-9egg72tfkvmgrmfjg955uclrfmu18191.apps.googleusercontent.com',
+  googleClientId: '69659661517-6kf1k063i9jq7sln3g2rlooof221tlm9.apps.googleusercontent.com',
 
   async init() {
     console.log('[Auth] init()');
