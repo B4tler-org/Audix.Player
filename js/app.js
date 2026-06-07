@@ -1,6 +1,7 @@
 /* ============================================
-   APP ROUTER & INITIALIZER — v3.0
-   Firebase Auth integration, Gamification, Daily Activity
+   APP ROUTER & INITIALIZER — v3.1
+   Firebase Auth integration, Gamification, Daily Activity,
+   Admin routing, Maintenance mode, Debug logging
    ============================================ */
 
 const Gamification = {
@@ -185,6 +186,20 @@ const App = {
       Achievements.set('uniqueDays', days.length);
     }
 
+    // Check for night owl / early bird
+    const hour = new Date().getHours();
+    if (hour >= 0 && hour < 6) {
+      if (typeof Achievements !== 'undefined') Achievements.track('earlyBird');
+    }
+    if (hour >= 0 && hour < 3) {
+      if (typeof Achievements !== 'undefined') Achievements.track('nightOwl');
+    }
+
+    // Admin init
+    if (typeof Admin !== 'undefined') {
+      Admin.init();
+    }
+
     window.addEventListener('hashchange', () => this.handleRoute());
     console.log('[App] init() complete');
   },
@@ -255,6 +270,12 @@ const App = {
   },
 
   showPage(page) {
+    // Maintenance mode check (admins bypass)
+    if (typeof Admin !== 'undefined' && Admin.checkMaintenance() && page !== 'admin') {
+      console.log('[App] Maintenance mode active — blocking page:', page);
+      page = 'maintenance';
+    }
+
     this.currentPage = page;
 
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -267,10 +288,16 @@ const App = {
       home: 'homeOpens', equalizer: 'eqOpens', quiz: 'quizOpens', library: 'libraryOpens',
       radio: 'radioOpens', support: 'supportOpens', achievements: 'achievementsOpens',
       about: 'aboutOpens', privacy: 'privacyOpens', contact: 'contactOpens',
-      profile: 'profileOpens', settings: 'settingsOpens'
+      profile: 'profileOpens', settings: 'settingsOpens', admin: 'adminOpens'
     };
     if (map[page] && typeof Achievements !== 'undefined') {
       Achievements.track(map[page]);
+    }
+    // Track pages visited
+    if (typeof Achievements !== 'undefined') {
+      const visited = new Set();
+      for (const key in map) visited.add(key);
+      Achievements.set('pagesVisited', visited.size);
     }
 
     if (page === 'achievements' && typeof Achievements !== 'undefined') Achievements.render();
@@ -279,6 +306,7 @@ const App = {
     if (page === 'library' && typeof Library !== 'undefined') Library.render();
     if (page === 'profile' && typeof Profile !== 'undefined') Profile.updateDisplay();
     if (page === 'settings' && typeof Settings !== 'undefined') Settings.applyToUI();
+    if (page === 'admin' && typeof Admin !== 'undefined') Admin.render();
 
     document.querySelector('.main-content')?.scrollTo(0, 0);
   }

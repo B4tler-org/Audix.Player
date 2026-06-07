@@ -1,254 +1,397 @@
 /* ============================================
-   ACHIEVEMENTS SYSTEM v3.0 — Firebase Firestore
+   ACHIEVEMENTS SYSTEM — v4.0
+   50 Achievements, reward linking, details view,
+   filters, progress bars, debug logging
    ============================================ */
 
-import { db } from './auth.js';
-import { doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
 const Achievements = {
-  list: [
-    { id: 'first_song', title: 'First Note', desc: 'Play your first song', icon: '🎵', xpReward: 10, rewardType: 'functional', rewardId: 'hint', condition: (s) => s.plays >= 1 },
-    { id: 'ten_plays', title: 'Decade', desc: 'Play 10 songs', icon: '🔟', xpReward: 20, rewardType: 'cosmetic', rewardId: 'neon_theme', condition: (s) => s.plays >= 10 },
-    { id: 'hundred_plays', title: 'Century', desc: 'Play 100 songs', icon: '💯', xpReward: 50, rewardType: 'functional', rewardId: 'fifty_fifty', condition: (s) => s.plays >= 100 },
-    { id: 'night_owl', title: 'Night Owl', desc: 'Play music after midnight', icon: '🌙', xpReward: 15, rewardType: 'cosmetic', rewardId: 'dark_theme', condition: (s) => s.nightPlays >= 1 },
-    { id: 'early_bird', title: 'Early Bird', desc: 'Play music before 6 AM', icon: '🐦', xpReward: 15, rewardType: 'content', rewardId: 'hidden_playlist_1', condition: (s) => s.earlyPlays >= 1 },
-    { id: 'repeat_offender', title: 'On Repeat', desc: 'Use repeat mode 5 times', icon: '🔁', xpReward: 10, rewardType: 'functional', rewardId: 'skip_question', condition: (s) => s.repeatUses >= 5 },
-    { id: 'shuffler', title: 'Shuffler', desc: 'Use shuffle mode 5 times', icon: '🔀', xpReward: 10, rewardType: 'cosmetic', rewardId: 'glass_theme', condition: (s) => s.shuffleUses >= 5 },
-    { id: 'lyric_lover', title: 'Lyric Lover', desc: 'Open lyrics 10 times', icon: '📜', xpReward: 15, rewardType: 'content', rewardId: 'karaoke_effect_1', condition: (s) => s.lyricOpens >= 10 },
-    { id: 'cover_downloader', title: 'Art Collector', desc: 'Download 3 covers', icon: '🖼️', xpReward: 15, rewardType: 'cosmetic', rewardId: 'badge_style_1', condition: (s) => s.coversDownloaded >= 3 },
-    { id: 'sharer', title: 'Spread the Word', desc: 'Share a song', icon: '📢', xpReward: 10, rewardType: 'functional', rewardId: 'extra_station_1', condition: (s) => s.shares >= 1 },
-    { id: 'librarian', title: 'Librarian', desc: 'Add 5 songs to library', icon: '📚', xpReward: 20, rewardType: 'functional', rewardId: 'advanced_search', condition: (s) => s.songsAdded >= 5 },
-    { id: 'archivist', title: 'Archivist', desc: 'Add 50 songs to library', icon: '🗃️', xpReward: 50, rewardType: 'content', rewardId: 'secret_song_1', condition: (s) => s.songsAdded >= 50 },
-    { id: 'quiz_novice', title: 'Quiz Novice', desc: 'Complete your first quiz', icon: '🎓', xpReward: 15, rewardType: 'functional', rewardId: 'quiz_hint', condition: (s) => s.quizzesCompleted >= 1 },
-    { id: 'quiz_pro', title: 'Quiz Pro', desc: 'Score perfect in a quiz', icon: '🏆', xpReward: 30, rewardType: 'cosmetic', rewardId: 'profile_frame_1', condition: (s) => s.perfectQuizzes >= 1 },
-    { id: 'quiz_addict', title: 'Quiz Addict', desc: 'Complete 10 quizzes', icon: '🧠', xpReward: 40, rewardType: 'functional', rewardId: 'fifty_fifty', condition: (s) => s.quizzesCompleted >= 10 },
-    { id: 'speed_demon', title: 'Speed Demon', desc: 'Answer correctly under 5 seconds', icon: '⚡', xpReward: 20, rewardType: 'content', rewardId: 'lyric_theme_1', condition: (s) => s.fastAnswers >= 1 },
-    { id: 'radio_explorer', title: 'Radio Explorer', desc: 'Play 3 different radio stations', icon: '📻', xpReward: 15, rewardType: 'functional', rewardId: 'extra_station_2', condition: (s) => s.uniqueStations >= 3 },
-    { id: 'world_traveler', title: 'World Traveler', desc: 'Play stations from 5 countries', icon: '🌍', xpReward: 25, rewardType: 'cosmetic', rewardId: 'gradient_theme', condition: (s) => s.uniqueCountries >= 5 },
-    { id: 'custom_station', title: 'Broadcaster', desc: 'Add a custom radio station', icon: '📡', xpReward: 15, rewardType: 'functional', rewardId: 'extra_station_3', condition: (s) => s.customStationsAdded >= 1 },
-    { id: 'bass_head', title: 'Bass Head', desc: 'Max out bass boost', icon: '🔊', xpReward: 15, rewardType: 'functional', rewardId: 'night_mode_eq', condition: (s) => s.maxBassUsed >= 1 },
-    { id: 'treble_head', title: 'Treble Head', desc: 'Max out treble boost', icon: '🎶', xpReward: 15, rewardType: 'functional', rewardId: 'concert_eq', condition: (s) => s.maxTrebleUsed >= 1 },
-    { id: 'vocal_head', title: 'Vocal Head', desc: 'Max out vocal boost', icon: '🎤', xpReward: 15, rewardType: 'cosmetic', rewardId: 'player_skin_1', condition: (s) => s.maxVocalUsed >= 1 },
-    { id: 'eq_master', title: 'EQ Master', desc: 'Use all 3 equalizer sliders', icon: '🎚️', xpReward: 20, rewardType: 'functional', rewardId: 'advanced_eq', condition: (s) => s.eqAdjusted >= 3 },
-    { id: 'hour_listener', title: 'Marathon', desc: 'Listen for 1 hour total', icon: '⏱️', xpReward: 25, rewardType: 'content', rewardId: 'hidden_playlist_2', condition: (s) => s.listenMinutes >= 60 },
-    { id: 'day_listener', title: 'Day Long', desc: 'Listen for 24 hours total', icon: '🕰️', xpReward: 50, rewardType: 'cosmetic', rewardId: 'animated_frame', condition: (s) => s.listenMinutes >= 1440 },
-    { id: 'id3_hunter', title: 'ID3 Hunter', desc: 'Play a song with full ID3 tags', icon: '🏷️', xpReward: 10, rewardType: 'functional', rewardId: 'ai_cleaner_v2', condition: (s) => s.id3Plays >= 1 },
-    { id: 'lyrics_found', title: 'Poet', desc: 'Successfully load lyrics', icon: '✍️', xpReward: 15, rewardType: 'content', rewardId: 'exclusive_lyric_theme', condition: (s) => s.lyricsLoaded >= 1 },
-    { id: 'equalizer_open', title: 'Sound Engineer', desc: 'Open the equalizer page', icon: '🎛️', xpReward: 10, rewardType: 'functional', rewardId: 'bass_boost_eq', condition: (s) => s.eqOpens >= 1 },
-    { id: 'library_open', title: 'Organizer', desc: 'Open the library page', icon: '📂', xpReward: 10, rewardType: 'functional', rewardId: 'smart_playlist', condition: (s) => s.libraryOpens >= 1 },
-    { id: 'radio_open', title: 'Tuner', desc: 'Open the radio page', icon: '📻', xpReward: 10, rewardType: 'functional', rewardId: 'extra_station_1', condition: (s) => s.radioOpens >= 1 },
-    { id: 'quiz_open', title: 'Gamer', desc: 'Open the quiz page', icon: '🎮', xpReward: 10, rewardType: 'functional', rewardId: 'quiz_easy_mode', condition: (s) => s.quizOpens >= 1 },
-    { id: 'support_open', title: 'Patron', desc: 'Visit the support page', icon: '❤️', xpReward: 10, rewardType: 'cosmetic', rewardId: 'supporter_badge', condition: (s) => s.supportOpens >= 1 },
-    { id: 'about_open', title: 'Curious', desc: 'Read the about page', icon: '🔍', xpReward: 10, rewardType: 'content', rewardId: 'secret_song_2', condition: (s) => s.aboutOpens >= 1 },
-    { id: 'privacy_open', title: 'Privacy Aware', desc: 'Read the privacy policy', icon: '🔒', xpReward: 10, rewardType: 'cosmetic', rewardId: 'privacy_badge', condition: (s) => s.privacyOpens >= 1 },
-    { id: 'contact_open', title: 'Reach Out', desc: 'Visit contact page', icon: '📧', xpReward: 10, rewardType: 'functional', rewardId: 'feedback_feature', condition: (s) => s.contactOpens >= 1 },
-    { id: 'achievements_open', title: 'Trophy Hunter', desc: 'Open achievements page', icon: '🏅', xpReward: 10, rewardType: 'cosmetic', rewardId: 'trophy_frame', condition: (s) => s.achievementsOpens >= 1 },
-    { id: 'five_countries', title: 'Globetrotter', desc: 'Play radio from 5 countries', icon: '✈️', xpReward: 25, rewardType: 'functional', rewardId: 'world_map_feature', condition: (s) => s.uniqueCountries >= 5 },
-    { id: 'ten_countries', title: 'Jet Setter', desc: 'Play radio from 7 countries', icon: '🚀', xpReward: 35, rewardType: 'content', rewardId: 'secret_station', condition: (s) => s.uniqueCountries >= 7 },
-    { id: 'searcher', title: 'Searcher', desc: 'Use library search', icon: '🔎', xpReward: 10, rewardType: 'functional', rewardId: 'search_filter', condition: (s) => s.searches >= 1 },
-    { id: 'power_user', title: 'Power User', desc: 'Use every feature once', icon: '⚙️', xpReward: 30, rewardType: 'cosmetic', rewardId: 'power_badge', condition: (s) => s.featuresUsed >= 10 },
-    { id: 'dedicated', title: 'Dedicated', desc: 'Use Audix on 3 different days', icon: '📅', xpReward: 20, rewardType: 'content', rewardId: 'daily_mix', condition: (s) => s.uniqueDays >= 3 },
-    { id: 'veteran', title: 'Veteran', desc: 'Use Audix on 7 different days', icon: '🎖️', xpReward: 40, rewardType: 'cosmetic', rewardId: 'veteran_frame', condition: (s) => s.uniqueDays >= 7 },
-    { id: 'collector', title: 'Collector', desc: 'Add 10 songs', icon: '💿', xpReward: 25, rewardType: 'functional', rewardId: 'batch_upload', condition: (s) => s.songsAdded >= 10 },
-    { id: 'audiophile', title: 'Audiophile', desc: 'Adjust equalizer 10 times', icon: '🎧', xpReward: 25, rewardType: 'functional', rewardId: 'preset_share', condition: (s) => s.eqAdjustments >= 10 },
-    { id: 'explorer', title: 'Explorer', desc: 'Visit every page', icon: '🧭', xpReward: 30, rewardType: 'content', rewardId: 'explorer_playlist', condition: (s) => s.pagesVisited >= 10 },
-    { id: 'quiz_winner', title: 'Quiz Winner', desc: 'Win 5 quizzes', icon: '🥇', xpReward: 35, rewardType: 'functional', rewardId: 'quiz_hard_mode', condition: (s) => s.quizzesWon >= 5 },
-    { id: 'radio_marathon', title: 'Radio Marathon', desc: 'Listen to radio for 30 min', icon: '📡', xpReward: 25, rewardType: 'content', rewardId: 'radio_recording', condition: (s) => s.radioMinutes >= 30 },
-    { id: 'full_house', title: 'Full House', desc: 'Unlock 25 achievements', icon: '🎰', xpReward: 50, rewardType: 'cosmetic', rewardId: 'full_house_badge', condition: (s) => s.unlockedCount >= 25 },
-    { id: 'completionist', title: 'Completionist', desc: 'Unlock all 50 achievements', icon: '👑', xpReward: 100, rewardType: 'cosmetic', rewardId: 'crown_frame', condition: (s) => s.unlockedCount >= 50 }
-  ],
-
-  state: {},
   unlocked: new Set(),
-  unlockedRewards: new Set(),
+  progress: {},
+  stats: {},
   sfxEnabled: true,
 
-  async init() {
-    await this.loadUserAchievements();
+  // 50 Achievement definitions with reward linking
+  list: [
+    { id: 'first_open', name: 'First Steps', desc: 'Open Audix for the first time.', xp: 10, reward: null, condition: (s) => true },
+    { id: 'first_song', name: 'First Song', desc: 'Upload your first song to the library.', xp: 50, reward: null, condition: (s) => (s.songsUploaded || 0) >= 1 },
+    { id: 'upload_5', name: 'Growing Collection', desc: 'Upload 5 songs.', xp: 100, reward: null, condition: (s) => (s.songsUploaded || 0) >= 5 },
+    { id: 'upload_10', name: 'Music Hoarder', desc: 'Upload 10 songs.', xp: 150, reward: { type: 'theme', value: 'dark', label: 'Theme: Dark' }, condition: (s) => (s.songsUploaded || 0) >= 10 },
+    { id: 'upload_25', name: 'Library Builder', desc: 'Upload 25 songs.', xp: 200, reward: null, condition: (s) => (s.songsUploaded || 0) >= 25 },
+    { id: 'upload_50', name: 'Ultimate Collector', desc: 'Upload 50 songs.', xp: 300, reward: null, condition: (s) => (s.songsUploaded || 0) >= 50 },
+    { id: 'upload_100', name: 'Century Club', desc: 'Upload 100 songs.', xp: 500, reward: { type: 'theme', value: 'glass', label: 'Theme: Glass' }, condition: (s) => (s.songsUploaded || 0) >= 100 },
+    { id: 'first_play', name: 'First Play', desc: 'Play your first song.', xp: 25, reward: null, condition: (s) => (s.songsPlayed || 0) >= 1 },
+    { id: 'play_10', name: 'Getting Groovy', desc: 'Play 10 songs.', xp: 50, reward: null, condition: (s) => (s.songsPlayed || 0) >= 10 },
+    { id: 'play_50', name: 'Playlist Warrior', desc: 'Play 50 songs.', xp: 100, reward: null, condition: (s) => (s.songsPlayed || 0) >= 50 },
+    { id: 'play_100', name: 'Non-Stop Hits', desc: 'Play 100 songs.', xp: 200, reward: { type: 'theme', value: 'neon', label: 'Theme: Neon' }, condition: (s) => (s.songsPlayed || 0) >= 100 },
+    { id: 'play_500', name: 'Marathon Listener', desc: 'Play 500 songs.', xp: 500, reward: null, condition: (s) => (s.songsPlayed || 0) >= 500 },
+    { id: 'play_1000', name: 'Legendary Player', desc: 'Play 1,000 songs.', xp: 1000, reward: { type: 'theme', value: 'gradient', label: 'Theme: Gradient' }, condition: (s) => (s.songsPlayed || 0) >= 1000 },
+    { id: 'listen_1m', name: 'Newbie Listener', desc: 'Listen for 1 minute.', xp: 10, reward: null, condition: (s) => (s.listenMinutes || 0) >= 1 },
+    { id: 'listen_10m', name: 'Short Session', desc: 'Listen for 10 minutes.', xp: 25, reward: null, condition: (s) => (s.listenMinutes || 0) >= 10 },
+    { id: 'listen_1h', name: 'Hour Long', desc: 'Listen for 1 hour.', xp: 50, reward: null, condition: (s) => (s.listenMinutes || 0) >= 60 },
+    { id: 'listen_5h', name: 'Deep Dive', desc: 'Listen for 5 hours.', xp: 100, reward: { type: 'eq_preset', value: 'night', label: 'EQ Preset: Night Mode' }, condition: (s) => (s.listenMinutes || 0) >= 300 },
+    { id: 'listen_12h', name: 'Half Day', desc: 'Listen for 12 hours.', xp: 200, reward: null, condition: (s) => (s.listenMinutes || 0) >= 720 },
+    { id: 'listen_24h', name: 'Full Day', desc: 'Listen for 24 hours.', xp: 500, reward: { type: 'eq_preset', value: 'concert', label: 'EQ Preset: Concert' }, condition: (s) => (s.listenMinutes || 0) >= 1440 },
+    { id: 'listen_100h', name: 'Century Hours', desc: 'Listen for 100 hours.', xp: 1000, reward: null, condition: (s) => (s.listenMinutes || 0) >= 6000 },
+    { id: 'quiz_play', name: 'Quiz Novice', desc: 'Play the music quiz once.', xp: 25, reward: null, condition: (s) => (s.quizPlayed || 0) >= 1 },
+    { id: 'quiz_win', name: 'Quiz Winner', desc: 'Win a quiz game.', xp: 50, reward: null, condition: (s) => (s.quizWon || 0) >= 1 },
+    { id: 'quiz_win_5', name: 'Quiz Master', desc: 'Win 5 quiz games.', xp: 100, reward: { type: 'theme', value: 'neon', label: 'Theme: Neon' }, condition: (s) => (s.quizWon || 0) >= 5 },
+    { id: 'quiz_win_10', name: 'Quiz Legend', desc: 'Win 10 quiz games.', xp: 200, reward: { type: 'eq_preset', value: 'night', label: 'EQ Preset: Night Mode' }, condition: (s) => (s.quizWon || 0) >= 10 },
+    { id: 'streak_3', name: 'On Fire', desc: 'Maintain a 3-day quiz streak.', xp: 75, reward: null, condition: (s) => (s.quizStreak || 0) >= 3 },
+    { id: 'streak_7', name: 'Unstoppable', desc: 'Maintain a 7-day quiz streak.', xp: 150, reward: { type: 'eq_preset', value: 'concert', label: 'EQ Preset: Concert' }, condition: (s) => (s.quizStreak || 0) >= 7 },
+    { id: 'visit_all', name: 'Explorer', desc: 'Visit every page in the app.', xp: 50, reward: null, condition: (s) => (s.pagesVisited || 0) >= 10 },
+    { id: 'home_10', name: 'Home Sweet Home', desc: 'Visit the Home page 10 times.', xp: 25, reward: null, condition: (s) => (s.homeOpens || 0) >= 10 },
+    { id: 'use_eq', name: 'Sound Shaper', desc: 'Use the equalizer.', xp: 25, reward: null, condition: (s) => (s.eqUsed || 0) >= 1 },
+    { id: 'eq_bass', name: 'Bass Head', desc: 'Use the Bass Boost preset.', xp: 50, reward: null, condition: (s) => (s.eqBassUsed || 0) >= 1 },
+    { id: 'eq_vocal', name: 'Vocal Master', desc: 'Use the Vocal Boost preset.', xp: 50, reward: null, condition: (s) => (s.eqVocalUsed || 0) >= 1 },
+    { id: 'radio_1', name: 'Radio Star', desc: 'Listen to your first radio station.', xp: 25, reward: null, condition: (s) => (s.radioListened || 0) >= 1 },
+    { id: 'radio_5', name: 'World Tour', desc: 'Listen to 5 different radio stations.', xp: 50, reward: null, condition: (s) => (s.radioListened || 0) >= 5 },
+    { id: 'radio_10', name: 'Global Listener', desc: 'Listen to 10 different radio stations.', xp: 100, reward: null, condition: (s) => (s.radioListened || 0) >= 10 },
+    { id: 'share_1', name: 'Social Butterfly', desc: 'Share a song.', xp: 25, reward: null, condition: (s) => (s.shares || 0) >= 1 },
+    { id: 'share_5', name: 'Sharer', desc: 'Share 5 songs.', xp: 50, reward: null, condition: (s) => (s.shares || 0) >= 5 },
+    { id: 'share_10', name: 'Influencer', desc: 'Share 10 songs.', xp: 100, reward: null, condition: (s) => (s.shares || 0) >= 10 },
+    { id: 'download_cover', name: 'Cover Art', desc: 'Download a cover art image.', xp: 25, reward: null, condition: (s) => (s.coversDownloaded || 0) >= 1 },
+    { id: 'toggle_lyrics', name: 'Lyric Lover', desc: 'Toggle the lyrics panel.', xp: 25, reward: null, condition: (s) => (s.lyricsToggled || 0) >= 1 },
+    { id: 'toggle_karaoke', name: 'Karaoke King', desc: 'Toggle karaoke mode.', xp: 50, reward: null, condition: (s) => (s.karaokeToggled || 0) >= 1 },
+    { id: 'change_pfp', name: 'Profile Setup', desc: 'Change your profile picture.', xp: 25, reward: null, condition: (s) => (s.pfpChanged || 0) >= 1 },
+    { id: 'change_username', name: 'Identity', desc: 'Change your username.', xp: 25, reward: null, condition: (s) => (s.usernameChanged || 0) >= 1 },
+    { id: 'day_1', name: 'Day 1', desc: 'Use Audix for 1 day.', xp: 10, reward: null, condition: (s) => (s.uniqueDays || 0) >= 1 },
+    { id: 'day_7', name: 'Week Warrior', desc: 'Use Audix for 7 days.', xp: 50, reward: { type: 'theme', value: 'glass', label: 'Theme: Glass' }, condition: (s) => (s.uniqueDays || 0) >= 7 },
+    { id: 'day_30', name: 'Monthly Muse', desc: 'Use Audix for 30 days.', xp: 100, reward: { type: 'theme', value: 'gradient', label: 'Theme: Gradient' }, condition: (s) => (s.uniqueDays || 0) >= 30 },
+    { id: 'day_100', name: 'Centurion', desc: 'Use Audix for 100 days.', xp: 500, reward: null, condition: (s) => (s.uniqueDays || 0) >= 100 },
+    { id: 'id3_full', name: 'ID3 Master', desc: 'Upload a song with complete metadata.', xp: 25, reward: null, condition: (s) => (s.fullMetadata || 0) >= 1 },
+    { id: 'night_owl', name: 'Night Owl', desc: 'Use Audix after midnight.', xp: 25, reward: null, condition: (s) => (s.nightOwl || 0) >= 1 },
+    { id: 'early_bird', name: 'Early Bird', desc: 'Use Audix before 6 AM.', xp: 25, reward: null, condition: (s) => (s.earlyBird || 0) >= 1 },
+    { id: 'admin_access', name: 'Admin Access', desc: 'Access the admin panel.', xp: 100, reward: { type: 'cosmetic', value: 'admin_crown', label: 'Admin Crown' }, condition: (s) => (s.adminAccess || 0) >= 1, adminOnly: true }
+  ],
+
+  init() {
+    console.log('[Achievements] init()');
+    this.load();
+    this.checkAll();
     this.render();
-    this.updateRewardsUI();
+    this.renderRewards();
+    console.log('[Achievements] init complete —', this.unlocked.size, 'unlocked');
   },
 
-  async loadUserAchievements() {
-    const userId = (typeof Auth !== 'undefined') ? Auth.getUserId() : null;
-
-    if (!userId) {
-      // Guest: use localStorage
-      const raw = localStorage.getItem('audix_achievements_guest');
-      if (raw) {
-        try {
-          const data = JSON.parse(raw);
-          this.state = data.state || {};
-          this.unlocked = new Set(data.unlocked || []);
-          this.unlockedRewards = new Set(data.unlockedRewards || []);
-        } catch (e) {}
-      }
-      this.state.unlockedCount = this.unlocked.size;
-      return;
+  // Track an event and check achievements
+  track(event, value = 1) {
+    console.log(`[Achievements] track("${event}", ${value})`);
+    if (typeof value === 'number') {
+      this.stats[event] = Math.max(this.stats[event] || 0, value);
+    } else {
+      this.stats[event] = (this.stats[event] || 0) + 1;
     }
-
-    // Logged in: use Firestore
-    try {
-      const ref = doc(db, 'achievements', userId);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        const data = snap.data();
-        this.state = data.state || {};
-        this.unlocked = new Set(data.unlocked || []);
-        this.unlockedRewards = new Set(data.unlockedRewards || []);
-        this.state.unlockedCount = this.unlocked.size;
-      } else {
-        this.state = {};
-        this.unlocked = new Set();
-        this.unlockedRewards = new Set();
-      }
-    } catch (e) {
-      console.error('[Achievements] Firestore load error:', e);
-    }
+    this.checkAll();
+    this.save();
   },
 
-  async saveUserAchievements() {
-    const userId = (typeof Auth !== 'undefined') ? Auth.getUserId() : null;
-
-    if (!userId) {
-      localStorage.setItem('audix_achievements_guest', JSON.stringify({
-        state: this.state,
-        unlocked: Array.from(this.unlocked),
-        unlockedRewards: Array.from(this.unlockedRewards)
-      }));
-      return;
-    }
-
-    try {
-      const ref = doc(db, 'achievements', userId);
-      await setDoc(ref, {
-        state: this.state,
-        unlocked: Array.from(this.unlocked),
-        unlockedRewards: Array.from(this.unlockedRewards)
-      }, { merge: true });
-    } catch (e) {
-      console.error('[Achievements] Firestore save error:', e);
-    }
+  set(key, value) {
+    console.log(`[Achievements] set("${key}", ${value})`);
+    this.stats[key] = value;
+    this.checkAll();
+    this.save();
   },
 
-  async track(statKey, value = 1) {
-    this.state[statKey] = (this.state[statKey] || 0) + value;
-    this.state.unlockedCount = this.unlocked.size;
-    await this.checkUnlocks();
-    await this.saveUserAchievements();
-  },
-
-  async checkUnlocks() {
+  checkAll() {
+    const isAdmin = (typeof Auth !== 'undefined' && Auth.isAdmin && Auth.isAdmin());
+    let newlyUnlocked = 0;
     for (const ach of this.list) {
-      if (!this.unlocked.has(ach.id) && ach.condition(this.state)) {
-        this.unlocked.add(ach.id);
-        this.unlockedRewards.add(ach.rewardId);
-        this.showUnlock(ach);
-        // Award XP
-        if (typeof Auth !== 'undefined' && Auth.userData) {
-          const newXp = (Auth.userData.xp || 0) + ach.xpReward;
-          await Auth.updateProfile({ xp: newXp });
-        }
+      if (this.unlocked.has(ach.id)) continue;
+      if (ach.adminOnly && !isAdmin) continue;
+      if (ach.condition(this.stats)) {
+        this.unlock(ach.id, false);
+        newlyUnlocked++;
       }
     }
-    this.state.unlockedCount = this.unlocked.size;
+    if (newlyUnlocked > 0) {
+      this.save();
+      this.render();
+      this.renderRewards();
+    }
+  },
+
+  unlock(id, save = true) {
+    if (this.unlocked.has(id)) return;
+    const ach = this.list.find(a => a.id === id);
+    if (!ach) return;
+    this.unlocked.add(id);
+    console.log(`[Achievements] UNLOCKED: ${ach.name} (+${ach.xp} XP)`);
+    if (typeof Utils !== 'undefined') {
+      Utils.toast(`Achievement Unlocked: ${ach.name} (+${ach.xp} XP)`, 'success');
+    }
+    if (typeof Gamification !== 'undefined') {
+      Gamification.addXP(ach.xp, 'achievement: ' + ach.name);
+    }
+    if (ach.reward) {
+      this.grantReward(ach.reward);
+    }
+    if (save) this.save();
+  },
+
+  grantReward(reward) {
+    console.log(`[Achievements] Granting reward: ${reward.label}`);
+    if (typeof Utils !== 'undefined') {
+      Utils.toast(`Reward Unlocked: ${reward.label}`, 'success');
+    }
+    // Unlock theme buttons
+    if (reward.type === 'theme') {
+      const btn = document.querySelector(`.theme-btn[data-theme="${reward.value}"]`);
+      if (btn) {
+        btn.classList.remove('reward-locked');
+        btn.classList.add('unlocked');
+        btn.title = 'Unlocked via Achievement';
+      }
+    }
+    // Unlock EQ preset buttons
+    if (reward.type === 'eq_preset') {
+      const btn = document.querySelector(`.btn-preset[data-preset="${reward.value}"]`);
+      if (btn) {
+        btn.classList.remove('reward-locked');
+        btn.classList.add('unlocked');
+        btn.title = 'Unlocked via Achievement';
+      }
+    }
+  },
+
+  // Admin perk: unlock all
+  unlockAll() {
+    console.log('[Achievements] unlockAll() — Admin perk');
+    for (const ach of this.list) {
+      if (!this.unlocked.has(ach.id)) {
+        this.unlocked.add(ach.id);
+        if (ach.reward) this.grantReward(ach.reward);
+      }
+    }
+    this.save();
     this.render();
-    this.updateRewardsUI();
+    this.renderRewards();
   },
 
-  getRewardName(rewardId) {
-    const names = {
-      'hint': 'Hint Power-Up', 'neon_theme': 'Neon Theme', 'fifty_fifty': '50/50 Power-Up',
-      'dark_theme': 'Dark Theme', 'hidden_playlist_1': 'Hidden Playlist 1',
-      'skip_question': 'Skip Question', 'glass_theme': 'Glass Theme',
-      'karaoke_effect_1': 'Karaoke Effect', 'badge_style_1': 'Badge Style',
-      'extra_station_1': 'Extra Station', 'advanced_search': 'Advanced Search',
-      'secret_song_1': 'Secret Song', 'quiz_hint': 'Quiz Hint',
-      'profile_frame_1': 'Profile Frame', 'lyric_theme_1': 'Lyric Theme',
-      'extra_station_2': 'Extra Station 2', 'gradient_theme': 'Gradient Theme',
-      'extra_station_3': 'Extra Station 3', 'night_mode_eq': 'Night Mode EQ',
-      'concert_eq': 'Concert EQ', 'player_skin_1': 'Player Skin',
-      'advanced_eq': 'Advanced EQ', 'hidden_playlist_2': 'Hidden Playlist 2',
-      'animated_frame': 'Animated Frame', 'ai_cleaner_v2': 'AI Cleaner v2',
-      'exclusive_lyric_theme': 'Exclusive Lyric Theme', 'bass_boost_eq': 'Bass Boost EQ',
-      'smart_playlist': 'Smart Playlist', 'quiz_easy_mode': 'Easy Quiz Mode',
-      'supporter_badge': 'Supporter Badge', 'secret_song_2': 'Secret Song 2',
-      'privacy_badge': 'Privacy Badge', 'feedback_feature': 'Feedback Feature',
-      'trophy_frame': 'Trophy Frame', 'world_map_feature': 'World Map',
-      'secret_station': 'Secret Station', 'search_filter': 'Search Filter',
-      'power_badge': 'Power Badge', 'daily_mix': 'Daily Mix',
-      'veteran_frame': 'Veteran Frame', 'batch_upload': 'Batch Upload',
-      'preset_share': 'Preset Share', 'explorer_playlist': 'Explorer Playlist',
-      'quiz_hard_mode': 'Hard Quiz Mode', 'radio_recording': 'Radio Recording',
-      'full_house_badge': 'Full House Badge', 'crown_frame': 'Crown Frame'
+  getProgress(ach) {
+    // Return current / target for progressable achievements
+    const s = this.stats;
+    const map = {
+      'first_song': () => [s.songsUploaded || 0, 1],
+      'upload_5': () => [s.songsUploaded || 0, 5],
+      'upload_10': () => [s.songsUploaded || 0, 10],
+      'upload_25': () => [s.songsUploaded || 0, 25],
+      'upload_50': () => [s.songsUploaded || 0, 50],
+      'upload_100': () => [s.songsUploaded || 0, 100],
+      'first_play': () => [s.songsPlayed || 0, 1],
+      'play_10': () => [s.songsPlayed || 0, 10],
+      'play_50': () => [s.songsPlayed || 0, 50],
+      'play_100': () => [s.songsPlayed || 0, 100],
+      'play_500': () => [s.songsPlayed || 0, 500],
+      'play_1000': () => [s.songsPlayed || 0, 1000],
+      'listen_1m': () => [s.listenMinutes || 0, 1],
+      'listen_10m': () => [s.listenMinutes || 0, 10],
+      'listen_1h': () => [s.listenMinutes || 0, 60],
+      'listen_5h': () => [s.listenMinutes || 0, 300],
+      'listen_12h': () => [s.listenMinutes || 0, 720],
+      'listen_24h': () => [s.listenMinutes || 0, 1440],
+      'listen_100h': () => [s.listenMinutes || 0, 6000],
+      'quiz_win': () => [s.quizWon || 0, 1],
+      'quiz_win_5': () => [s.quizWon || 0, 5],
+      'quiz_win_10': () => [s.quizWon || 0, 10],
+      'streak_3': () => [s.quizStreak || 0, 3],
+      'streak_7': () => [s.quizStreak || 0, 7],
+      'visit_all': () => [s.pagesVisited || 0, 10],
+      'home_10': () => [s.homeOpens || 0, 10],
+      'radio_5': () => [s.radioListened || 0, 5],
+      'radio_10': () => [s.radioListened || 0, 10],
+      'share_5': () => [s.shares || 0, 5],
+      'share_10': () => [s.shares || 0, 10],
+      'day_7': () => [s.uniqueDays || 0, 7],
+      'day_30': () => [s.uniqueDays || 0, 30],
+      'day_100': () => [s.uniqueDays || 0, 100],
     };
-    return names[rewardId] || rewardId;
-  },
-
-  hasReward(rewardId) {
-    return this.unlockedRewards.has(rewardId);
-  },
-
-  showUnlock(ach) {
-    if (this.sfxEnabled) {
-      try { if (typeof SFX !== 'undefined' && SFX.unlock) SFX.unlock(); } catch (e) {}
-    }
-    if (typeof Utils !== 'undefined' && Utils.toast) {
-      Utils.toast(`🏆 Achievement Unlocked: ${ach.title}! +${ach.xpReward} XP`, 'success');
-    }
-    if (typeof Utils !== 'undefined' && Utils.achievementToast) {
-      Utils.achievementToast(`🏆 ${ach.title} — ${ach.desc}`);
-    }
+    if (map[ach.id]) return map[ach.id]();
+    return [this.unlocked.has(ach.id) ? 1 : 0, 1];
   },
 
   render() {
     const grid = document.getElementById('achievements-grid');
     if (!grid) return;
-    const unlockedCount = document.getElementById('achieve-unlocked');
-    if (unlockedCount) unlockedCount.textContent = this.unlocked.size;
-    const totalXp = document.getElementById('total-xp');
-    if (totalXp) {
-      let xp = 0;
-      this.list.forEach(ach => { if (this.unlocked.has(ach.id)) xp += (ach.xpReward || 0); });
-      totalXp.textContent = xp;
-    }
-    grid.innerHTML = this.list.map(ach => {
+    const filter = (grid.dataset.filter || 'all');
+    let html = '';
+    for (const ach of this.list) {
       const isUnlocked = this.unlocked.has(ach.id);
-      return `<div class="achievement-card ${isUnlocked ? 'unlocked' : ''}">
-        <div class="ach-icon">${ach.icon}</div>
-        <div class="ach-title">${ach.title}</div>
-        <div class="ach-desc">${ach.desc}</div>
-        <div class="ach-xp">+${ach.xpReward} XP</div>
-        ${!isUnlocked ? '<div class="ach-lock">🔒</div>' : ''}
-      </div>`;
-    }).join('');
+      if (filter === 'unlocked' && !isUnlocked) continue;
+      if (filter === 'locked' && isUnlocked) continue;
+      const [curr, target] = this.getProgress(ach);
+      const pct = target > 0 ? Math.min(100, Math.round((curr / target) * 100)) : (isUnlocked ? 100 : 0);
+      const nearCompletion = !isUnlocked && pct >= 75;
+      if (filter === 'near' && !nearCompletion) continue;
+      const statusClass = isUnlocked ? 'unlocked' : 'locked';
+      const statusText = isUnlocked ? 'Unlocked' : 'Locked';
+      const rewardHtml = ach.reward ? `<div class="ach-reward">${ach.reward.label}</div>` : '';
+      html += `
+        <div class="achievement-card ${statusClass}" data-id="${ach.id}" onclick="Achievements.showDetails('${ach.id}')">
+          <div class="ach-icon">${isUnlocked ? '🏆' : '🔒'}</div>
+          <div class="ach-info">
+            <h4>${ach.name}</h4>
+            <p>${ach.desc}</p>
+            <div class="ach-meta">
+              <span class="ach-xp">+${ach.xp} XP</span>
+              <span class="ach-status ${statusClass}">${statusText}</span>
+            </div>
+            ${rewardHtml}
+            <div class="ach-progress-bar"><div class="ach-progress-fill" style="width:${pct}%"></div></div>
+            <div class="ach-progress-text">${curr} / ${target}</div>
+          </div>
+        </div>
+      `;
+    }
+    grid.innerHTML = html || '<p class="empty-achievements">No achievements match this filter.</p>';
+    this.updateStats();
+    console.log('[Achievements] render() complete — filter:', filter);
   },
 
-  updateRewardsUI() {
-    const rewardsList = document.getElementById('rewardsList');
-    if (!rewardsList) return;
-    if (this.unlockedRewards.size === 0) {
-      rewardsList.innerHTML = '<span style="color:var(--text-secondary);font-size:0.8rem;">Complete achievements to unlock rewards!</span>';
+  renderRewards() {
+    const list = document.getElementById('rewardsList');
+    if (!list) return;
+    let html = '';
+    for (const ach of this.list) {
+      if (ach.reward && this.unlocked.has(ach.id)) {
+        html += `<span class="reward-badge">${ach.reward.label}</span>`;
+      }
+    }
+    if (typeof Auth !== 'undefined' && Auth.isAdmin && Auth.isAdmin()) {
+      html += `<span class="reward-badge admin">All Admin Perks</span>`;
+    }
+    list.innerHTML = html || '<span class="no-rewards">No rewards yet — keep listening!</span>';
+  },
+
+  updateStats() {
+    const unlockedEl = document.getElementById('achieve-unlocked');
+    const totalXpEl = document.getElementById('total-xp');
+    if (unlockedEl) unlockedEl.textContent = this.unlocked.size;
+    let totalXp = 0;
+    for (const id of this.unlocked) {
+      const ach = this.list.find(a => a.id === id);
+      if (ach) totalXp += ach.xp;
+    }
+    if (totalXpEl) totalXpEl.textContent = totalXp;
+  },
+
+  showDetails(id) {
+    const ach = this.list.find(a => a.id === id);
+    if (!ach) return;
+    const isUnlocked = this.unlocked.has(id);
+    const [curr, target] = this.getProgress(ach);
+    const pct = target > 0 ? Math.min(100, Math.round((curr / target) * 100)) : 100;
+    const date = isUnlocked ? new Date().toLocaleDateString() : '—';
+    const rewardHtml = ach.reward
+      ? `<div class="detail-reward"><strong>Reward:</strong> ${ach.reward.label}</div>`
+      : '<div class="detail-reward"><strong>Reward:</strong> None</div>';
+
+    const modal = document.getElementById('achievementDetailModal');
+    const content = document.getElementById('achievementDetailContent');
+    if (!modal || !content) {
+      // Fallback alert if modal not in DOM
+      alert(`${ach.name}\\n${ach.desc}\\nXP: ${ach.xp}\\nStatus: ${isUnlocked ? 'Unlocked' : 'Locked'}\\nProgress: ${curr}/${target}`);
       return;
     }
-    rewardsList.innerHTML = Array.from(this.unlockedRewards).map(rid =>
-      `<div class="reward-tag">✨ ${this.getRewardName(rid)}</div>`
-    ).join('');
-    this.applyRewardUnlocks();
+
+    content.innerHTML = `
+      <div class="detail-header">
+        <div class="detail-icon">${isUnlocked ? '🏆' : '🔒'}</div>
+        <h2>${ach.name}</h2>
+        <span class="detail-status ${isUnlocked ? 'unlocked' : 'locked'}">${isUnlocked ? 'Unlocked' : 'Locked'}</span>
+      </div>
+      <p class="detail-desc">${ach.desc}</p>
+      <div class="detail-stats">
+        <div><strong>XP Reward:</strong> ${ach.xp}</div>
+        ${rewardHtml}
+        <div><strong>Date Achieved:</strong> ${date}</div>
+        <div><strong>Progress:</strong> ${curr} / ${target} (${pct}%)</div>
+      </div>
+      <div class="detail-progress-bar"><div class="detail-progress-fill" style="width:${pct}%"></div></div>
+    `;
+    modal.classList.remove('hidden');
   },
 
-  applyRewardUnlocks() {
-    if (this.hasReward('night_mode_eq')) { const b = document.getElementById('preset-night'); if (b) b.classList.add('unlocked'); }
-    if (this.hasReward('concert_eq')) { const b = document.getElementById('preset-concert'); if (b) b.classList.add('unlocked'); }
-    if (this.hasReward('quiz_hint')) { const b = document.getElementById('btn-hint'); if (b) b.classList.remove('hidden'); }
-    if (this.hasReward('fifty_fifty')) { const b = document.getElementById('btn-fifty'); if (b) b.classList.remove('hidden'); }
-    if (this.hasReward('skip_question')) { const b = document.getElementById('btn-skip'); if (b) b.classList.remove('hidden'); }
-    if (this.hasReward('neon_theme')) { const b = document.getElementById('theme-neon'); if (b) b.classList.add('unlocked'); }
-    if (this.hasReward('dark_theme')) { const b = document.getElementById('theme-dark'); if (b) b.classList.add('unlocked'); }
-    if (this.hasReward('glass_theme')) { const b = document.getElementById('theme-glass'); if (b) b.classList.add('unlocked'); }
-    if (this.hasReward('gradient_theme')) { const b = document.getElementById('theme-gradient'); if (b) b.classList.add('unlocked'); }
+  closeDetails() {
+    const modal = document.getElementById('achievementDetailModal');
+    if (modal) modal.classList.add('hidden');
+  },
+
+  setFilter(filter) {
+    const grid = document.getElementById('achievements-grid');
+    if (grid) {
+      grid.dataset.filter = filter;
+      this.render();
+    }
+  },
+
+  async save() {
+    const userId = (typeof Auth !== 'undefined' && Auth.getUserId) ? Auth.getUserId() : 'guest';
+    const data = {
+      unlocked: Array.from(this.unlocked),
+      stats: this.stats,
+      progress: this.progress
+    };
+    localStorage.setItem('audix_achievements_' + userId, JSON.stringify(data));
+    // Also save to Firestore if logged in
+    if (typeof Auth !== 'undefined' && Auth.currentUser && Auth.db) {
+      try {
+        await Auth.db.collection('users').doc(Auth.currentUser.uid).update({
+          achievements: data.unlocked,
+          achievementStats: data.stats
+        });
+      } catch (e) {
+        console.warn('[Achievements] Firestore save failed:', e);
+      }
+    }
+    console.log('[Achievements] saved —', this.unlocked.size, 'unlocked');
+  },
+
+  async load() {
+    const userId = (typeof Auth !== 'undefined' && Auth.getUserId) ? Auth.getUserId() : 'guest';
+    const raw = localStorage.getItem('audix_achievements_' + userId);
+    if (raw) {
+      try {
+        const data = JSON.parse(raw);
+        this.unlocked = new Set(data.unlocked || []);
+        this.stats = data.stats || {};
+        this.progress = data.progress || {};
+      } catch (e) {
+        console.error('[Achievements] load error:', e);
+      }
+    }
+    // Load from Firestore if logged in
+    if (typeof Auth !== 'undefined' && Auth.currentUser && Auth.db) {
+      try {
+        const doc = await Auth.db.collection('users').doc(Auth.currentUser.uid).get();
+        if (doc.exists) {
+          const d = doc.data();
+          if (d.achievements) this.unlocked = new Set(d.achievements);
+          if (d.achievementStats) this.stats = { ...this.stats, ...d.achievementStats };
+        }
+      } catch (e) {
+        console.warn('[Achievements] Firestore load failed:', e);
+      }
+    }
+    console.log('[Achievements] loaded —', this.unlocked.size, 'unlocked');
+  },
+
+  async loadUserAchievements() {
+    console.log('[Achievements] loadUserAchievements()');
+    await this.load();
+    this.checkAll();
+    this.render();
+    this.renderRewards();
   }
 };
 
-window.Achievements = Achievements;
-export default Achievements;
+// Global filter handler
+document.addEventListener('click', (e) => {
+  if (e.target.matches('.ach-filter-btn')) {
+    document.querySelectorAll('.ach-filter-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    Achievements.setFilter(e.target.dataset.filter);
+  }
+  if (e.target.matches('.ach-close-detail') || e.target.matches('#achievementDetailModal')) {
+    Achievements.closeDetails();
+  }
+});
