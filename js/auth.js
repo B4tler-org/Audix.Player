@@ -9,6 +9,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   signOut,
   onAuthStateChanged,
@@ -54,6 +56,27 @@ const Auth = {
     console.log('[Auth] init()');
     this.bindEvents();
     this.renderGoogleButton();
+
+    // Handle redirect result (mobile Google login)
+    try {
+      const result = await getRedirectResult(firebaseAuth);
+      if (result && result.user) {
+        const user = result.user;
+        const ref = doc(db, 'users', user.uid);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) {
+          await setDoc(ref, {
+            username: user.displayName || user.email.split('@')[0],
+            email: user.email,
+            profilePic: user.photoURL || null,
+            createdAt: serverTimestamp(),
+            xp: 0, level: 1, achievements: [], unlockedRewards: []
+          });
+        }
+      }
+    } catch (e) {
+      console.error('[Auth] Redirect result error:', e);
+    }
 
     onAuthStateChanged(firebaseAuth, async (user) => {
       if (user) {
@@ -124,6 +147,12 @@ const Auth = {
   },
 
   async googleLogin() {
+    // Use redirect on mobile, popup on desktop
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      await signInWithRedirect(firebaseAuth, googleProvider);
+      return; // page will reload, result handled in init()
+    }
     const cred = await signInWithPopup(firebaseAuth, googleProvider);
     const user = cred.user;
     const ref = doc(db, 'users', user.uid);
@@ -269,6 +298,56 @@ const Auth = {
       });
     }
 
+    // Phone OTP events
+    const sendOtpBtn = document.getElementById('sendOtpBtn');
+    if (sendOtpBtn) {
+      sendOtpBtn.addEventListener('click', async () => {
+        const phone = document.getElementById('phoneNumber').value.trim();
+        if (!phone) { Utils.toast('Enter a phone number', 'error'); return; }
+        try {
+          sendOtpBtn.textContent = 'Sending...';
+          sendOtpBtn.disabled = true;
+          await this.sendPhoneOTP(phone);
+          document.getElementById('phoneStep1').style.display = 'none';
+          document.getElementById('phoneStep2').style.display = 'block';
+          Utils.toast('OTP sent!');
+        } catch (err) {
+          Utils.toast(err.message, 'error');
+          sendOtpBtn.textContent = 'Send OTP';
+          sendOtpBtn.disabled = false;
+        }
+      });
+    }
+
+    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+    if (verifyOtpBtn) {
+      verifyOtpBtn.addEventListener('click', async () => {
+        const otp = document.getElementById('otpInput').value.trim();
+        if (!otp) { Utils.toast('Enter the OTP', 'error'); return; }
+        try {
+          verifyOtpBtn.textContent = 'Verifying...';
+          verifyOtpBtn.disabled = true;
+          await this.verifyPhoneOTP(otp);
+          Utils.toast('Phone login successful!');
+        } catch (err) {
+          Utils.toast(err.message, 'error');
+          verifyOtpBtn.textContent = 'Verify OTP';
+          verifyOtpBtn.disabled = false;
+        }
+      });
+    }
+
+    const resendOtpBtn = document.getElementById('resendOtpBtn');
+    if (resendOtpBtn) {
+      resendOtpBtn.addEventListener('click', () => {
+        document.getElementById('phoneStep1').style.display = 'block';
+        document.getElementById('phoneStep2').style.display = 'none';
+        document.getElementById('sendOtpBtn').textContent = 'Send OTP';
+        document.getElementById('sendOtpBtn').disabled = false;
+        window.recaptchaVerifier = null;
+      });
+    }
+
     const avatarBtn = document.getElementById('userAvatarBtn');
     if (avatarBtn) {
       avatarBtn.addEventListener('click', () => { window.location.hash = 'profile'; });
@@ -305,6 +384,56 @@ const Auth = {
 
   updateUI() {
     const isLoggedIn = !!this.currentUser;
+
+    // Phone OTP events
+    const sendOtpBtn = document.getElementById('sendOtpBtn');
+    if (sendOtpBtn) {
+      sendOtpBtn.addEventListener('click', async () => {
+        const phone = document.getElementById('phoneNumber').value.trim();
+        if (!phone) { Utils.toast('Enter a phone number', 'error'); return; }
+        try {
+          sendOtpBtn.textContent = 'Sending...';
+          sendOtpBtn.disabled = true;
+          await this.sendPhoneOTP(phone);
+          document.getElementById('phoneStep1').style.display = 'none';
+          document.getElementById('phoneStep2').style.display = 'block';
+          Utils.toast('OTP sent!');
+        } catch (err) {
+          Utils.toast(err.message, 'error');
+          sendOtpBtn.textContent = 'Send OTP';
+          sendOtpBtn.disabled = false;
+        }
+      });
+    }
+
+    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+    if (verifyOtpBtn) {
+      verifyOtpBtn.addEventListener('click', async () => {
+        const otp = document.getElementById('otpInput').value.trim();
+        if (!otp) { Utils.toast('Enter the OTP', 'error'); return; }
+        try {
+          verifyOtpBtn.textContent = 'Verifying...';
+          verifyOtpBtn.disabled = true;
+          await this.verifyPhoneOTP(otp);
+          Utils.toast('Phone login successful!');
+        } catch (err) {
+          Utils.toast(err.message, 'error');
+          verifyOtpBtn.textContent = 'Verify OTP';
+          verifyOtpBtn.disabled = false;
+        }
+      });
+    }
+
+    const resendOtpBtn = document.getElementById('resendOtpBtn');
+    if (resendOtpBtn) {
+      resendOtpBtn.addEventListener('click', () => {
+        document.getElementById('phoneStep1').style.display = 'block';
+        document.getElementById('phoneStep2').style.display = 'none';
+        document.getElementById('sendOtpBtn').textContent = 'Send OTP';
+        document.getElementById('sendOtpBtn').disabled = false;
+        window.recaptchaVerifier = null;
+      });
+    }
 
     const avatarBtn = document.getElementById('userAvatarBtn');
     const headerPfp = document.getElementById('headerPfp');
