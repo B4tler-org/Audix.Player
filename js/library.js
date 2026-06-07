@@ -12,6 +12,10 @@ const Library = {
     await this.loadSongs();
     this.render();
     this.bindEvents();
+    // Sync with player playlist on init
+    if (typeof Player !== 'undefined') {
+      Player.setPlaylist(this.songs);
+    }
   },
 
   openDB() {
@@ -22,7 +26,9 @@ const Library = {
       req.onupgradeneeded = (e) => {
         const db = e.target.result;
         if (!db.objectStoreNames.contains('songs')) {
-          db.createObjectStore('songs', { keyPath: 'id', autoIncrement: true });
+          const store = db.createObjectStore('songs', { keyPath: 'id', autoIncrement: true });
+          store.createIndex('title', 'title', { unique: false });
+          store.createIndex('artist', 'artist', { unique: false });
         }
       };
     });
@@ -30,13 +36,28 @@ const Library = {
 
   async loadSongs() {
     return new Promise((resolve) => {
+      if (!this.db) { this.songs = []; resolve(); return; }
       const tx = this.db.transaction('songs', 'readonly');
       const store = tx.objectStore('songs');
       const req = store.getAll();
       req.onsuccess = () => {
         this.songs = req.result || [];
+        // Re-create blob URLs for loaded songs (they expire on page reload)
+        this.songs.forEach(song => {
+          if (song.blob && !(song.blob instanceof File)) {
+            // If blob was stored as object, createObjectURL should still work
+            // but if URL is invalid, we need to recreate it
+            try {
+              const blob = new Blob([song.blob], { type: 'audio/mpeg' });
+              song.url = URL.createObjectURL(blob);
+            } catch (e) {
+              // Keep existing URL if possible
+            }
+          }
+        });
         resolve();
       };
+      req.onerror = () => { this.songs = []; resolve(); };
     });
   },
 
@@ -53,11 +74,21 @@ const Library = {
         console.error('Error processing file', file.name, e);
       }
     }
+    // Reset file input so same files can be selected again
+    const input = document.getElementById('file-input');
+    if (input) input.value = '';
+
     await this.loadSongs();
     this.render();
-    Utils.toast(`${added} song(s) added to library`);
-    Achievements.track('songsAdded', added);
-    if (added > 0) Player.setPlaylist(this.songs);
+    if (typeof Utils !== 'undefined') {
+      Utils.toast(`${added} song(s) added to library`);
+    }
+    if (typeof Achievements !== 'undefined') {
+      Achievements.track('songsAdded', added);
+    }
+    if (typeof Player !== 'undefined') {
+      Player.setPlaylist(this.songs);
+    }
   },
 
   processFile(file) {
@@ -70,7 +101,7 @@ const Library = {
         year: '',
         duration: 0,
         url: url,
-        blob: file,
+        blob: file, // Store the actual File blob for IndexedDB
         cover: null,
         addedAt: Date.now()
       };
@@ -102,22 +133,29 @@ const Library = {
 
   saveSong(song) {
     return new Promise((resolve, reject) => {
+      if (!this.db) { reject(new Error('DB not ready')); return; }
       const tx = this.db.transaction('songs', 'readwrite');
       const store = tx.objectStore('songs');
       const req = store.add(song);
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
+      tx.oncomplete = () => resolve(req.result);
+      tx.onerror = () => reject(tx.error);
     });
   },
 
   async deleteSong(id) {
     return new Promise((resolve) => {
+      if (!this.db) { resolve(); return; }
       const tx = this.db.transaction('songs', 'readwrite');
       const store = tx.objectStore('songs');
       store.delete(id);
       tx.oncomplete = async () => {
         await this.loadSongs();
         this.render();
+        if (typeof Player !== 'undefined') {
+          Player.setPlaylist(this.songs);
+        }
         resolve();
       };
     });
@@ -134,7 +172,7 @@ const Library = {
       search.addEventListener('input', Utils.debounce((e) => {
         this.currentFilter = e.target.value.toLowerCase();
         this.render();
-        Achievements.track('searches');
+        if (typeof Achievements !== 'undefined') Achievements.track('searches');
       }, 300));
     }
   },
@@ -145,30 +183,31 @@ const Library = {
 
     const filtered = this.songs.filter(s => {
       const q = this.currentFilter;
-      return !q ||
-        s.title.toLowerCase().includes(q) ||
-        s.artist.toLowerCase().includes(q) ||
-        (s.album && s.album.toLowerCase().includes(q));
+      if (!q) return true;
+      return (s.title && s.title.toLowerCase().includes(q)) ||
+             (s.artist && s.artist.toLowerCase().includes(q)) ||
+             (s.album && s.album.toLowerCase().includes(q));
     });
 
     if (filtered.length === 0) {
+      const isEmpty = this.songs.length === 0;
       list.innerHTML = `
         <div class="empty-state">
           <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
-          <p>${this.songs.length === 0 ? 'Your library is empty.' : 'No matches found.'}</p>
-          <span>${this.songs.length === 0 ? 'Add MP3 files from your device to get started.' : 'Try a different search term.'}</span>
+          <p>${isEmpty ? 'Your library is empty.' : 'No matches found.'}</p>
+          <span>${isEmpty ? 'Add MP3 files from your device to get started.' : 'Try a different search term.'}</span>
         </div>`;
       return;
     }
 
     list.innerHTML = filtered.map((song, idx) => `
-      <div class="library-item ${Player.currentIndex === idx ? 'active' : ''}" data-index="${idx}">
+      <div class="library-item ${Player && Player.currentIndex === idx ? 'active' : ''}" data-index="${idx}">
         <div class="lib-thumb">
           ${song.cover ? `<img src="${song.cover}" alt="">` : '&#9836;'}
         </div>
         <div class="lib-info">
-          <div class="lib-title">${song.title}</div>
-          <div class="lib-artist">${song.artist}${song.album ? ' — ' + song.album : ''}</div>
+          <div class="lib-title">${song.title || 'Unknown'}</div>
+          <div class="lib-artist">${song.artist || 'Unknown Artist'}${song.album ? ' — ' + song.album : ''}</div>
         </div>
         <div class="lib-duration">${song.duration ? Utils.formatTime(song.duration) : ''}</div>
       </div>
@@ -177,7 +216,9 @@ const Library = {
     list.querySelectorAll('.library-item').forEach(el => {
       el.addEventListener('click', () => {
         const index = parseInt(el.dataset.index);
-        Player.playFromLibrary(index);
+        if (typeof Player !== 'undefined') {
+          Player.playFromLibrary(index);
+        }
       });
     });
   }

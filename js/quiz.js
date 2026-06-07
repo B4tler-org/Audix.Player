@@ -17,6 +17,7 @@ const Quiz = {
 
   init() {
     this.bindEvents();
+    this.updateUI('start');
   },
 
   bindEvents() {
@@ -34,8 +35,12 @@ const Quiz = {
   },
 
   start() {
-    if (Library.songs.length < 4) {
-      Utils.toast('Add at least 4 songs to your library to play the quiz!', 'error');
+    // FIXED: Check Library.songs directly instead of relying on stale state
+    const songs = (typeof Library !== 'undefined' && Library.songs) ? Library.songs : [];
+    if (songs.length < 4) {
+      if (typeof Utils !== 'undefined') {
+        Utils.toast('Add at least 4 songs to your library to play the quiz!', 'error');
+      }
       return;
     }
 
@@ -43,7 +48,7 @@ const Quiz = {
     this.round = 0;
     this.score = 0;
     this.updateUI('game');
-    Achievements.track('quizOpens');
+    if (typeof Achievements !== 'undefined') Achievements.track('quizOpens');
     this.nextRound();
   },
 
@@ -60,12 +65,18 @@ const Quiz = {
     document.getElementById('btn-next-round').classList.add('hidden');
     document.getElementById('btn-play-snippet').classList.remove('hidden');
 
+    const songs = (typeof Library !== 'undefined' && Library.songs) ? Library.songs : [];
+    if (songs.length === 0) {
+      this.end();
+      return;
+    }
+
     // Pick random song
-    const idx = Math.floor(Math.random() * Library.songs.length);
-    this.currentSong = Library.songs[idx];
+    const idx = Math.floor(Math.random() * songs.length);
+    this.currentSong = songs[idx];
 
     // Generate 4 options (1 correct + 3 random)
-    const others = Library.songs.filter((_, i) => i !== idx);
+    const others = songs.filter((_, i) => i !== idx);
     const shuffled = others.sort(() => 0.5 - Math.random()).slice(0, 3);
     this.options = [this.currentSong, ...shuffled].sort(() => 0.5 - Math.random());
 
@@ -77,9 +88,10 @@ const Quiz = {
 
   renderOptions() {
     const container = document.getElementById('quiz-options');
+    if (!container) return;
     container.innerHTML = this.options.map((opt, i) => `
       <button class="quiz-option" data-index="${i}">
-        <strong>${String.fromCharCode(65 + i)}.</strong> ${opt.title}
+        <strong>${String.fromCharCode(65 + i)}.</strong> ${opt.title || 'Unknown'}
       </button>
     `).join('');
 
@@ -89,31 +101,34 @@ const Quiz = {
   },
 
   playSnippet() {
-    if (!this.currentSong) return;
+    if (!this.currentSong || !this.currentSong.url) return;
     const audio = document.getElementById('audio-player');
+    if (!audio) return;
     audio.src = this.currentSong.url;
     audio.currentTime = 0;
-    audio.play();
+    audio.play().catch(() => {});
 
     const progress = document.getElementById('snippet-progress');
-    progress.style.setProperty('--progress', '0%');
+    if (progress) progress.style.setProperty('--progress', '0%');
 
     let elapsed = 0;
     this.snippetTimer = setInterval(() => {
       elapsed += 0.1;
       const pct = (elapsed / this.snippetDuration) * 100;
-      progress.style.setProperty('--progress', pct + '%');
+      if (progress) progress.style.setProperty('--progress', pct + '%');
       if (elapsed >= this.snippetDuration) {
         audio.pause();
         clearInterval(this.snippetTimer);
       }
     }, 100);
 
-    document.getElementById('btn-play-snippet').classList.add('hidden');
+    const btn = document.getElementById('btn-play-snippet');
+    if (btn) btn.classList.add('hidden');
   },
 
   startTimer() {
     const timerEl = document.getElementById('quiz-timer');
+    if (!timerEl) return;
     timerEl.textContent = this.timeLeft;
     timerEl.classList.remove('warning');
 
@@ -122,7 +137,7 @@ const Quiz = {
       timerEl.textContent = this.timeLeft;
       if (this.timeLeft <= 5) {
         timerEl.classList.add('warning');
-        SFX.tick();
+        if (typeof SFX !== 'undefined') SFX.tick();
       }
       if (this.timeLeft <= 0) {
         this.answer(-1); // timeout
@@ -134,7 +149,7 @@ const Quiz = {
     clearInterval(this.timer);
     clearInterval(this.snippetTimer);
     const audio = document.getElementById('audio-player');
-    audio.pause();
+    if (audio) audio.pause();
   },
 
   answer(selectedIndex) {
@@ -151,43 +166,59 @@ const Quiz = {
     });
 
     const feedback = document.getElementById('quiz-feedback');
-    feedback.classList.remove('hidden', 'right', 'wrong');
-
-    if (isCorrect) {
-      this.score++;
-      feedback.textContent = '✅ Correct!';
-      feedback.classList.add('right');
-      SFX.success();
-      if (timeTaken < 5) Achievements.track('fastAnswers');
-    } else {
-      feedback.textContent = selectedIndex === -1 ? '⏱️ Time's up!' : `❌ Wrong! Answer: ${this.currentSong.title}`;
-      feedback.classList.add('wrong');
-      SFX.error();
+    if (feedback) {
+      feedback.classList.remove('hidden', 'right', 'wrong');
+      if (isCorrect) {
+        this.score++;
+        feedback.textContent = '✅ Correct!';
+        feedback.classList.add('right');
+        if (typeof SFX !== 'undefined') SFX.success();
+        if (timeTaken < 5 && typeof Achievements !== 'undefined') Achievements.track('fastAnswers');
+      } else {
+        feedback.textContent = selectedIndex === -1 ? '⏱️ Time's up!' : `❌ Wrong! Answer: ${this.currentSong.title || 'Unknown'}`;
+        feedback.classList.add('wrong');
+        if (typeof SFX !== 'undefined') SFX.error();
+      }
     }
 
-    document.getElementById('quiz-score').textContent = this.score;
-    document.getElementById('btn-next-round').classList.remove('hidden');
+    const scoreEl = document.getElementById('quiz-score');
+    if (scoreEl) scoreEl.textContent = this.score;
+
+    const nextBtn = document.getElementById('btn-next-round');
+    if (nextBtn) nextBtn.classList.remove('hidden');
   },
 
   end() {
     this.active = false;
     this.updateUI('result');
-    document.getElementById('final-score').textContent = `${this.score} / ${this.roundsTotal}`;
-    Achievements.track('quizzesCompleted');
-    if (this.score === this.roundsTotal) {
-      Achievements.track('perfectQuizzes');
-      document.getElementById('quiz-achievement').textContent = '🏆 Perfect Score! Quiz Master unlocked!';
-      document.getElementById('quiz-achievement').classList.remove('hidden');
+    const finalScore = document.getElementById('final-score');
+    if (finalScore) finalScore.textContent = `${this.score} / ${this.roundsTotal}`;
+    if (typeof Achievements !== 'undefined') {
+      Achievements.track('quizzesCompleted');
+      if (this.score === this.roundsTotal) {
+        Achievements.track('perfectQuizzes');
+        const achEl = document.getElementById('quiz-achievement');
+        if (achEl) {
+          achEl.textContent = '🏆 Perfect Score! Quiz Master unlocked!';
+          achEl.classList.remove('hidden');
+        }
+      }
+      if (this.score >= 4) Achievements.track('quizzesWon');
     }
-    if (this.score >= 4) Achievements.track('quizzesWon');
   },
 
   updateUI(state) {
-    document.getElementById('quiz-start').classList.toggle('hidden', state !== 'start');
-    document.getElementById('quiz-game').classList.toggle('hidden', state !== 'game');
-    document.getElementById('quiz-result').classList.toggle('hidden', state !== 'result');
+    const start = document.getElementById('quiz-start');
+    const game = document.getElementById('quiz-game');
+    const result = document.getElementById('quiz-result');
+    if (start) start.classList.toggle('hidden', state !== 'start');
+    if (game) game.classList.toggle('hidden', state !== 'game');
+    if (result) result.classList.toggle('hidden', state !== 'result');
 
     const note = document.getElementById('quiz-lib-note');
-    if (note) note.classList.toggle('hidden', Library.songs.length >= 4);
+    if (note) {
+      const songs = (typeof Library !== 'undefined' && Library.songs) ? Library.songs : [];
+      note.classList.toggle('hidden', songs.length >= 4);
+    }
   }
 };

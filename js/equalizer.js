@@ -12,10 +12,52 @@ const Equalizer = {
   gainNode: null,
   connected: false,
   animationId: null,
+  defaults: { bass: 0, vocal: 0, treble: 0 },
 
   init() {
+    this.loadSettings();
     this.bindEvents();
     this.renderVisualizer();
+    this.startIdleVisualizer();
+  },
+
+  loadSettings() {
+    try {
+      const raw = localStorage.getItem('audix_eq');
+      if (raw) this.defaults = JSON.parse(raw);
+    } catch (e) {}
+    // Apply loaded settings to UI
+    const vocal = document.getElementById('vocal-boost');
+    const bass = document.getElementById('bass-boost');
+    const treble = document.getElementById('treble-boost');
+    if (vocal) vocal.value = this.defaults.vocal || 0;
+    if (bass) bass.value = this.defaults.bass || 0;
+    if (treble) treble.value = this.defaults.treble || 0;
+    this.updateLabels();
+  },
+
+  saveSettings() {
+    const vocal = document.getElementById('vocal-boost');
+    const bass = document.getElementById('bass-boost');
+    const treble = document.getElementById('treble-boost');
+    this.defaults = {
+      vocal: parseInt(vocal ? vocal.value : 0),
+      bass: parseInt(bass ? bass.value : 0),
+      treble: parseInt(treble ? treble.value : 0)
+    };
+    localStorage.setItem('audix_eq', JSON.stringify(this.defaults));
+  },
+
+  updateLabels() {
+    const vocal = document.getElementById('vocal-boost');
+    const bass = document.getElementById('bass-boost');
+    const treble = document.getElementById('treble-boost');
+    const vVal = document.getElementById('vocal-value');
+    const bVal = document.getElementById('bass-value');
+    const tVal = document.getElementById('treble-value');
+    if (vVal && vocal) vVal.textContent = `${vocal.value} dB`;
+    if (bVal && bass) bVal.textContent = `${bass.value} dB`;
+    if (tVal && treble) tVal.textContent = `${treble.value} dB`;
   },
 
   bindEvents() {
@@ -23,9 +65,9 @@ const Equalizer = {
     const bass = document.getElementById('bass-boost');
     const treble = document.getElementById('treble-boost');
 
-    if (vocal) vocal.addEventListener('input', (e) => this.setFilter('vocal', e.target.value));
-    if (bass) bass.addEventListener('input', (e) => this.setFilter('bass', e.target.value));
-    if (treble) treble.addEventListener('input', (e) => this.setFilter('treble', e.target.value));
+    if (vocal) vocal.addEventListener('input', (e) => { this.setFilter('vocal', e.target.value); this.saveSettings(); });
+    if (bass) bass.addEventListener('input', (e) => { this.setFilter('bass', e.target.value); this.saveSettings(); });
+    if (treble) treble.addEventListener('input', (e) => { this.setFilter('treble', e.target.value); this.saveSettings(); });
 
     document.querySelectorAll('.btn-preset').forEach(btn => {
       btn.addEventListener('click', () => this.applyPreset(btn.dataset.preset));
@@ -33,7 +75,11 @@ const Equalizer = {
   },
 
   setup(audioEl) {
-    if (this.connected) return;
+    if (this.connected) {
+      // Re-apply current filter values
+      this.applyCurrentValues();
+      return;
+    }
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
       this.source = this.ctx.createMediaElementSource(audioEl);
@@ -65,33 +111,45 @@ const Equalizer = {
       this.analyser.connect(this.ctx.destination);
 
       this.connected = true;
+      this.applyCurrentValues();
       this.startVisualizer();
     } catch (e) {
       console.error('Web Audio API setup failed', e);
     }
   },
 
-  setFilter(type, value) {
-    if (!this.ctx) return;
-    const val = parseFloat(value);
-    const dB = val;
+  applyCurrentValues() {
+    const vocal = document.getElementById('vocal-boost');
+    const bass = document.getElementById('bass-boost');
+    const treble = document.getElementById('treble-boost');
+    if (this.vocalFilter && vocal) this.vocalFilter.gain.value = parseFloat(vocal.value);
+    if (this.bassFilter && bass) this.bassFilter.gain.value = parseFloat(bass.value);
+    if (this.trebleFilter && treble) this.trebleFilter.gain.value = parseFloat(treble.value);
+  },
 
-    if (type === 'bass') {
-      this.bassFilter.gain.value = dB;
-      document.getElementById('bass-value').textContent = `${val} dB`;
-      if (val >= 15) Achievements.track('maxBassUsed');
-    } else if (type === 'treble') {
-      this.trebleFilter.gain.value = dB;
-      document.getElementById('treble-value').textContent = `${val} dB`;
-      if (val >= 15) Achievements.track('maxTrebleUsed');
-    } else if (type === 'vocal') {
-      this.vocalFilter.gain.value = dB;
-      document.getElementById('vocal-value').textContent = `${val} dB`;
-      if (val >= 15) Achievements.track('maxVocalUsed');
+  setFilter(type, value) {
+    if (!this.ctx) {
+      // Store value for when audio starts
+      this.saveSettings();
+    }
+    const val = parseFloat(value);
+    this.updateLabels();
+
+    if (type === 'bass' && this.bassFilter) {
+      this.bassFilter.gain.value = val;
+      if (val >= 15 && typeof Achievements !== 'undefined') Achievements.track('maxBassUsed');
+    } else if (type === 'treble' && this.trebleFilter) {
+      this.trebleFilter.gain.value = val;
+      if (val >= 15 && typeof Achievements !== 'undefined') Achievements.track('maxTrebleUsed');
+    } else if (type === 'vocal' && this.vocalFilter) {
+      this.vocalFilter.gain.value = val;
+      if (val >= 15 && typeof Achievements !== 'undefined') Achievements.track('maxVocalUsed');
     }
 
-    Achievements.track('eqAdjustments');
-    Achievements.set('eqAdjusted', (Achievements.state.eqAdjusted || 0) + 1);
+    if (typeof Achievements !== 'undefined') {
+      Achievements.track('eqAdjustments');
+      Achievements.set('eqAdjusted', (Achievements.state.eqAdjusted || 0) + 1);
+    }
   },
 
   applyPreset(name) {
@@ -104,19 +162,25 @@ const Equalizer = {
     const p = presets[name];
     if (!p) return;
 
-    document.getElementById('bass-boost').value = p.bass;
-    document.getElementById('vocal-boost').value = p.vocal;
-    document.getElementById('treble-boost').value = p.treble;
+    const bassEl = document.getElementById('bass-boost');
+    const vocalEl = document.getElementById('vocal-boost');
+    const trebleEl = document.getElementById('treble-boost');
+    if (bassEl) bassEl.value = p.bass;
+    if (vocalEl) vocalEl.value = p.vocal;
+    if (trebleEl) trebleEl.value = p.treble;
 
     this.setFilter('bass', p.bass);
     this.setFilter('vocal', p.vocal);
     this.setFilter('treble', p.treble);
+    this.saveSettings();
 
     document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
-    document.querySelector(`[data-preset="${name}"]`)?.classList.add('active');
+    const activeBtn = document.querySelector(`[data-preset="${name}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
   },
 
   startVisualizer() {
+    if (this.animationId) cancelAnimationFrame(this.animationId);
     const canvas = document.getElementById('eq-visualizer');
     if (!canvas || !this.analyser) return;
     const ctx = canvas.getContext('2d');
@@ -131,11 +195,10 @@ const Equalizer = {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const barWidth = (canvas.width / bufferLength) * 2.5;
-      let barHeight;
       let x = 0;
 
       for (let i = 0; i < bufferLength; i++) {
-        barHeight = dataArray[i] / 2;
+        const barHeight = dataArray[i] / 2;
         const r = barHeight + 25;
         const g = 50 + i * 2;
         const b = 200;
@@ -147,8 +210,37 @@ const Equalizer = {
     draw();
   },
 
+  startIdleVisualizer() {
+    // Shows a gentle animated visualizer even when no audio is playing
+    const canvas = document.getElementById('eq-visualizer');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let time = 0;
+
+    const drawIdle = () => {
+      if (this.connected && this.analyser) {
+        // Audio is active, let startVisualizer take over
+        return;
+      }
+      this.animationId = requestAnimationFrame(drawIdle);
+      time += 0.02;
+
+      ctx.fillStyle = 'rgba(10, 10, 18, 0.3)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const bars = 64;
+      const barWidth = canvas.width / bars;
+      for (let i = 0; i < bars; i++) {
+        const height = Math.abs(Math.sin(time + i * 0.2)) * 60 + 10;
+        const hue = (i * 5 + time * 20) % 360;
+        ctx.fillStyle = `hsla(${hue}, 70%, 50%, 0.6)`;
+        ctx.fillRect(i * barWidth, canvas.height - height, barWidth - 2, height);
+      }
+    };
+    drawIdle();
+  },
+
   renderVisualizer() {
-    // Static render until audio starts
     const canvas = document.getElementById('eq-visualizer');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');

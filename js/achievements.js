@@ -57,6 +57,7 @@ const Achievements = {
 
   state: {},
   unlocked: new Set(),
+  sfxEnabled: true,
 
   init() {
     this.load();
@@ -76,10 +77,12 @@ const Achievements = {
   },
 
   save() {
-    localStorage.setItem('audix_achievements', JSON.stringify({
-      state: this.state,
-      unlocked: Array.from(this.unlocked)
-    }));
+    try {
+      localStorage.setItem('audix_achievements', JSON.stringify({
+        state: this.state,
+        unlocked: Array.from(this.unlocked)
+      }));
+    } catch (e) { console.error('Achievement save error', e); }
   },
 
   track(key, value = 1) {
@@ -112,8 +115,19 @@ const Achievements = {
   },
 
   showUnlock(ach) {
-    SFX.unlock();
-    Utils.toast(`🏆 Achievement Unlocked: ${ach.title}!`, 'success');
+    // FIXED: Robust SFX with fallback
+    if (this.sfxEnabled) {
+      try {
+        if (typeof SFX !== 'undefined' && SFX.unlock) {
+          SFX.unlock();
+        }
+      } catch (e) {
+        console.warn('Achievement SFX failed:', e);
+      }
+    }
+    if (typeof Utils !== 'undefined' && Utils.toast) {
+      Utils.toast(`🏆 Achievement Unlocked: ${ach.title}!`, 'success');
+    }
   },
 
   render() {

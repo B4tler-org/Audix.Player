@@ -10,53 +10,61 @@ const Utils = {
     return `${m}:${s.toString().padStart(2, '0')}`;
   },
 
-  async function generateSFX(type) {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const t = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+  // FIXED: Was "async function generateSFX(type)" which is invalid inside object literal
+  async generateSFX(type) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      // Resume context if suspended (browser autoplay policy)
+      if (ctx.state === 'suspended') await ctx.resume();
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
 
-    if (type === 'success') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(523, t);
-      osc.frequency.setValueAtTime(659, t + 0.1);
-      osc.frequency.setValueAtTime(784, t + 0.2);
-      gain.gain.setValueAtTime(0.15, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-      osc.start(t);
-      osc.stop(t + 0.4);
-    } else if (type === 'error') {
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(150, t);
-      osc.frequency.linearRampToValueAtTime(100, t + 0.3);
-      gain.gain.setValueAtTime(0.1, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-      osc.start(t);
-      osc.stop(t + 0.3);
-    } else if (type === 'unlock') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(440, t);
-      osc.frequency.setValueAtTime(554, t + 0.1);
-      osc.frequency.setValueAtTime(659, t + 0.2);
-      osc.frequency.setValueAtTime(880, t + 0.3);
-      gain.gain.setValueAtTime(0.15, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
-      osc.start(t);
-      osc.stop(t + 0.6);
-    } else if (type === 'tick') {
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(800, t);
-      gain.gain.setValueAtTime(0.05, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
-      osc.start(t);
-      osc.stop(t + 0.05);
+      if (type === 'success') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523, t);
+        osc.frequency.setValueAtTime(659, t + 0.1);
+        osc.frequency.setValueAtTime(784, t + 0.2);
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+        osc.start(t);
+        osc.stop(t + 0.4);
+      } else if (type === 'error') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, t);
+        osc.frequency.linearRampToValueAtTime(100, t + 0.3);
+        gain.gain.setValueAtTime(0.1, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        osc.start(t);
+        osc.stop(t + 0.3);
+      } else if (type === 'unlock') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, t);
+        osc.frequency.setValueAtTime(554, t + 0.1);
+        osc.frequency.setValueAtTime(659, t + 0.2);
+        osc.frequency.setValueAtTime(880, t + 0.3);
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+        osc.start(t);
+        osc.stop(t + 0.6);
+      } else if (type === 'tick') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(800, t);
+        gain.gain.setValueAtTime(0.05, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        osc.start(t);
+        osc.stop(t + 0.05);
+      }
+    } catch (e) {
+      console.warn('SFX failed:', e);
     }
   },
 
   toast(message, type = 'info') {
     const container = document.getElementById('toast-container');
+    if (!container) return;
     const el = document.createElement('div');
     el.className = `toast ${type}`;
     el.textContent = message;
@@ -66,6 +74,7 @@ const Utils = {
 
   generateQR(text) {
     const container = document.getElementById('qrcode');
+    if (!container) return;
     container.innerHTML = '';
     if (typeof QRCode !== 'undefined') {
       new QRCode(container, {

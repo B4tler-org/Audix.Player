@@ -10,7 +10,6 @@ const App = {
     this.bindMobileMenu();
     this.handleRoute();
     this.initModules();
-    this.setupQR();
 
     // Track day usage
     const today = new Date().toDateString();
@@ -19,7 +18,9 @@ const App = {
       days.push(today);
       localStorage.setItem('audix_days', JSON.stringify(days));
     }
-    Achievements.set('uniqueDays', days.length);
+    if (typeof Achievements !== 'undefined') {
+      Achievements.set('uniqueDays', days.length);
+    }
 
     // Hash route listener
     window.addEventListener('hashchange', () => this.handleRoute());
@@ -27,7 +28,9 @@ const App = {
 
   initModules() {
     Library.init().then(() => {
-      Player.setPlaylist(Library.songs);
+      if (typeof Player !== 'undefined') {
+        Player.setPlaylist(Library.songs);
+      }
     });
     Equalizer.init();
     Quiz.init();
@@ -93,36 +96,20 @@ const App = {
       radio: 'radioOpens', support: 'supportOpens', achievements: 'achievementsOpens',
       about: 'aboutOpens', privacy: 'privacyOpens', contact: 'contactOpens'
     };
-    if (map[page]) Achievements.track(map[page]);
-    Achievements.set('pagesVisited', new Set(Object.keys(map).filter(k => Achievements.state[map[k]] > 0)).size);
-    Achievements.set('featuresUsed', Object.values(Achievements.state).filter(v => v > 0).length);
+    if (map[page] && typeof Achievements !== 'undefined') {
+      Achievements.track(map[page]);
+      Achievements.set('pagesVisited', new Set(Object.keys(map).filter(k => Achievements.state[map[k]] > 0)).size);
+      Achievements.set('featuresUsed', Object.values(Achievements.state).filter(v => v > 0).length);
+    }
 
     // Page-specific init
-    if (page === 'achievements') Achievements.render();
-    if (page === 'radio') Radio.render();
-    if (page === 'quiz') Quiz.updateUI('start');
-    if (page === 'library') Library.render();
-    if (page === 'support') this.setupQR();
+    if (page === 'achievements' && typeof Achievements !== 'undefined') Achievements.render();
+    if (page === 'radio' && typeof Radio !== 'undefined') Radio.render();
+    if (page === 'quiz' && typeof Quiz !== 'undefined') Quiz.updateUI('start');
+    if (page === 'library' && typeof Library !== 'undefined') Library.render();
 
     // Scroll to top
     document.querySelector('.main-content')?.scrollTo(0, 0);
-  },
-
-  setupQR() {
-    Utils.generateQR('https://github.com/');
-    const btn = document.getElementById('btn-download-qr');
-    if (btn) {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const qr = document.querySelector('#qrcode img');
-        if (qr) {
-          const a = document.createElement('a');
-          a.href = qr.src;
-          a.download = 'audix-support-qr.png';
-          a.click();
-        }
-      });
-    }
   }
 };
 
