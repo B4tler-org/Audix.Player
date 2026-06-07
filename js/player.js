@@ -1,10 +1,10 @@
 /* ============================================
    AUDIO PLAYER CORE
+   Reads from Library.songs as single source of truth
    ============================================ */
 
 const Player = {
   audio: null,
-  playlist: [],
   currentIndex: -1,
   isPlaying: false,
   repeat: false,
@@ -15,10 +15,17 @@ const Player = {
   lyricsOpen: false,
 
   init() {
+    console.log('[Player] init() starting...');
     this.audio = document.getElementById('audio-player');
     this.bindEvents();
     this.loadState();
     this.startVibeCanvas();
+    console.log('[Player] init() complete. currentIndex:', this.currentIndex);
+  },
+
+  // Centralized song access — always reads from Library.songs
+  get songs() {
+    return (typeof Library !== 'undefined' && Library.songs) ? Library.songs : [];
   },
 
   bindEvents() {
@@ -45,9 +52,8 @@ const Player = {
     this.audio.addEventListener('timeupdate', () => this.updateProgress());
     this.audio.addEventListener('loadedmetadata', () => {
       document.getElementById('duration').textContent = Utils.formatTime(this.audio.duration);
-      // Update library duration if known
-      if (this.currentIndex >= 0 && this.playlist[this.currentIndex]) {
-        this.playlist[this.currentIndex].duration = this.audio.duration;
+      if (this.currentIndex >= 0 && this.songs[this.currentIndex]) {
+        this.songs[this.currentIndex].duration = this.audio.duration;
       }
     });
     this.audio.addEventListener('ended', () => this.onEnded());
@@ -72,32 +78,36 @@ const Player = {
       }
     });
     this.audio.addEventListener('error', (e) => {
-      console.error('Audio error:', e);
+      console.error('[Player] Audio error:', e);
       if (typeof Utils !== 'undefined') Utils.toast('Error playing audio', 'error');
     });
   },
 
-  setPlaylist(songs) {
-    this.playlist = songs || [];
-    if (this.currentIndex === -1 && this.playlist.length > 0) {
-      this.loadTrack(0);
-    }
-  },
-
   playFromLibrary(index) {
-    if (typeof Library !== 'undefined' && Library.songs) {
-      this.playlist = Library.songs;
+    console.log('[Player] playFromLibrary called with index:', index, 'songs count:', this.songs.length);
+    if (index < 0 || index >= this.songs.length) {
+      console.warn('[Player] Invalid index:', index, 'songs.length:', this.songs.length);
+      return;
     }
+    this.currentIndex = index;
     this.loadTrack(index);
     this.play();
     if (typeof Library !== 'undefined') Library.render();
   },
 
   loadTrack(index) {
-    if (!this.playlist.length || index < 0 || index >= this.playlist.length) return;
+    const songs = this.songs;
+    console.log('[Player] loadTrack(', index, ') — songs available:', songs.length);
+    if (!songs.length || index < 0 || index >= songs.length) {
+      console.warn('[Player] Cannot load track — invalid index or empty library');
+      return;
+    }
     this.currentIndex = index;
-    const song = this.playlist[index];
-    if (!song || !song.url) return;
+    const song = songs[index];
+    if (!song || !song.url) {
+      console.warn('[Player] Song at index', index, 'has no URL');
+      return;
+    }
 
     this.audio.src = song.url;
 
@@ -145,13 +155,14 @@ const Player = {
   },
 
   play() {
-    if (!this.audio.src && this.playlist.length) {
+    const songs = this.songs;
+    if (!this.audio.src && songs.length) {
       this.loadTrack(0);
     }
     if (this.audio.src) {
       const promise = this.audio.play();
       if (promise) promise.catch((e) => {
-        console.warn('Play failed:', e);
+        console.warn('[Player] Play failed:', e);
         if (typeof Utils !== 'undefined') Utils.toast('Tap play again to start audio', 'error');
       });
     }
@@ -174,21 +185,23 @@ const Player = {
   },
 
   prev() {
-    if (!this.playlist.length) return;
+    const songs = this.songs;
+    if (!songs.length) return;
     let idx = this.currentIndex - 1;
-    if (idx < 0) idx = this.playlist.length - 1;
+    if (idx < 0) idx = songs.length - 1;
     this.loadTrack(idx);
     this.play();
   },
 
   next() {
-    if (!this.playlist.length) return;
+    const songs = this.songs;
+    if (!songs.length) return;
     let idx;
     if (this.shuffle) {
-      idx = Math.floor(Math.random() * this.playlist.length);
+      idx = Math.floor(Math.random() * songs.length);
     } else {
       idx = this.currentIndex + 1;
-      if (idx >= this.playlist.length) idx = 0;
+      if (idx >= songs.length) idx = 0;
     }
     this.loadTrack(idx);
     this.play();
@@ -307,7 +320,6 @@ const Player = {
 
     const draw = () => {
       ctx.clearRect(0, 0, w, h);
-
       const time = Date.now() * 0.0005;
       const hue1 = (time * 10) % 360;
       const hue2 = (hue1 + 60) % 360;
@@ -318,13 +330,9 @@ const Player = {
       ctx.fillRect(0, 0, w, h);
 
       particles.forEach(p => {
-        p.x += p.dx;
-        p.y += p.dy;
-        if (p.x < 0) p.x = w;
-        if (p.x > w) p.x = 0;
-        if (p.y < 0) p.y = h;
-        if (p.y > h) p.y = 0;
-
+        p.x += p.dx; p.y += p.dy;
+        if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fillStyle = `hsla(${(hue1 + p.x) % 360}, 70%, 60%, ${p.alpha})`;
@@ -337,7 +345,6 @@ const Player = {
           Equalizer.analyser.getByteFrequencyData(data);
           const avg = data.reduce((a, b) => a + b, 0) / data.length;
           const intensity = avg / 255;
-
           ctx.beginPath();
           ctx.arc(w / 2, h / 2, 100 + intensity * 200, 0, Math.PI * 2);
           ctx.strokeStyle = `hsla(${hue1}, 80%, 50%, ${intensity * 0.3})`;
@@ -345,7 +352,6 @@ const Player = {
           ctx.stroke();
         } catch (e) {}
       }
-
       requestAnimationFrame(draw);
     };
     draw();
@@ -355,7 +361,8 @@ const Player = {
     localStorage.setItem('audix_player', JSON.stringify({
       repeat: this.repeat,
       shuffle: this.shuffle,
-      totalListened: this.totalListened
+      totalListened: this.totalListened,
+      currentIndex: this.currentIndex
     }));
   },
 
@@ -367,6 +374,7 @@ const Player = {
         this.repeat = data.repeat || false;
         this.shuffle = data.shuffle || false;
         this.totalListened = data.totalListened || 0;
+        this.currentIndex = data.currentIndex || -1;
         const btnRepeat = document.getElementById('btn-repeat');
         const btnShuffle = document.getElementById('btn-shuffle');
         if (btnRepeat) btnRepeat.classList.toggle('active', this.repeat);

@@ -6,6 +6,7 @@ const App = {
   currentPage: 'home',
 
   init() {
+    console.log('[App] init() starting...');
     this.bindNav();
     this.bindMobileMenu();
     this.handleRoute();
@@ -24,19 +25,28 @@ const App = {
 
     // Hash route listener
     window.addEventListener('hashchange', () => this.handleRoute());
+    console.log('[App] init() complete');
   },
 
   initModules() {
+    console.log('[App] initModules() starting...');
+    // Initialize in dependency order: Library first (data source), then others
     Library.init().then(() => {
-      if (typeof Player !== 'undefined') {
-        Player.setPlaylist(Library.songs);
+      console.log('[App] Library initialized with', Library.songs.length, 'songs');
+      // Now init Player (reads from Library.songs)
+      Player.init();
+      console.log('[App] Player initialized');
+      // If songs exist, load first track into player UI
+      if (Library.songs.length > 0) {
+        console.log('[App] Auto-loading first track into Player UI');
+        Player.loadTrack(0);
       }
     });
     Equalizer.init();
     Quiz.init();
     Radio.init();
     Achievements.init();
-    Player.init();
+    console.log('[App] All modules initialized');
   },
 
   bindNav() {

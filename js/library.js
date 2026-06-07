@@ -1,5 +1,6 @@
 /* ============================================
-   LIBRARY MANAGER (IndexedDB + ID3)
+   LIBRARY MANAGER — SINGLE SOURCE OF TRUTH
+   All modules read from Library.songs
    ============================================ */
 
 const Library = {
@@ -8,23 +9,23 @@ const Library = {
   currentFilter: '',
 
   async init() {
+    console.log('[Library] init() starting...');
     await this.openDB();
     await this.loadSongs();
+    console.log('[Library] Loaded', this.songs.length, 'songs from IndexedDB');
     this.render();
     this.bindEvents();
-    // Sync with player playlist on init
-    if (typeof Player !== 'undefined') {
-      Player.setPlaylist(this.songs);
-    }
+    console.log('[Library] init() complete. songs.length:', this.songs.length);
   },
 
   openDB() {
     return new Promise((resolve, reject) => {
       const req = indexedDB.open('AudixDB', 1);
-      req.onerror = () => reject(req.error);
-      req.onsuccess = () => { this.db = req.result; resolve(); };
+      req.onerror = () => { console.error('[Library] DB open error:', req.error); reject(req.error); };
+      req.onsuccess = () => { this.db = req.result; console.log('[Library] DB opened successfully'); resolve(); };
       req.onupgradeneeded = (e) => {
         const db = e.target.result;
+        console.log('[Library] DB upgrade needed, creating object store...');
         if (!db.objectStoreNames.contains('songs')) {
           const store = db.createObjectStore('songs', { keyPath: 'id', autoIncrement: true });
           store.createIndex('title', 'title', { unique: false });
@@ -36,58 +37,70 @@ const Library = {
 
   async loadSongs() {
     return new Promise((resolve) => {
-      if (!this.db) { this.songs = []; resolve(); return; }
+      if (!this.db) { console.warn('[Library] DB not ready, songs=[]'); this.songs = []; resolve(); return; }
       const tx = this.db.transaction('songs', 'readonly');
       const store = tx.objectStore('songs');
       const req = store.getAll();
       req.onsuccess = () => {
         this.songs = req.result || [];
-        // Re-create blob URLs for loaded songs (they expire on page reload)
-        this.songs.forEach(song => {
-          if (song.blob && !(song.blob instanceof File)) {
-            // If blob was stored as object, createObjectURL should still work
-            // but if URL is invalid, we need to recreate it
+        console.log('[Library] loadSongs() — loaded', this.songs.length, 'songs');
+        // Re-create blob URLs for any songs that lost them
+        this.songs.forEach((song, i) => {
+          if (!song.url || song.url === '') {
+            console.warn('[Library] Song', i, 'has no URL, attempting recovery...');
             try {
-              const blob = new Blob([song.blob], { type: 'audio/mpeg' });
-              song.url = URL.createObjectURL(blob);
+              if (song.blob && song.blob instanceof Blob) {
+                song.url = URL.createObjectURL(song.blob);
+              }
             } catch (e) {
-              // Keep existing URL if possible
+              console.error('[Library] Failed to recover URL for song', i);
             }
           }
         });
         resolve();
       };
-      req.onerror = () => { this.songs = []; resolve(); };
+      req.onerror = () => { console.error('[Library] loadSongs error:', req.error); this.songs = []; resolve(); };
     });
   },
 
   async addFiles(fileList) {
     const files = Array.from(fileList);
+    console.log('[Library] addFiles() —', files.length, 'files selected');
     let added = 0;
     for (const file of files) {
-      if (!file.type.startsWith('audio/')) continue;
+      if (!file.type.startsWith('audio/')) {
+        console.log('[Library] Skipping non-audio file:', file.name, file.type);
+        continue;
+      }
       try {
+        console.log('[Library] Processing file:', file.name);
         const song = await this.processFile(file);
         await this.saveSong(song);
+        console.log('[Library] Saved song:', song.title, 'by', song.artist);
         added++;
       } catch (e) {
-        console.error('Error processing file', file.name, e);
+        console.error('[Library] Error processing file', file.name, e);
       }
     }
-    // Reset file input so same files can be selected again
+    // Reset file input
     const input = document.getElementById('file-input');
     if (input) input.value = '';
 
+    console.log('[Library] Reloading songs after upload...');
     await this.loadSongs();
+    console.log('[Library] After reload, songs.length:', this.songs.length);
     this.render();
-    if (typeof Utils !== 'undefined') {
-      Utils.toast(`${added} song(s) added to library`);
-    }
-    if (typeof Achievements !== 'undefined') {
-      Achievements.track('songsAdded', added);
-    }
+
+    if (typeof Utils !== 'undefined') Utils.toast(`${added} song(s) added to library`);
+    if (typeof Achievements !== 'undefined') Achievements.track('songsAdded', added);
+
+    // If player was empty, load first track
     if (typeof Player !== 'undefined') {
-      Player.setPlaylist(this.songs);
+      console.log('[Library] Notifying Player — songs now:', Player.songs.length);
+      if (Player.currentIndex === -1 && this.songs.length > 0) {
+        console.log('[Library] Auto-loading first track into Player');
+        Player.loadTrack(0);
+      }
     }
   },
 
@@ -101,12 +114,11 @@ const Library = {
         year: '',
         duration: 0,
         url: url,
-        blob: file, // Store the actual File blob for IndexedDB
+        blob: file,
         cover: null,
         addedAt: Date.now()
       };
 
-      // Read ID3 tags
       if (typeof jsmediatags !== 'undefined') {
         jsmediatags.read(file, {
           onSuccess: (tag) => {
@@ -121,11 +133,16 @@ const Library = {
               const blob = new Blob([pic.data], { type: pic.format });
               song.cover = URL.createObjectURL(blob);
             }
+            console.log('[Library] ID3 tags read:', song.title, '-', song.artist);
             resolve(song);
           },
-          onError: () => resolve(song)
+          onError: (err) => {
+            console.log('[Library] ID3 read failed for', file.name, '- using filename as title');
+            resolve(song);
+          }
         });
       } else {
+        console.warn('[Library] jsmediatags not available');
         resolve(song);
       }
     });
@@ -137,8 +154,11 @@ const Library = {
       const tx = this.db.transaction('songs', 'readwrite');
       const store = tx.objectStore('songs');
       const req = store.add(song);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
+      req.onsuccess = () => {
+        console.log('[Library] saveSong success, id:', req.result);
+        resolve(req.result);
+      };
+      req.onerror = () => { console.error('[Library] saveSong error:', req.error); reject(req.error); };
       tx.oncomplete = () => resolve(req.result);
       tx.onerror = () => reject(tx.error);
     });
@@ -151,10 +171,18 @@ const Library = {
       const store = tx.objectStore('songs');
       store.delete(id);
       tx.oncomplete = async () => {
+        console.log('[Library] Song deleted, id:', id);
         await this.loadSongs();
         this.render();
+        // If player was playing deleted song, stop it
         if (typeof Player !== 'undefined') {
-          Player.setPlaylist(this.songs);
+          const currentSong = Player.songs[Player.currentIndex];
+          if (!currentSong || currentSong.id === id) {
+            Player.pause();
+            Player.currentIndex = -1;
+            document.getElementById('track-title').textContent = 'Select a song';
+            document.getElementById('track-artist').textContent = 'Your Library is empty';
+          }
         }
         resolve();
       };
@@ -216,6 +244,7 @@ const Library = {
     list.querySelectorAll('.library-item').forEach(el => {
       el.addEventListener('click', () => {
         const index = parseInt(el.dataset.index);
+        console.log('[Library] Clicked song index:', index);
         if (typeof Player !== 'undefined') {
           Player.playFromLibrary(index);
         }
