@@ -685,7 +685,7 @@ html, body {
   content: '';
   display: block;
   height: 100%;
-  width: 0%;
+  width: var(--progress, 0%);
   background: var(--accent-3);
   transition: width 0.1s linear;
 }
