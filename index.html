@@ -258,9 +258,10 @@
           </div>
           <div class="qr-container">
             <h3>Scan to Support</h3>
-            <div id="qrcode"></div>
-            <p class="qr-caption">Scan here / Download QR</p>
-            <a class="btn-primary" id="btn-download-qr" href="#">Download QR</a>
+            <img id="qr-image" src="assets/qr-support.jpg" alt="eSewa Support QR Code for Basundhara Thapa" loading="lazy" style="max-width:100%;height:auto;border-radius:8px;">
+            <p class="qr-caption">Scan here to support via eSewa</p>
+            <p style="font-size:0.85rem;color:#666;margin-top:4px;">Basundhara Thapa • 9821805256</p>
+            <a class="btn-primary" id="btn-download-qr" href="assets/qr-support.jpg" download="audix-support-qr.jpg">Download QR</a>
           </div>
         </div>
       </section>
@@ -353,5 +354,28 @@
   <script src="js/equalizer.js"></script>
   <script src="js/player.js"></script>
   <script src="js/app.js"></script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then((reg) => {
+            console.log('SW registered:', reg.scope);
+            // Handle updates
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('New SW available, refreshing...');
+                  newWorker.postMessage('skipWaiting');
+                }
+              });
+            });
+          })
+          .catch((err) => console.log('SW registration failed:', err));
+      });
+    }
+  </script>
 </body>
 </html>
