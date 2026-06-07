@@ -6,7 +6,7 @@
 const Auth = {
   currentUser: null,
   db: null,
-  googleClientId: 'YOUR_GOOGLE_CLIENT_ID', // Replace with actual Google OAuth Client ID
+  googleClientId: '478887203737-db4cr9gjp22bqvl941k5fl11ef45q22s.apps.googleusercontent.com', 
 
   async init() {
     console.log('[Auth] init() starting...');
