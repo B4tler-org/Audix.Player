@@ -1,3 +1,12 @@
+import Auth, { db, firebaseAuth } from './auth.js';
+import Achievements from './achievements.js';
+import Settings from './settings.js';
+
+// Make globally available for non-module scripts
+window.Auth = Auth;
+window.Achievements = Achievements;
+window.Settings = Settings;
+
 /* ============================================
    APP ROUTER & INITIALIZER — v2.0
    Gamification, Daily Activity, XP System
@@ -178,11 +187,6 @@ const App = {
     this.bindNav();
     this.bindMobileMenu();
 
-    // Auth FIRST (creates DB, restores session)
-    if (typeof Auth !== 'undefined') {
-      await Auth.init();
-    }
-
     // Initialize gamification
     if (typeof Gamification !== 'undefined') {
       Gamification.init();
@@ -303,5 +307,8 @@ const App = {
   }
 };
 
-// Boot
-document.addEventListener('DOMContentLoaded', () => App.init());
+// Boot — init Auth first, then App
+document.addEventListener('DOMContentLoaded', async () => {
+  await Auth.init();
+  await App.init();
+});
