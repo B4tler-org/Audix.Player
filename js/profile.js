@@ -1,6 +1,6 @@
 /* ============================================
-   PROFILE MANAGER
-   Real-time UI sync across all components
+   PROFILE MANAGER — v2.0
+   XP/Level Display Integration
    ============================================ */
 
 const Profile = {
@@ -33,15 +33,11 @@ const Profile = {
       return;
     }
     try {
-      // Convert to base64 for persistence
       const dataUrl = await Utils.fileToDataURL(file);
       await Auth.updateProfile(Auth.currentUser.id, { profilePic: dataUrl });
-
-      // Real-time UI update
       this.updateDisplay();
       Auth.updateUI();
       Auth.broadcastProfileUpdate();
-
       if (typeof Utils !== 'undefined') Utils.toast('Profile picture updated');
     } catch (err) {
       if (typeof Utils !== 'undefined') Utils.toast('Failed to update picture', 'error');
@@ -57,6 +53,7 @@ const Profile = {
     const joinedEl = document.getElementById('profileJoined');
     const songCountEl = document.getElementById('profileSongCount');
     const achieveCountEl = document.getElementById('profileAchieveCount');
+    const listenTimeEl = document.getElementById('profileListenTime');
 
     if (!user) {
       if (pfpImg) pfpImg.classList.add('hidden');
@@ -66,6 +63,7 @@ const Profile = {
       if (joinedEl) joinedEl.textContent = '—';
       if (songCountEl) songCountEl.textContent = '0';
       if (achieveCountEl) achieveCountEl.textContent = '0 / 50';
+      if (listenTimeEl) listenTimeEl.textContent = '0 min';
       return;
     }
 
@@ -95,5 +93,12 @@ const Profile = {
       const unlocked = (typeof Achievements !== 'undefined' && Achievements.unlocked) ? Achievements.unlocked.size : 0;
       achieveCountEl.textContent = `${unlocked} / 50`;
     }
+    if (listenTimeEl) {
+      const mins = (typeof Player !== 'undefined') ? Math.floor(Player.totalListened) : 0;
+      listenTimeEl.textContent = mins >= 60 ? `${Math.floor(mins/60)}h ${mins%60}m` : `${mins} min`;
+    }
+
+    // Update gamification UI
+    if (typeof Gamification !== 'undefined') Gamification.updateUI();
   }
 };

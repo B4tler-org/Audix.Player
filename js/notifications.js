@@ -1,6 +1,6 @@
 /* ============================================
-   NOTIFICATIONS PANEL
-   Real-time sync with player
+   NOTIFICATIONS PANEL — v2.0
+   XP, Achievement, Level-up, Reward Notifications
    ============================================ */
 
 const Notifications = {
@@ -93,7 +93,6 @@ const Notifications = {
     const song = songs[currentIndex];
     song.isFavorite = !song.isFavorite;
 
-    // Save to DB
     if (typeof Library !== 'undefined' && Library.db && song.id) {
       const tx = Library.db.transaction('userSongs', 'readwrite');
       const store = tx.objectStore('userSongs');
@@ -105,6 +104,7 @@ const Notifications = {
     if (typeof Utils !== 'undefined') {
       Utils.toast(song.isFavorite ? 'Added to favorites' : 'Removed from favorites');
     }
+    if (typeof Gamification !== 'undefined') Gamification.addXP(2, 'favorite');
   },
 
   updateDisplay() {
@@ -162,7 +162,6 @@ const Notifications = {
   },
 
   updateProfileInfo() {
-    // Called when profile changes to update any user-related display
     this.updateDisplay();
   }
 };

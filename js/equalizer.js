@@ -1,5 +1,6 @@
 /* ============================================
-   EQUALIZER & VISUALIZER (Web Audio API)
+   EQUALIZER & VISUALIZER — v2.0
+   Reward-unlocked presets: Night Mode, Concert
    ============================================ */
 
 const Equalizer = {
@@ -75,7 +76,13 @@ const Equalizer = {
     if (treble) treble.addEventListener('input', (e) => { this.setFilter('treble', e.target.value); this.saveSettings(); });
 
     document.querySelectorAll('.btn-preset').forEach(btn => {
-      btn.addEventListener('click', () => this.applyPreset(btn.dataset.preset));
+      btn.addEventListener('click', () => {
+        if (btn.classList.contains('reward-locked') && !btn.classList.contains('unlocked')) {
+          if (typeof Utils !== 'undefined') Utils.toast('Unlock this preset by completing achievements!', 'info');
+          return;
+        }
+        this.applyPreset(btn.dataset.preset);
+      });
     });
   },
 
@@ -153,7 +160,9 @@ const Equalizer = {
       flat: { bass: 0, vocal: 0, treble: 0 },
       bass: { bass: 12, vocal: 0, treble: -2 },
       vocal: { bass: -2, vocal: 10, treble: 2 },
-      treble: { bass: -4, vocal: 0, treble: 12 }
+      treble: { bass: -4, vocal: 0, treble: 12 },
+      night: { bass: 8, vocal: -2, treble: -6 }, // Night mode: reduced highs, boosted bass
+      concert: { bass: 6, vocal: 8, treble: 10 } // Concert: everything boosted
     };
     const p = presets[name];
     if (!p) return;

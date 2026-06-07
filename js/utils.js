@@ -1,5 +1,5 @@
 /* ============================================
-   UTILS, CONSTANTS & AI TITLE CLEANER
+   UTILS, CONSTANTS, AI TITLE CLEANER & MOOD DETECTION
    ============================================ */
 
 const Utils = {
@@ -56,6 +56,21 @@ const Utils = {
         gain.gain.setValueAtTime(0.1, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
         osc.start(t); osc.stop(t + 0.15);
+      } else if (type === 'levelup') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523, t);
+        osc.frequency.setValueAtTime(659, t + 0.1);
+        osc.frequency.setValueAtTime(784, t + 0.2);
+        osc.frequency.setValueAtTime(1047, t + 0.3);
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+        osc.start(t); osc.stop(t + 0.5);
+      } else if (type === 'xp') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(660, t);
+        gain.gain.setValueAtTime(0.08, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+        osc.start(t); osc.stop(t + 0.1);
       }
     } catch (e) {
       console.warn('SFX failed:', e);
@@ -72,6 +87,38 @@ const Utils = {
     setTimeout(() => el.remove(), 3000);
   },
 
+  xpToast(message) {
+    const container = document.getElementById('xp-toast-container');
+    if (!container) return;
+    const el = document.createElement('div');
+    el.className = 'toast xp';
+    el.textContent = message;
+    container.appendChild(el);
+    if (typeof SFX !== 'undefined') SFX.xp();
+    setTimeout(() => el.remove(), 2500);
+  },
+
+  achievementToast(message) {
+    const container = document.getElementById('achievement-toast-container');
+    if (!container) return;
+    const el = document.createElement('div');
+    el.className = 'toast reward';
+    el.textContent = message;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  },
+
+  levelUpToast(level, title) {
+    const container = document.getElementById('achievement-toast-container');
+    if (!container) return;
+    const el = document.createElement('div');
+    el.className = 'toast levelup';
+    el.innerHTML = `🎉 Level ${level}! ${title}`;
+    container.appendChild(el);
+    if (typeof SFX !== 'undefined') SFX.levelup();
+    setTimeout(() => el.remove(), 5000);
+  },
+
   debounce(fn, ms) {
     let timer;
     return (...args) => {
@@ -81,7 +128,7 @@ const Utils = {
   },
 
   // ============================================
-  // AI TITLE CLEANER
+  // AI TITLE CLEANER v2
   // ============================================
   cleanTitle(filename) {
     // Remove file extension
@@ -152,6 +199,43 @@ const Utils = {
     };
   },
 
+  // ============================================
+  // MOOD DETECTION
+  // ============================================
+  detectMood(song) {
+    const text = `${song.title || ''} ${song.artist || ''} ${song.genre || ''} ${song.album || ''}`.toLowerCase();
+
+    const moods = {
+      happy: ['happy', 'joy', 'upbeat', 'dance', 'pop', 'party', 'fun', 'smile', 'summer', 'bright', 'cheer', 'celebr'],
+      sad: ['sad', 'melancholy', 'blue', 'cry', 'tear', 'somber', 'grief', 'sorrow', 'depress', 'heartbreak', 'lonely', 'downtempo'],
+      chill: ['chill', 'relax', 'calm', 'peace', 'ambient', 'lofi', 'soft', 'smooth', 'mellow', 'acoustic', 'sleep', 'meditation'],
+      energetic: ['energetic', 'rock', 'metal', 'punk', 'hard', 'fast', 'intense', 'power', 'aggressive', 'dubstep', 'trap', ' workout']
+    };
+
+    let scores = { happy: 0, sad: 0, chill: 0, energetic: 0 };
+
+    for (const [mood, keywords] of Object.entries(moods)) {
+      for (const kw of keywords) {
+        if (text.includes(kw)) scores[mood]++;
+      }
+    }
+
+    const maxScore = Math.max(...Object.values(scores));
+    if (maxScore === 0) return 'chill';
+
+    return Object.keys(scores).find(key => scores[key] === maxScore) || 'chill';
+  },
+
+  getMoodIcon(mood) {
+    const icons = { happy: '😊', sad: '😢', chill: '😌', energetic: '⚡' };
+    return icons[mood] || '🎵';
+  },
+
+  getMoodLabel(mood) {
+    const labels = { happy: 'Happy', sad: 'Sad', chill: 'Chill', energetic: 'Energetic' };
+    return labels[mood] || 'Unknown';
+  },
+
   // File to ArrayBuffer helper
   fileToArrayBuffer(file) {
     return new Promise((resolve, reject) => {
@@ -186,7 +270,9 @@ const SFX = {
   error: () => Utils.generateSFX('error'),
   unlock: () => Utils.generateSFX('unlock'),
   tick: () => Utils.generateSFX('tick'),
-  favorite: () => Utils.generateSFX('favorite')
+  favorite: () => Utils.generateSFX('favorite'),
+  levelup: () => Utils.generateSFX('levelup'),
+  xp: () => Utils.generateSFX('xp')
 };
 
 const DEFAULT_RADIO_STATIONS = [
@@ -204,4 +290,12 @@ const DEFAULT_RADIO_STATIONS = [
   { name: 'Radio Bhutan', url: 'https://www.bbs.bt/stream', country: 'Bhutan', genre: 'Folk', format: 'MP3' },
   { name: 'Radio Tupi', url: 'https://8925.brasilstream.com.br/stream', country: 'Brazil', genre: 'Samba', format: 'MP3' },
   { name: 'Antena 1', url: 'https://antena1.newradio.it/stream', country: 'Brazil', genre: 'MPB', format: 'MP3' }
+];
+
+// Extra radio stations unlocked as rewards
+const EXTRA_RADIO_STATIONS = [
+  { name: 'Jazz Cafe', url: 'https://streaming.radio.co/sf2f7a8e00/listen', country: 'USA', genre: 'Jazz', format: 'MP3', unlockLevel: 3 },
+  { name: 'Classical FM', url: 'https://stream.classicalfm.ca/classicalfm', country: 'USA', genre: 'Classical', format: 'MP3', unlockLevel: 5 },
+  { name: 'Electronic Dance', url: 'https://stream.edmradio.com/edm', country: 'USA', genre: 'EDM', format: 'MP3', unlockLevel: 7 },
+  { name: 'Hindi Retro', url: 'https://retrohindi.stream.com', country: 'India', genre: 'Retro', format: 'MP3', unlockLevel: 10 }
 ];

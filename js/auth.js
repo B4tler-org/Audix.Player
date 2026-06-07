@@ -1,12 +1,11 @@
 /* ============================================
-   AUTHENTICATION SYSTEM
-   Email/Password + Google OAuth (NO OTP)
+   AUTHENTICATION SYSTEM — v2.0
+   Enhanced user data: XP, Level, Achievements, Rewards
    ============================================ */
 
 const Auth = {
   currentUser: null,
   db: null,
-  // Client ID stored in code only, NEVER displayed in UI
   googleClientId: '478887203737db4cr9gjp22bqvl941k5fl11ef45q22s.apps.googleusercontent.com',
 
   async init() {
@@ -19,7 +18,7 @@ const Auth = {
 
   openDB() {
     return new Promise((resolve, reject) => {
-      const req = indexedDB.open('AudixDB', 2);
+      const req = indexedDB.open('AudixDB', 3); // Version bump for gamification store
       req.onerror = () => reject(req.error);
       req.onsuccess = () => { this.db = req.result; resolve(); };
       req.onupgradeneeded = (e) => {
@@ -44,6 +43,9 @@ const Auth = {
         if (!db.objectStoreNames.contains('songs')) {
           db.createObjectStore('songs', { keyPath: 'id', autoIncrement: true });
         }
+        if (!db.objectStoreNames.contains('userGamification')) {
+          db.createObjectStore('userGamification', { keyPath: 'userId' });
+        }
       };
     });
   },
@@ -67,7 +69,6 @@ const Auth = {
     if (!username || username.length < 3) {
       throw new Error('Username must be at least 3 characters');
     }
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       throw new Error('Please enter a valid email address');
@@ -93,7 +94,11 @@ const Auth = {
           salt,
           profilePic: null,
           createdAt: Date.now(),
-          googleId: null
+          googleId: null,
+          xp: 0,
+          level: 1,
+          achievements: [],
+          unlockedRewards: []
         };
         const addReq = store.add(user);
         addReq.onsuccess = () => {
@@ -177,7 +182,11 @@ const Auth = {
                 salt: null,
                 profilePic,
                 createdAt: Date.now(),
-                googleId
+                googleId,
+                xp: 0,
+                level: 1,
+                achievements: [],
+                unlockedRewards: []
               };
               const addReq = store.add(newUser);
               addReq.onsuccess = () => {
@@ -224,7 +233,6 @@ const Auth = {
       sessionStorage.setItem('audix_session', JSON.stringify(session));
     }
     this.updateUI();
-    // Broadcast profile change to all UI components
     this.broadcastProfileUpdate();
   },
 
@@ -241,10 +249,11 @@ const Auth = {
         this.currentUser = user;
         this.updateUI();
         this.hideLoginModal();
-        // Load user data
         if (typeof Library !== 'undefined') await Library.loadUserSongs();
         if (typeof Achievements !== 'undefined') await Achievements.loadUserAchievements();
         if (typeof Settings !== 'undefined') await Settings.load();
+        // Load gamification
+        if (typeof Gamification !== 'undefined') Gamification.load();
         this.broadcastProfileUpdate();
       } else {
         this.logout();
@@ -282,12 +291,13 @@ const Auth = {
     return new Promise((resolve, reject) => {
       if (!this.currentUser) { reject(new Error('Not logged in')); return; }
       const userId = this.currentUser.id;
-      const tx = this.db.transaction(['users', 'userSongs', 'userAchievements', 'userSettings', 'userLyrics'], 'readwrite');
+      const tx = this.db.transaction(['users', 'userSongs', 'userAchievements', 'userSettings', 'userLyrics', 'userGamification'], 'readwrite');
 
       tx.objectStore('users').delete(userId);
       tx.objectStore('userAchievements').delete(userId);
       tx.objectStore('userSettings').delete(userId);
       tx.objectStore('userLyrics').delete(userId);
+      tx.objectStore('userGamification').delete(userId);
 
       const songsStore = tx.objectStore('userSongs');
       const allReq = songsStore.getAll();
@@ -357,7 +367,6 @@ const Auth = {
   },
 
   bindEvents() {
-    // Auth tabs
     document.querySelectorAll('.auth-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
@@ -367,7 +376,6 @@ const Auth = {
       });
     });
 
-    // Login form
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
       loginForm.addEventListener('submit', async (e) => {
@@ -388,7 +396,6 @@ const Auth = {
       });
     }
 
-    // Register form
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
       registerForm.addEventListener('submit', async (e) => {
@@ -412,7 +419,6 @@ const Auth = {
       });
     }
 
-    // User avatar button
     const avatarBtn = document.getElementById('userAvatarBtn');
     if (avatarBtn) {
       avatarBtn.addEventListener('click', () => {
@@ -436,7 +442,6 @@ const Auth = {
         text: 'continue_with'
       });
     } else {
-      // Google script not loaded yet, retry
       setTimeout(() => this.renderGoogleButton(), 500);
     }
   },
@@ -511,11 +516,9 @@ const Auth = {
   },
 
   broadcastProfileUpdate() {
-    // Update all UI components that show user info
     if (typeof Profile !== 'undefined') Profile.updateDisplay();
     if (typeof Notifications !== 'undefined') Notifications.updateProfileInfo();
 
-    // Update sidebar
     const sidebarUsername = document.getElementById('sidebarUsername');
     const sidebarEmail = document.getElementById('sidebarEmail');
     const sidebarPfp = document.getElementById('sidebarPfp');

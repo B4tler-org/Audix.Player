@@ -1,23 +1,29 @@
 /* ============================================
-   SETTINGS MANAGER
+   SETTINGS MANAGER — v2.0
+   Theme & Reward Settings
    ============================================ */
 
 const Settings = {
   prefs: {
     sfxEnabled: true,
-    autoplayOnUpload: true
+    autoplayOnUpload: true,
+    theme: 'default'
   },
 
   init() {
     this.load();
     this.bindEvents();
     this.applyToUI();
+    this.applyTheme();
   },
 
   load() {
     const raw = localStorage.getItem('audix_settings');
     if (raw) {
-      try { this.prefs = JSON.parse(raw); } catch (e) {}
+      try { 
+        const data = JSON.parse(raw);
+        this.prefs = { ...this.prefs, ...data };
+      } catch (e) {}
     }
   },
 
@@ -59,6 +65,21 @@ const Settings = {
     if (deleteAccount) {
       deleteAccount.addEventListener('click', () => this.confirmDeleteAccount());
     }
+
+    // Theme buttons
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.classList.contains('reward-locked') && !btn.classList.contains('unlocked')) {
+          if (typeof Utils !== 'undefined') Utils.toast('Unlock this theme by completing achievements!', 'info');
+          return;
+        }
+        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.prefs.theme = btn.dataset.theme;
+        this.save();
+        this.applyTheme();
+      });
+    });
   },
 
   applyToUI() {
@@ -66,6 +87,27 @@ const Settings = {
     const toggleAutoplay = document.getElementById('toggleAutoplay');
     if (toggleSfx) toggleSfx.checked = this.prefs.sfxEnabled;
     if (toggleAutoplay) toggleAutoplay.checked = this.prefs.autoplayOnUpload;
+
+    // Theme
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.theme === this.prefs.theme);
+    });
+  },
+
+  applyTheme() {
+    const themes = {
+      default: { '--bg-deep': '#0a0a12', '--bg-base': '#0f0f1a', '--bg-card': '#16162a' },
+      neon: { '--accent': '#ff00ff', '--accent-2': '#00ffff', '--accent-3': '#ffff00' },
+      dark: { '--bg-deep': '#000000', '--bg-base': '#050505', '--bg-card': '#0a0a0a', '--glass': 'rgba(255,255,255,0.02)' },
+      glass: { '--glass': 'rgba(255,255,255,0.1)', '--glass-border': 'rgba(255,255,255,0.15)' },
+      gradient: { '--bg-deep': '#1a0a2e', '--bg-base': '#16213e', '--bg-card': '#0f3460' }
+    };
+    const t = themes[this.prefs.theme];
+    if (!t) return;
+    const root = document.documentElement;
+    for (const [key, val] of Object.entries(t)) {
+      root.style.setProperty(key, val);
+    }
   },
 
   async changeUsername() {
@@ -83,10 +125,7 @@ const Settings = {
     try {
       await Auth.updateProfile(Auth.currentUser.id, { username });
       input.value = '';
-
-      // Real-time broadcast
       Auth.broadcastProfileUpdate();
-
       if (typeof Utils !== 'undefined') Utils.toast('Username updated');
     } catch (err) {
       if (typeof Utils !== 'undefined') Utils.toast(err.message, 'error');

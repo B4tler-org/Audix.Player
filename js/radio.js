@@ -1,5 +1,6 @@
 /* ============================================
-   RADIO STREAMING
+   RADIO STREAMING — v2.0
+   Extra stations unlocked by level/achievements
    ============================================ */
 
 const Radio = {
@@ -32,7 +33,13 @@ const Radio = {
 
   mergeStations() {
     const defaults = (typeof DEFAULT_RADIO_STATIONS !== 'undefined') ? DEFAULT_RADIO_STATIONS : [];
-    this.stations = [...defaults, ...this.customStations];
+    let extra = [];
+    // Add extra stations based on level/rewards
+    if (typeof EXTRA_RADIO_STATIONS !== 'undefined') {
+      const level = (typeof Gamification !== 'undefined') ? Gamification.level : 1;
+      extra = EXTRA_RADIO_STATIONS.filter(s => level >= (s.unlockLevel || 999));
+    }
+    this.stations = [...defaults, ...extra, ...this.customStations];
     console.log('[Radio] Merged', this.stations.length, 'stations');
   },
 
@@ -92,6 +99,7 @@ const Radio = {
     this.closeModal();
     if (typeof Utils !== 'undefined') Utils.toast('Station added successfully');
     if (typeof Achievements !== 'undefined') Achievements.track('customStationsAdded');
+    if (typeof Gamification !== 'undefined') Gamification.addXP(5, 'custom station');
   },
 
   render() {
@@ -163,6 +171,7 @@ const Radio = {
         Achievements.set('uniqueCountries', countries.size);
       }
       station.played = true;
+      if (typeof Gamification !== 'undefined') Gamification.addXP(1, 'radio');
     }).catch(err => {
       console.error('[Radio] Play error:', err);
       if (typeof Utils !== 'undefined') Utils.toast('Failed to play station. The stream may be offline or blocked by CORS.', 'error');
