@@ -1,5 +1,6 @@
 /* ============================================
-   ACHIEVEMENTS SYSTEM
+   ACHIEVEMENTS SYSTEM — Per-User Storage
+   Prevents reset after refresh
    ============================================ */
 
 const Achievements = {
@@ -58,43 +59,90 @@ const Achievements = {
   state: {},
   unlocked: new Set(),
   sfxEnabled: true,
+  db: null,
 
-  init() {
-    this.load();
+  async init() {
+    this.db = (typeof Auth !== 'undefined' && Auth.db) ? Auth.db : null;
+    await this.loadUserAchievements();
     this.render();
   },
 
-  load() {
-    try {
-      const raw = localStorage.getItem('audix_achievements');
+  async loadUserAchievements() {
+    const userId = (typeof Auth !== 'undefined') ? Auth.getUserId() : null;
+    console.log('[Achievements] loadUserAchievements for userId:', userId);
+
+    if (!userId) {
+      // Guest mode: load from localStorage
+      const raw = localStorage.getItem('audix_achievements_guest');
       if (raw) {
-        const data = JSON.parse(raw);
-        this.state = data.state || {};
-        this.unlocked = new Set(data.unlocked || []);
+        try {
+          const data = JSON.parse(raw);
+          this.state = data.state || {};
+          this.unlocked = new Set(data.unlocked || []);
+        } catch (e) {}
       }
-    } catch (e) { console.error('Achievement load error', e); }
-    this.state.unlockedCount = this.unlocked.size;
+      this.state.unlockedCount = this.unlocked.size;
+      console.log('[Achievements] Guest loaded:', this.unlocked.size, 'unlocked');
+      return;
+    }
+
+    // Load from IndexedDB per-user
+    return new Promise((resolve) => {
+      if (!this.db) { resolve(); return; }
+      const tx = this.db.transaction('userAchievements', 'readonly');
+      const store = tx.objectStore('userAchievements');
+      const req = store.get(userId);
+      req.onsuccess = () => {
+        if (req.result) {
+          this.state = req.result.state || {};
+          this.unlocked = new Set(req.result.unlocked || []);
+          this.state.unlockedCount = this.unlocked.size;
+          console.log('[Achievements] Loaded from DB:', this.unlocked.size, 'unlocked');
+        } else {
+          console.log('[Achievements] No DB data found, starting fresh');
+          this.state = {};
+          this.unlocked = new Set();
+        }
+        resolve();
+      };
+      req.onerror = () => { console.error('[Achievements] DB load error'); resolve(); };
+    });
   },
 
-  save() {
-    try {
-      localStorage.setItem('audix_achievements', JSON.stringify({
+  async saveUserAchievements() {
+    const userId = (typeof Auth !== 'undefined') ? Auth.getUserId() : null;
+    this.state.unlockedCount = this.unlocked.size;
+
+    if (!userId) {
+      // Guest mode: save to localStorage
+      localStorage.setItem('audix_achievements_guest', JSON.stringify({
         state: this.state,
         unlocked: Array.from(this.unlocked)
       }));
-    } catch (e) { console.error('Achievement save error', e); }
+      return;
+    }
+
+    if (!this.db) return;
+    const tx = this.db.transaction('userAchievements', 'readwrite');
+    const store = tx.objectStore('userAchievements');
+    store.put({
+      userId,
+      state: this.state,
+      unlocked: Array.from(this.unlocked),
+      updatedAt: Date.now()
+    });
   },
 
   track(key, value = 1) {
     this.state[key] = (this.state[key] || 0) + value;
     this.check();
-    this.save();
+    this.saveUserAchievements();
   },
 
   set(key, value) {
     this.state[key] = value;
     this.check();
-    this.save();
+    this.saveUserAchievements();
   },
 
   check() {
@@ -109,21 +157,16 @@ const Achievements = {
     });
     if (newUnlock) {
       this.state.unlockedCount = this.unlocked.size;
-      this.save();
+      this.saveUserAchievements();
       this.render();
     }
   },
 
   showUnlock(ach) {
-    // FIXED: Robust SFX with fallback
     if (this.sfxEnabled) {
       try {
-        if (typeof SFX !== 'undefined' && SFX.unlock) {
-          SFX.unlock();
-        }
-      } catch (e) {
-        console.warn('Achievement SFX failed:', e);
-      }
+        if (typeof SFX !== 'undefined' && SFX.unlock) SFX.unlock();
+      } catch (e) { console.warn('Achievement SFX failed:', e); }
     }
     if (typeof Utils !== 'undefined' && Utils.toast) {
       Utils.toast(`🏆 Achievement Unlocked: ${ach.title}!`, 'success');

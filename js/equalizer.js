@@ -15,18 +15,23 @@ const Equalizer = {
   defaults: { bass: 0, vocal: 0, treble: 0 },
 
   init() {
+    console.log('[EQ] init()');
     this.loadSettings();
     this.bindEvents();
     this.renderVisualizer();
     this.startIdleVisualizer();
   },
 
+  getStorageKey() {
+    const userId = (typeof Auth !== 'undefined') ? Auth.getUserId() : 'guest';
+    return 'audix_eq_' + userId;
+  },
+
   loadSettings() {
     try {
-      const raw = localStorage.getItem('audix_eq');
+      const raw = localStorage.getItem(this.getStorageKey());
       if (raw) this.defaults = JSON.parse(raw);
     } catch (e) {}
-    // Apply loaded settings to UI
     const vocal = document.getElementById('vocal-boost');
     const bass = document.getElementById('bass-boost');
     const treble = document.getElementById('treble-boost');
@@ -45,7 +50,7 @@ const Equalizer = {
       bass: parseInt(bass ? bass.value : 0),
       treble: parseInt(treble ? treble.value : 0)
     };
-    localStorage.setItem('audix_eq', JSON.stringify(this.defaults));
+    localStorage.setItem(this.getStorageKey(), JSON.stringify(this.defaults));
   },
 
   updateLabels() {
@@ -76,7 +81,6 @@ const Equalizer = {
 
   setup(audioEl) {
     if (this.connected) {
-      // Re-apply current filter values
       this.applyCurrentValues();
       return;
     }
@@ -86,7 +90,6 @@ const Equalizer = {
       this.analyser = this.ctx.createAnalyser();
       this.analyser.fftSize = 256;
 
-      // Filters
       this.bassFilter = this.ctx.createBiquadFilter();
       this.bassFilter.type = 'lowshelf';
       this.bassFilter.frequency.value = 150;
@@ -102,7 +105,6 @@ const Equalizer = {
 
       this.gainNode = this.ctx.createGain();
 
-      // Chain: source -> bass -> vocal -> treble -> gain -> analyser -> destination
       this.source.connect(this.bassFilter);
       this.bassFilter.connect(this.vocalFilter);
       this.vocalFilter.connect(this.trebleFilter);
@@ -114,7 +116,7 @@ const Equalizer = {
       this.applyCurrentValues();
       this.startVisualizer();
     } catch (e) {
-      console.error('Web Audio API setup failed', e);
+      console.error('[EQ] Web Audio setup failed:', e);
     }
   },
 
@@ -128,13 +130,8 @@ const Equalizer = {
   },
 
   setFilter(type, value) {
-    if (!this.ctx) {
-      // Store value for when audio starts
-      this.saveSettings();
-    }
     const val = parseFloat(value);
     this.updateLabels();
-
     if (type === 'bass' && this.bassFilter) {
       this.bassFilter.gain.value = val;
       if (val >= 15 && typeof Achievements !== 'undefined') Achievements.track('maxBassUsed');
@@ -145,7 +142,6 @@ const Equalizer = {
       this.vocalFilter.gain.value = val;
       if (val >= 15 && typeof Achievements !== 'undefined') Achievements.track('maxVocalUsed');
     }
-
     if (typeof Achievements !== 'undefined') {
       Achievements.track('eqAdjustments');
       Achievements.set('eqAdjusted', (Achievements.state.eqAdjusted || 0) + 1);
@@ -190,13 +186,10 @@ const Equalizer = {
     const draw = () => {
       this.animationId = requestAnimationFrame(draw);
       this.analyser.getByteFrequencyData(dataArray);
-
       ctx.fillStyle = 'rgba(10, 10, 18, 0.3)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
       const barWidth = (canvas.width / bufferLength) * 2.5;
       let x = 0;
-
       for (let i = 0; i < bufferLength; i++) {
         const barHeight = dataArray[i] / 2;
         const r = barHeight + 25;
@@ -211,23 +204,17 @@ const Equalizer = {
   },
 
   startIdleVisualizer() {
-    // Shows a gentle animated visualizer even when no audio is playing
     const canvas = document.getElementById('eq-visualizer');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let time = 0;
 
     const drawIdle = () => {
-      if (this.connected && this.analyser) {
-        // Audio is active, let startVisualizer take over
-        return;
-      }
+      if (this.connected && this.analyser) return;
       this.animationId = requestAnimationFrame(drawIdle);
       time += 0.02;
-
       ctx.fillStyle = 'rgba(10, 10, 18, 0.3)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
       const bars = 64;
       const barWidth = canvas.width / bars;
       for (let i = 0; i < bars; i++) {

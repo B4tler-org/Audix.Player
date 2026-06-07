@@ -1,16 +1,25 @@
 /* ============================================
    APP ROUTER & INITIALIZER
+   Auth-first initialization
    ============================================ */
 
 const App = {
   currentPage: 'home',
 
-  init() {
+  async init() {
     console.log('[App] init() starting...');
     this.bindNav();
     this.bindMobileMenu();
-    this.handleRoute();
+
+    // Initialize Auth FIRST (creates DB, restores session)
+    if (typeof Auth !== 'undefined') {
+      await Auth.init();
+    }
+
+    // Then initialize all other modules
     this.initModules();
+
+    this.handleRoute();
 
     // Track day usage
     const today = new Date().toDateString();
@@ -23,30 +32,34 @@ const App = {
       Achievements.set('uniqueDays', days.length);
     }
 
-    // Hash route listener
     window.addEventListener('hashchange', () => this.handleRoute());
     console.log('[App] init() complete');
   },
 
   initModules() {
-    console.log('[App] initModules() starting...');
-    // Initialize in dependency order: Library first (data source), then others
-    Library.init().then(() => {
-      console.log('[App] Library initialized with', Library.songs.length, 'songs');
-      // Now init Player (reads from Library.songs)
-      Player.init();
-      console.log('[App] Player initialized');
-      // If songs exist, load first track into player UI
-      if (Library.songs.length > 0) {
-        console.log('[App] Auto-loading first track into Player UI');
-        Player.loadTrack(0);
-      }
-    });
-    Equalizer.init();
-    Quiz.init();
-    Radio.init();
-    Achievements.init();
-    console.log('[App] All modules initialized');
+    console.log('[App] initModules()');
+
+    // Library depends on Auth.db being ready
+    if (typeof Library !== 'undefined') {
+      Library.init().then(() => {
+        console.log('[App] Library ready with', Library.songs.length, 'songs');
+        // Player reads from Library.songs
+        if (typeof Player !== 'undefined') {
+          Player.init();
+          if (Library.songs.length > 0) {
+            console.log('[App] Auto-loading first track');
+            Player.loadTrack(0);
+          }
+        }
+      });
+    }
+
+    if (typeof Equalizer !== 'undefined') Equalizer.init();
+    if (typeof Quiz !== 'undefined') Quiz.init();
+    if (typeof Radio !== 'undefined') Radio.init();
+    if (typeof Achievements !== 'undefined') Achievements.init();
+    if (typeof Profile !== 'undefined') Profile.init();
+    if (typeof Settings !== 'undefined') Settings.init();
   },
 
   bindNav() {
@@ -92,24 +105,21 @@ const App = {
   showPage(page) {
     this.currentPage = page;
 
-    // Hide all pages
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     const target = document.getElementById(`page-${page}`);
     if (target) target.classList.add('active');
 
-    // Update nav active state
     document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.page === page));
 
-    // Track page visits for achievements
+    // Track achievements
     const map = {
       home: 'homeOpens', equalizer: 'eqOpens', quiz: 'quizOpens', library: 'libraryOpens',
       radio: 'radioOpens', support: 'supportOpens', achievements: 'achievementsOpens',
-      about: 'aboutOpens', privacy: 'privacyOpens', contact: 'contactOpens'
+      about: 'aboutOpens', privacy: 'privacyOpens', contact: 'contactOpens',
+      profile: 'profileOpens', settings: 'settingsOpens'
     };
     if (map[page] && typeof Achievements !== 'undefined') {
       Achievements.track(map[page]);
-      Achievements.set('pagesVisited', new Set(Object.keys(map).filter(k => Achievements.state[map[k]] > 0)).size);
-      Achievements.set('featuresUsed', Object.values(Achievements.state).filter(v => v > 0).length);
     }
 
     // Page-specific init
@@ -117,8 +127,9 @@ const App = {
     if (page === 'radio' && typeof Radio !== 'undefined') Radio.render();
     if (page === 'quiz' && typeof Quiz !== 'undefined') Quiz.updateUI('start');
     if (page === 'library' && typeof Library !== 'undefined') Library.render();
+    if (page === 'profile' && typeof Profile !== 'undefined') Profile.updateDisplay();
+    if (page === 'settings' && typeof Settings !== 'undefined') Settings.applyToUI();
 
-    // Scroll to top
     document.querySelector('.main-content')?.scrollTo(0, 0);
   }
 };

@@ -10,6 +10,7 @@ const Radio = {
   customStations: [],
 
   init() {
+    console.log('[Radio] init()');
     this.audio = document.getElementById('audio-player');
     this.loadCustomStations();
     this.mergeStations();
@@ -30,9 +31,9 @@ const Radio = {
   },
 
   mergeStations() {
-    // FIXED: Defensive check for DEFAULT_RADIO_STATIONS
     const defaults = (typeof DEFAULT_RADIO_STATIONS !== 'undefined') ? DEFAULT_RADIO_STATIONS : [];
     this.stations = [...defaults, ...this.customStations];
+    console.log('[Radio] Merged', this.stations.length, 'stations');
   },
 
   bindEvents() {
@@ -137,7 +138,6 @@ const Radio = {
   play(station) {
     if (!this.audio) return;
 
-    // Toggle off if already playing same station
     if (this.currentStation && this.currentStation.url === station.url && !this.audio.paused) {
       this.audio.pause();
       this.currentStation = null;
@@ -146,7 +146,6 @@ const Radio = {
       return;
     }
 
-    // If player was playing a local song, pause it first
     if (typeof Player !== 'undefined' && Player.isPlaying) {
       Player.pause();
     }
@@ -165,7 +164,7 @@ const Radio = {
       }
       station.played = true;
     }).catch(err => {
-      console.error('Radio play error:', err);
+      console.error('[Radio] Play error:', err);
       if (typeof Utils !== 'undefined') Utils.toast('Failed to play station. The stream may be offline or blocked by CORS.', 'error');
     });
   },
