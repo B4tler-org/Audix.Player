@@ -1,15 +1,6 @@
-import Auth, { db, firebaseAuth } from './auth.js';
-import Achievements from './achievements.js';
-import Settings from './settings.js';
-
-// Make globally available for non-module scripts
-window.Auth = Auth;
-window.Achievements = Achievements;
-window.Settings = Settings;
-
 /* ============================================
-   APP ROUTER & INITIALIZER — v2.0
-   Gamification, Daily Activity, XP System
+   APP ROUTER & INITIALIZER — v3.0
+   Firebase Auth integration, Gamification, Daily Activity
    ============================================ */
 
 const Gamification = {
@@ -20,7 +11,6 @@ const Gamification = {
   totalListenTime: 0,
   quizStats: { played: 0, won: 0, streak: 0, lastDate: null },
 
-  // Level configuration
   levelTitles: {
     1: 'Beginner Listener',
     10: 'Music Explorer',
@@ -35,7 +25,6 @@ const Gamification = {
   },
 
   getXPForLevel(level) {
-    // Exponential curve: level 1 = 0, level 2 = 100, level 3 = 220, etc.
     return Math.floor(100 * Math.pow(level - 1, 1.5));
   },
 
@@ -52,17 +41,14 @@ const Gamification = {
     const oldLevel = this.level;
     this.xp += amount;
 
-    // Check level up
     while (this.xp >= this.getNextLevelXP() && this.level < 50) {
       this.level++;
     }
 
-    // Show XP toast
     if (typeof Utils !== 'undefined') {
       Utils.xpToast(`+${amount} XP (${source})`);
     }
 
-    // Level up notification
     if (this.level > oldLevel) {
       const title = this.getLevelTitle();
       if (typeof Utils !== 'undefined') Utils.levelUpToast(this.level, title);
@@ -74,7 +60,6 @@ const Gamification = {
   },
 
   getLevelTitle() {
-    // Find the highest defined title at or below current level
     const levels = Object.keys(this.levelTitles).map(Number).sort((a, b) => a - b);
     let title = this.levelTitles[1];
     for (const lvl of levels) {
@@ -87,26 +72,16 @@ const Gamification = {
     const today = new Date().toDateString();
     const yesterday = new Date(Date.now() - 86400000).toDateString();
 
-    if (this.lastActiveDate === today) {
-      // Already active today
-      return;
-    }
+    if (this.lastActiveDate === today) return;
 
     if (this.lastActiveDate === yesterday) {
-      // Consecutive day
       this.dailyStreak++;
-      this.addXP(10 + (this.dailyStreak * 2), 'daily streak'); // Bonus for streak
+      this.addXP(10 + (this.dailyStreak * 2), 'daily streak');
       if (typeof Utils !== 'undefined') Utils.toast(`🔥 ${this.dailyStreak} day streak! +${10 + this.dailyStreak * 2} XP`, 'success');
     } else {
-      // Streak broken or first time
-      if (this.lastActiveDate && this.lastActiveDate !== today) {
-        this.dailyStreak = 1;
-        if (typeof Utils !== 'undefined') Utils.toast('Daily streak started! +10 XP', 'success');
-        this.addXP(10, 'daily');
-      } else {
-        this.dailyStreak = 1;
-        this.addXP(10, 'daily');
-      }
+      this.dailyStreak = 1;
+      this.addXP(10, 'daily');
+      if (typeof Utils !== 'undefined') Utils.toast('Daily streak started! +10 XP', 'success');
     }
 
     this.lastActiveDate = today;
@@ -114,7 +89,6 @@ const Gamification = {
   },
 
   updateUI() {
-    // Sidebar XP bar
     const xpFill = document.getElementById('xpFill');
     const currentXpEl = document.getElementById('currentXp');
     const nextLevelXpEl = document.getElementById('nextLevelXp');
@@ -124,8 +98,8 @@ const Gamification = {
 
     const currentLevelBase = this.getCurrentLevelXP();
     const nextLevelBase = this.getNextLevelXP();
-    const progress = nextLevelBase > currentLevelBase 
-      ? ((this.xp - currentLevelBase) / (nextLevelBase - currentLevelBase)) * 100 
+    const progress = nextLevelBase > currentLevelBase
+      ? ((this.xp - currentLevelBase) / (nextLevelBase - currentLevelBase)) * 100
       : 100;
 
     if (xpFill) xpFill.style.width = progress + '%';
@@ -135,7 +109,6 @@ const Gamification = {
     if (headerXpFill) headerXpFill.style.width = progress + '%';
     if (headerLevelBadge) headerLevelBadge.textContent = 'Lv.' + this.level;
 
-    // Profile page
     const profileLevel = document.getElementById('profileLevel');
     const profileLevelName = document.getElementById('profileLevelName');
     const profileXpFill = document.getElementById('profileXpFill');
@@ -187,6 +160,11 @@ const App = {
     this.bindNav();
     this.bindMobileMenu();
 
+    // Auth init — Firebase handles session restoration via onAuthStateChanged
+    if (typeof Auth !== 'undefined') {
+      await Auth.init();
+    }
+
     // Initialize gamification
     if (typeof Gamification !== 'undefined') {
       Gamification.init();
@@ -194,7 +172,6 @@ const App = {
 
     // Initialize all modules
     this.initModules();
-
     this.handleRoute();
 
     // Track day usage
@@ -307,8 +284,5 @@ const App = {
   }
 };
 
-// Boot — init Auth first, then App
-document.addEventListener('DOMContentLoaded', async () => {
-  await Auth.init();
-  await App.init();
-});
+// Boot
+document.addEventListener('DOMContentLoaded', () => App.init());

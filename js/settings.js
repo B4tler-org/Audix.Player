@@ -1,10 +1,7 @@
 /* ============================================
-   SETTINGS MANAGER — v3.0
-   Firebase Firestore + localStorage fallback
+   SETTINGS MANAGER — v3.0 (Firebase Auth)
+   Theme & Reward Settings, Firebase UID integration
    ============================================ */
-
-import { db } from './auth.js';
-import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const Settings = {
   prefs: {
@@ -20,45 +17,18 @@ const Settings = {
     this.applyTheme();
   },
 
-  async load() {
-    const userId = (typeof Auth !== 'undefined') ? Auth.getUserId() : null;
-
-    if (userId) {
-      try {
-        const ref = doc(db, 'settings', userId);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-          this.prefs = { ...this.prefs, ...snap.data() };
-          this.applyToUI();
-          this.applyTheme();
-          return;
-        }
-      } catch (e) {
-        console.error('[Settings] Firestore load error:', e);
-      }
-    }
-
-    // Fallback to localStorage
+  load() {
     const raw = localStorage.getItem('audix_settings');
     if (raw) {
-      try { this.prefs = { ...this.prefs, ...JSON.parse(raw) }; } catch (e) {}
+      try {
+        const data = JSON.parse(raw);
+        this.prefs = { ...this.prefs, ...data };
+      } catch (e) {}
     }
   },
 
-  async save() {
-    const userId = (typeof Auth !== 'undefined') ? Auth.getUserId() : null;
-
-    if (userId) {
-      try {
-        await setDoc(doc(db, 'settings', userId), this.prefs, { merge: true });
-      } catch (e) {
-        console.error('[Settings] Firestore save error:', e);
-      }
-    }
-
-    // Always also save to localStorage as backup
+  save() {
     localStorage.setItem('audix_settings', JSON.stringify(this.prefs));
-
     if (typeof Achievements !== 'undefined') {
       Achievements.sfxEnabled = this.prefs.sfxEnabled;
     }
@@ -66,10 +36,14 @@ const Settings = {
 
   bindEvents() {
     const saveUsername = document.getElementById('btn-save-username');
-    if (saveUsername) saveUsername.addEventListener('click', () => this.changeUsername());
+    if (saveUsername) {
+      saveUsername.addEventListener('click', () => this.changeUsername());
+    }
 
     const savePassword = document.getElementById('btn-save-password');
-    if (savePassword) savePassword.addEventListener('click', () => this.changePassword());
+    if (savePassword) {
+      savePassword.addEventListener('click', () => this.changePassword());
+    }
 
     const toggleSfx = document.getElementById('toggleSfx');
     if (toggleSfx) {
@@ -88,7 +62,9 @@ const Settings = {
     }
 
     const deleteAccount = document.getElementById('btn-delete-account');
-    if (deleteAccount) deleteAccount.addEventListener('click', () => this.confirmDeleteAccount());
+    if (deleteAccount) {
+      deleteAccount.addEventListener('click', () => this.confirmDeleteAccount());
+    }
 
     document.querySelectorAll('.theme-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -110,6 +86,7 @@ const Settings = {
     const toggleAutoplay = document.getElementById('toggleAutoplay');
     if (toggleSfx) toggleSfx.checked = this.prefs.sfxEnabled;
     if (toggleAutoplay) toggleAutoplay.checked = this.prefs.autoplayOnUpload;
+
     document.querySelectorAll('.theme-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.theme === this.prefs.theme);
     });
@@ -125,8 +102,9 @@ const Settings = {
     };
     const t = themes[this.prefs.theme];
     if (!t) return;
+    const root = document.documentElement;
     for (const [key, val] of Object.entries(t)) {
-      document.documentElement.style.setProperty(key, val);
+      root.style.setProperty(key, val);
     }
   },
 
@@ -143,8 +121,9 @@ const Settings = {
       return;
     }
     try {
-      await Auth.updateProfile({ username });
+      await Auth.updateProfile(Auth.currentUser.uid, { displayName: username, username: username });
       input.value = '';
+      Auth.broadcastProfileUpdate();
       if (typeof Utils !== 'undefined') Utils.toast('Username updated');
     } catch (err) {
       if (typeof Utils !== 'undefined') Utils.toast(err.message, 'error');
@@ -152,20 +131,8 @@ const Settings = {
   },
 
   async changePassword() {
-    const oldInput = document.getElementById('settingsOldPassword');
-    const newInput = document.getElementById('settingsNewPassword');
-    if (!oldInput || !newInput) return;
-    if (typeof Auth === 'undefined' || !Auth.currentUser) {
-      if (typeof Utils !== 'undefined') Utils.toast('Please log in first', 'error');
-      return;
-    }
-    try {
-      await Auth.changePassword(oldInput.value, newInput.value);
-      oldInput.value = '';
-      newInput.value = '';
-      if (typeof Utils !== 'undefined') Utils.toast('Password updated successfully');
-    } catch (err) {
-      if (typeof Utils !== 'undefined') Utils.toast(err.message, 'error');
+    if (typeof Auth !== 'undefined') {
+      await Auth.changePassword();
     }
   },
 
@@ -174,16 +141,10 @@ const Settings = {
       if (typeof Utils !== 'undefined') Utils.toast('Please log in first', 'error');
       return;
     }
-    const confirmed = confirm('WARNING: This will permanently delete your account and ALL your data. This cannot be undone. Are you sure?');
-    if (confirmed) {
-      Auth.deleteAccount().then(() => {
-        if (typeof Utils !== 'undefined') Utils.toast('Account deleted');
-      }).catch((err) => {
-        if (typeof Utils !== 'undefined') Utils.toast(err.message, 'error');
-      });
-    }
+    Auth.deleteAccount().then(() => {
+      if (typeof Utils !== 'undefined') Utils.toast('Account deleted');
+    }).catch((err) => {
+      if (typeof Utils !== 'undefined') Utils.toast(err.message, 'error');
+    });
   }
 };
-
-window.Settings = Settings;
-export default Settings;
