@@ -20,6 +20,10 @@
         <h1>Audix <span>Music Player</span></h1>
       </div>
       <div class="header-actions">
+        <div class="header-xp-bar" id="headerXpBar">
+          <span class="level-badge" id="headerLevelBadge">Lv.1</span>
+          <div class="xp-progress-mini"><div class="xp-fill-mini" id="headerXpFill"></div></div>
+        </div>
         <button class="user-avatar-btn hidden" id="userAvatarBtn" title="Profile">
           <img id="headerPfp" src="" alt="Profile">
         </button>
@@ -42,6 +46,14 @@
           <span class="sidebar-email" id="sidebarEmail"></span>
         </div>
       </div>
+      <!-- XP & Level Display -->
+      <div class="sidebar-xp-section" id="sidebarXpSection">
+        <div class="level-title" id="levelTitle">Beginner Listener</div>
+        <div class="xp-bar-container">
+          <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+          <div class="xp-text"><span id="currentXp">0</span> / <span id="nextLevelXp">100</span> XP</div>
+        </div>
+      </div>
       <ul class="nav-list">
         <li><a href="#home" class="nav-link active" data-page="home"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> Home</a></li>
         <li><a href="#equalizer" class="nav-link" data-page="equalizer"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-6M6 20V10M18 20V4"></path></svg> Equalizer</a></li>
@@ -60,6 +72,7 @@
       </ul>
       <div class="sidebar-footer">
         <p>Powered by <strong>Utilities Nepal</strong></p>
+        <p class="footer-ai">Proudly built with the help of ChatGPT, Kimi AI, and Claude.</p>
       </div>
     </nav>
 
@@ -90,7 +103,7 @@
           </form>
           <div class="auth-divider"><span>or</span></div>
           <div id="googleSignInBtn"></div>
-          
+
         </div>
         <div class="auth-panel" id="registerPanel">
           <form id="registerForm">
@@ -117,6 +130,8 @@
               <span>No Cover</span>
             </div>
             <div class="id3-badge" id="id3-badge">ID3</div>
+            <!-- Mood Badge -->
+            <div class="mood-badge hidden" id="mood-badge"></div>
           </div>
 
           <div class="track-info">
@@ -125,6 +140,7 @@
             <div class="track-meta">
               <span id="track-album"></span>
               <span id="track-year"></span>
+              <span id="track-mood"></span>
             </div>
           </div>
 
@@ -151,6 +167,7 @@
             <button class="btn-text" id="btn-download-cover" title="Download Cover"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Cover</button>
             <button class="btn-text" id="btn-share" title="Share"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> Share</button>
             <button class="btn-text" id="btn-lyrics-toggle" title="Toggle Lyrics"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Lyrics</button>
+            <button class="btn-text" id="btn-karaoke-toggle" title="Karaoke Mode"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg> Karaoke</button>
           </div>
         </div>
 
@@ -192,7 +209,11 @@
             <button class="btn-preset" data-preset="bass">Bass Boost</button>
             <button class="btn-preset" data-preset="vocal">Vocal Boost</button>
             <button class="btn-preset" data-preset="treble">Treble Boost</button>
+            <!-- Reward-unlocked presets -->
+            <button class="btn-preset reward-locked" data-preset="night" id="preset-night" title="Unlock at Level 5">Night Mode</button>
+            <button class="btn-preset reward-locked" data-preset="concert" id="preset-concert" title="Unlock at Level 10">Concert</button>
           </div>
+          <div class="eq-reward-note" id="eqRewardNote">Unlock more presets by leveling up!</div>
         </div>
       </section>
 
@@ -203,10 +224,37 @@
           <div class="quiz-start" id="quiz-start">
             <div class="quiz-icon">&#127926;</div>
             <h3>Guess the Song</h3>
-            <p>Listen to a 5-second snippet and pick the correct title.</p>
+            <p>Listen to a snippet and pick the correct title.</p>
+
+            <!-- Quiz Mode Selection -->
+            <div class="quiz-mode-selector">
+              <label>Quiz Mode</label>
+              <div class="mode-buttons">
+                <button class="mode-btn active" data-mode="guess">Guess the Song</button>
+                <button class="mode-btn" data-mode="clip">Guess by Audio Clip</button>
+                <button class="mode-btn" data-mode="lyrics">Missing Lyrics</button>
+              </div>
+            </div>
+
+            <!-- Difficulty Selection -->
+            <div class="quiz-difficulty">
+              <label>Difficulty</label>
+              <div class="difficulty-buttons">
+                <button class="diff-btn active" data-diff="easy">Easy</button>
+                <button class="diff-btn" data-diff="medium">Medium</button>
+                <button class="diff-btn" data-diff="hard">Hard</button>
+              </div>
+            </div>
+
+            <!-- Daily Streak Display -->
+            <div class="quiz-streak" id="quizStreakDisplay">
+              <span class="streak-icon">🔥</span>
+              <span class="streak-count" id="streakCount">0</span> day streak
+            </div>
+
             <ul class="quiz-rules">
               <li>6 Rounds per game</li>
-              <li>15 seconds to answer each</li>
+              <li id="quiz-timer-rule">15 seconds to answer each</li>
               <li>Questions from your Library</li>
             </ul>
             <button class="btn-primary" id="btn-start-quiz">Start Quiz</button>
@@ -217,6 +265,12 @@
               <div class="quiz-round">Round <span id="quiz-round-num">1</span>/6</div>
               <div class="quiz-timer" id="quiz-timer">15</div>
               <div class="quiz-score">Score: <span id="quiz-score">0</span></div>
+            </div>
+            <!-- Hint Button (reward unlock) -->
+            <div class="quiz-tools">
+              <button class="btn-text btn-small hidden" id="btn-hint" title="Use Hint">💡 Hint</button>
+              <button class="btn-text btn-small hidden" id="btn-fifty" title="50/50">50/50</button>
+              <button class="btn-text btn-small hidden" id="btn-skip" title="Skip Question">⏭ Skip</button>
             </div>
             <div class="quiz-play-area">
               <button class="btn-play-snippet" id="btn-play-snippet">&#9658; Play Snippet</button>
@@ -229,6 +283,7 @@
           <div class="quiz-result hidden" id="quiz-result">
             <h3>Quiz Complete!</h3>
             <div class="final-score" id="final-score"></div>
+            <div class="xp-gained" id="quiz-xp-gained"></div>
             <div class="achievement-unlock hidden" id="quiz-achievement"></div>
             <button class="btn-primary" id="btn-restart-quiz">Play Again</button>
           </div>
@@ -248,6 +303,21 @@
             Add from Device
             <input type="file" id="file-input" accept="audio/*" multiple>
           </label>
+        </div>
+        <!-- Smart Playlist Filters -->
+        <div class="smart-filters">
+          <button class="smart-btn active" data-filter="all">All Songs</button>
+          <button class="smart-btn" data-filter="most-played">Most Played</button>
+          <button class="smart-btn" data-filter="recently-added">Recently Added</button>
+          <button class="smart-btn" data-filter="favorites">Favorites</button>
+          <button class="smart-btn" data-filter="mood">Mood Based</button>
+        </div>
+        <!-- Advanced Search Filters -->
+        <div class="advanced-search-filters hidden" id="advancedSearchFilters">
+          <button class="filter-chip" data-chip="artist">Artist</button>
+          <button class="filter-chip" data-chip="genre">Genre</button>
+          <button class="filter-chip" data-chip="album">Album</button>
+          <button class="filter-chip" data-chip="lyrics">Lyrics</button>
         </div>
         <div class="library-list" id="library-list">
           <div class="empty-state">
@@ -275,6 +345,7 @@
               <button class="country-btn" data-country="Bhutan">Bhutan</button>
             </div>
             <button class="btn-secondary" id="btn-add-station">+ Add Custom Station</button>
+            <div class="radio-reward-note" id="radioRewardNote">Unlock extra stations by leveling up!</div>
           </div>
           <div class="radio-content">
             <div class="now-playing-bar" id="radio-now-playing">
@@ -318,11 +389,14 @@
             <a class="btn-primary" id="btn-download-qr" href="assets/qr-support.jpg" download="audix-support-qr.jpg">Download QR</a>
           </div>
         </div>
+        <footer class="page-footer">
+          <p class="footer-ai">Proudly built with the help of ChatGPT, Kimi AI, and Claude.</p>
+        </footer>
       </section>
 
       <!-- ACHIEVEMENTS PAGE -->
       <section id="page-achievements" class="page">
-        <div class="page-header"><h2>Achievements</h2><p>Unlock all 50 badges</p></div>
+        <div class="page-header"><h2>Achievements</h2><p>Unlock all 50 badges and earn rewards</p></div>
         <div class="achievements-stats">
           <div class="stat-card">
             <span class="stat-num" id="achieve-unlocked">0</span>
@@ -332,8 +406,19 @@
             <span class="stat-num">50</span>
             <span class="stat-label">Total</span>
           </div>
+          <div class="stat-card">
+            <span class="stat-num" id="total-xp">0</span>
+            <span class="stat-label">Total XP</span>
+          </div>
+        </div>
+        <div class="rewards-bar" id="rewardsBar">
+          <h4>Your Rewards</h4>
+          <div class="rewards-list" id="rewardsList"></div>
         </div>
         <div class="achievements-grid" id="achievements-grid"></div>
+        <footer class="page-footer">
+          <p class="footer-ai">Proudly built with the help of ChatGPT, Kimi AI, and Claude.</p>
+        </footer>
       </section>
 
       <!-- PROFILE PAGE -->
@@ -350,6 +435,20 @@
               Change Picture
               <input type="file" id="pfp-input" accept="image/*">
             </label>
+          </div>
+          <!-- Level & XP Display -->
+          <div class="profile-xp-card">
+            <div class="profile-level">
+              <span class="level-num" id="profileLevel">1</span>
+              <span class="level-name" id="profileLevelName">Beginner Listener</span>
+            </div>
+            <div class="xp-bar-large">
+              <div class="xp-fill-large" id="profileXpFill"></div>
+            </div>
+            <div class="xp-stats">
+              <span id="profileXpText">0 / 100 XP</span>
+              <span id="profileTotalXp">0 XP Total</span>
+            </div>
           </div>
           <div class="profile-info">
             <div class="info-row">
@@ -372,11 +471,18 @@
               <label>Achievements</label>
               <span id="profileAchieveCount">0 / 50</span>
             </div>
+            <div class="info-row">
+              <label>Listening Time</label>
+              <span id="profileListenTime">0 min</span>
+            </div>
           </div>
           <div class="profile-actions">
             <button class="btn-primary" id="btn-logout">Logout</button>
           </div>
         </div>
+        <footer class="page-footer">
+          <p class="footer-ai">Proudly built with the help of ChatGPT, Kimi AI, and Claude.</p>
+        </footer>
       </section>
 
       <!-- SETTINGS PAGE -->
@@ -418,6 +524,20 @@
               </label>
             </div>
           </div>
+          <!-- Theme Settings -->
+          <div class="settings-group">
+            <h3>Appearance</h3>
+            <div class="setting-item">
+              <label>Theme</label>
+              <div class="theme-selector">
+                <button class="theme-btn active" data-theme="default">Default</button>
+                <button class="theme-btn reward-locked" data-theme="neon" id="theme-neon" title="Unlock at Level 3">Neon</button>
+                <button class="theme-btn reward-locked" data-theme="dark" id="theme-dark" title="Unlock at Level 5">Dark</button>
+                <button class="theme-btn reward-locked" data-theme="glass" id="theme-glass" title="Unlock at Level 8">Glass</button>
+                <button class="theme-btn reward-locked" data-theme="gradient" id="theme-gradient" title="Unlock at Level 12">Gradient</button>
+              </div>
+            </div>
+          </div>
           <div class="settings-group danger">
             <h3>Danger Zone</h3>
             <div class="setting-item">
@@ -426,6 +546,9 @@
             </div>
           </div>
         </div>
+        <footer class="page-footer">
+          <p class="footer-ai">Proudly built with the help of ChatGPT, Kimi AI, and Claude.</p>
+        </footer>
       </section>
 
       <!-- ABOUT PAGE -->
@@ -435,7 +558,7 @@
           <div class="info-brand">
             <div class="logo-large">&#9836;</div>
             <h3>Audix Music Player</h3>
-            <p>Version 1.0.0</p>
+            <p>Version 2.0.0</p>
           </div>
           <p>Audix is a modern, browser-based music player designed for audiophiles who love control. Built with vanilla JavaScript and the Web Audio API, it delivers powerful equalization, intelligent lyrics fetching, and a gamified listening experience.</p>
           <p>Developed by <strong>Utilities Nepal</strong> &copy; 2026.</p>
@@ -444,8 +567,12 @@
             <span class="tech-badge">LRCLIB</span>
             <span class="tech-badge">ID3 Tags</span>
             <span class="tech-badge">GitHub Pages</span>
+            <span class="tech-badge">Gamification</span>
           </div>
         </div>
+        <footer class="page-footer">
+          <p class="footer-ai">Proudly built with the help of ChatGPT, Kimi AI, and Claude.</p>
+        </footer>
       </section>
 
       <!-- PRIVACY PAGE -->
@@ -457,6 +584,9 @@
           <p><strong>Lyrics Fetching:</strong> When you request lyrics, only the song title and artist name are sent to LRCLIB's public API. No personal data is included.</p>
           <p><strong>No Tracking:</strong> Audix does not use cookies, analytics trackers, or third-party advertising scripts.</p>
         </div>
+        <footer class="page-footer">
+          <p class="footer-ai">Proudly built with the help of ChatGPT, Kimi AI, and Claude.</p>
+        </footer>
       </section>
 
       <!-- CONTACT PAGE -->
@@ -473,12 +603,16 @@
             <span>Support via GitHub Issues</span>
           </div>
         </div>
+        <footer class="page-footer">
+          <p class="footer-ai">Proudly built with the help of ChatGPT, Kimi AI, and Claude.</p>
+        </footer>
       </section>
     </main>
 
     <!-- Footer -->
     <footer class="app-footer">
-      <p>&copy; 2026 Audix Music Player. Powered by <strong>Utilities Nepal</strong>.</p><p class="footer-ai">Proudly coded through ChatGPT, Claude, and Kimi AI</p>
+      <p>&copy; 2026 Audix Music Player. Powered by <strong>Utilities Nepal</strong>.</p>
+      <p class="footer-ai">Proudly built with the help of ChatGPT, Kimi AI, and Claude.</p>
     </footer>
 
     <!-- Audio Element -->
@@ -486,7 +620,6 @@
 
     <!-- AI Vibe Background Canvas -->
     <canvas id="vibe-canvas"></canvas>
-
 
     <!-- Notifications Panel -->
     <div class="notifications-panel hidden" id="notificationsPanel">
@@ -517,8 +650,11 @@
     <button class="notifications-toggle-btn" id="notificationsToggleBtn" title="Music Controls">
       <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
     </button>
-    <!-- Toast Container -->
+
+    <!-- Toast Containers -->
     <div id="toast-container"></div>
+    <div id="xp-toast-container"></div>
+    <div id="achievement-toast-container"></div>
   </div>
 
   <!-- Scripts -->
