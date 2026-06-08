@@ -1,6 +1,6 @@
 /* ============================================
-   APP ROUTER & INITIALIZER — v3.2 (Critical Fixes)
-   Maintenance Mode, Player Activity, Share System,
+   APP ROUTER & INITIALIZER — v3.3
+   Player Activity, Share System,
    Lyrics Fetch, XP Recalc, Title Cleaner
    ============================================ */
 
@@ -35,7 +35,6 @@ const Gamification = {
   },
 
   recalculateLevel() {
-    // Ensure level matches total XP
     let calculatedLevel = 1;
     let xpNeeded = this.getXPForLevel(2);
     while (calculatedLevel < 50 && this.xp >= xpNeeded) {
@@ -227,7 +226,6 @@ const Gamification = {
   }
 };
 
-
 const QuizRewards = {
   checkStreakRewards(streak) {
     const rewards = {
@@ -278,7 +276,6 @@ const QuizRewards = {
   }
 };
 
-
 const App = {
   currentPage: 'home',
 
@@ -298,7 +295,6 @@ const App = {
     this.initModules();
     this.handleRoute();
 
-    // Track day usage
     const today = new Date().toDateString();
     const days = JSON.parse(localStorage.getItem('audix_days') || '[]');
     if (!days.includes(today)) {
@@ -321,7 +317,6 @@ const App = {
       Admin.init();
     }
 
-    // FIXED: Player activity uses actual audio element
     const audioPlayer = document.getElementById('audio-player');
     if (audioPlayer) {
       audioPlayer.addEventListener('play', () => {
@@ -344,7 +339,6 @@ const App = {
   },
 
   updateActivityFromAudio(isPlaying) {
-    // Get current track info from DOM (updated by player.js)
     const title = document.getElementById('track-title')?.textContent || 'Unknown';
     const artist = document.getElementById('track-artist')?.textContent || '';
     const album = document.getElementById('track-album')?.textContent || '';
@@ -419,9 +413,6 @@ const App = {
   },
 
   showPage(page) {
-    // Maintenance mode is ONLY enforced AFTER login (see auth.js _postLoginRedirect).
-    // The login modal is never blocked — it has z-index 3000 above everything.
-
     this.currentPage = page;
 
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -457,5 +448,4 @@ const App = {
   }
 };
 
-// Boot
 document.addEventListener('DOMContentLoaded', () => App.init());

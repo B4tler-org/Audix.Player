@@ -1,20 +1,16 @@
 /* ============================================
-   ADMIN PANEL — v1.1 (Critical Fixes)
-   User List Query, Maintenance Mode Enforcement,
-   Realtime Listeners
+   ADMIN PANEL — v1.2
+   User List Query, Realtime Listeners
    ============================================ */
 
 const Admin = {
-  ADMIN_EMAILS: ['samikkhadka2001@gmail.com', 'utilitiesnepal@gmail.com'],
-  maintenanceMode: false,
-  maintenanceMessage: 'Audix is under maintenance. We will be back soon!',
+  ADMIN_EMAILS: ['samirkhadka2001@gmail.com', 'samikkhadka2001@gmail.com', 'utilitiesnepal@gmail.com'],
   users: [],
   allSongs: [],
   _usersUnsub: null,
 
   init() {
     console.log('[Admin] init()');
-    this.loadMaintenanceState();
     this.bindEvents();
     if (this.isAdmin()) {
       console.log('[Admin] Admin detected — unlocking all perks');
@@ -55,27 +51,6 @@ const Admin = {
   },
 
   bindEvents() {
-    const maintToggle = document.getElementById('toggleMaintenance');
-    if (maintToggle) {
-      maintToggle.addEventListener('change', (e) => {
-        this.maintenanceMode = e.target.checked;
-        this.saveMaintenanceState();
-        this.renderDashboard();
-        if (typeof Utils !== 'undefined') {
-          Utils.toast(this.maintenanceMode ? 'Maintenance mode ENABLED' : 'Maintenance mode DISABLED', 'info');
-        }
-        console.log('[Admin] Maintenance mode:', this.maintenanceMode);
-      });
-    }
-
-    const maintMsg = document.getElementById('maintenanceMessage');
-    if (maintMsg) {
-      maintMsg.addEventListener('input', (e) => {
-        this.maintenanceMessage = e.target.value;
-        this.saveMaintenanceState();
-      });
-    }
-
     document.addEventListener('click', (e) => {
       if (e.target.matches('#btn-refresh-users')) this.loadUsers();
       if (e.target.matches('#btn-refresh-songs')) this.loadAllSongs();
@@ -89,37 +64,6 @@ const Admin = {
         this.refreshSongMetadata(id);
       }
     });
-  },
-
-  loadMaintenanceState() {
-    const raw = localStorage.getItem('audix_maintenance');
-    if (raw) {
-      try {
-        const data = JSON.parse(raw);
-        this.maintenanceMode = !!data.enabled;
-        this.maintenanceMessage = data.message || this.maintenanceMessage;
-      } catch (e) {}
-    }
-    const toggle = document.getElementById('toggleMaintenance');
-    const msg = document.getElementById('maintenanceMessage');
-    if (toggle) toggle.checked = this.maintenanceMode;
-    if (msg) msg.value = this.maintenanceMessage;
-  },
-
-  saveMaintenanceState() {
-    localStorage.setItem('audix_maintenance', JSON.stringify({
-      enabled: this.maintenanceMode,
-      message: this.maintenanceMessage
-    }));
-  },
-
-  checkMaintenance() {
-    if (!this.maintenanceMode) return false;
-    return !this.isAdmin();
-  },
-
-  getMaintenanceMessage() {
-    return this.maintenanceMessage;
   },
 
   async render() {
@@ -168,7 +112,6 @@ const Admin = {
       return;
     }
     try {
-      // Use realtime listener for live updates
       if (this._usersUnsub) {
         this._usersUnsub();
         this._usersUnsub = null;
@@ -196,7 +139,6 @@ const Admin = {
       console.log('[Admin] loadUsers() —', this.users.length, 'users');
       this.renderUsers();
 
-      // Set up realtime listener
       this._usersUnsub = Auth.db.collection('users').onSnapshot(snap => {
         this.users = [];
         snap.forEach(doc => {
@@ -347,6 +289,3 @@ const Admin = {
     container.innerHTML = html;
   }
 };
-
-// Maintenance overlay is now controlled by app.js AFTER login, not before.
-// DO NOT add DOMContentLoaded checks here — they block the login modal.

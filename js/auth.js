@@ -1,5 +1,5 @@
 /* ============================================
-   AUTHENTICATION SYSTEM — v3.6 (Critical Fixes)
+   AUTHENTICATION SYSTEM — v3.7
    PFP Upload, Tag System, Inventory Fix, 
    Level Recalc, Logout, Admin Badge SVG
    ============================================ */
@@ -10,7 +10,7 @@ const Auth = {
   idb: null,
   firebaseReady: false,
   uiUpdatePending: false,
-  ADMIN_EMAILS: ['samirkhadka2001@gmail.com', 'utilitiesnepal@gmail.com'], // Project: audix-8f929
+  ADMIN_EMAILS: ['samirkhadka2001@gmail.com', 'samikkhadka2001@gmail.com', 'utilitiesnepal@gmail.com'],
 
   async init() {
     console.log('[Auth] init() starting...');
@@ -248,7 +248,6 @@ const Auth = {
     }
   },
 
-  // ===================== FRIEND SYSTEM =====================
   async searchUserByAudixId(audixId) {
     try {
       const snap = await this.db.collection('users').where('audixId', '==', audixId).limit(1).get();
@@ -386,7 +385,6 @@ const Auth = {
     return { incoming, outgoing };
   },
 
-  // ===================== ACTIVITY STATUS =====================
   async updateActivityStatus(songInfo) {
     if (!this.currentUser) return;
     try {
@@ -427,7 +425,6 @@ const Auth = {
     if (typeof Utils !== 'undefined') Utils.toast(`Activity status set to ${setting}`, 'success');
   },
 
-  // ===================== INVENTORY & COINS =====================
   async getInventory() {
     if (!this.currentUser) return null;
     const doc = await this.db.collection('users').doc(this.currentUser.uid).get();
@@ -491,7 +488,6 @@ const Auth = {
     return doc.data()?.coins || 0;
   },
 
-  // ===================== TAG SYSTEM =====================
   async updateTag(tag) {
     if (!this.currentUser) return;
     const cleanTag = String(tag || '').trim().slice(0, 25);
@@ -500,7 +496,6 @@ const Auth = {
     this.broadcastProfileUpdate();
   },
 
-  // ===================== PFP UPLOAD =====================
   async uploadProfilePicture(file) {
     if (!this.currentUser) throw new Error('Not logged in');
     if (!file) throw new Error('No file provided');
@@ -535,7 +530,6 @@ const Auth = {
     });
   },
 
-  // ===================== ADMIN PROFILE =====================
   async ensureAdminInventory() {
     if (!this.currentUser || !this.isAdmin()) return;
     try {
@@ -609,7 +603,6 @@ const Auth = {
 
       if (typeof Utils !== 'undefined') Utils.toast('Welcome, ' + (result.user.displayName || 'User') + '!');
 
-      // Post-login maintenance redirect
       setTimeout(() => this._postLoginRedirect(), 150);
 
     } catch (error) {
@@ -620,9 +613,7 @@ const Auth = {
 
       if (error.code === 'auth/invalid-api-key' || error.message.includes('API key')) {
         message = 'Firebase API key is suspended. Please contact the developer to generate a new key in Firebase Console.';
-      } else
-
-      if (error.code === 'auth/popup-closed-by-user') {
+      } else if (error.code === 'auth/popup-closed-by-user') {
         message = 'Login cancelled';
       } else if (error.code === 'auth/popup-blocked') {
         message = 'Popup blocked! Please allow popups for this site, then try again.';
@@ -660,14 +651,8 @@ const Auth = {
       const userId = this.currentUser ? this.currentUser.uid : 'guest';
       this.currentUser = null;
 
-      // Hide maintenance overlay so login modal is accessible
-      const overlay = document.getElementById('maintenanceOverlay');
-      if (overlay) overlay.classList.add('hidden');
-
-      // Reset UI immediately
       this.updateUI();
 
-      // Clear admin perks from DOM
       document.querySelectorAll('.theme-btn, .btn-preset').forEach(btn => {
         if (btn.title && btn.title.includes('Admin')) {
           btn.classList.remove('unlocked');
@@ -675,16 +660,13 @@ const Auth = {
         }
       });
 
-      // Hide admin nav
       const adminNav = document.querySelector('.nav-link[data-page="admin"]');
       if (adminNav) adminNav.classList.add('hidden');
       const adminDivider = document.querySelector('.admin-nav-divider');
       if (adminDivider) adminDivider.classList.add('hidden');
 
-      // Show login modal (always accessible)
       this.showLoginModal();
 
-      // Redirect to home
       window.location.hash = 'home';
       if (typeof App !== 'undefined') App.showPage('home');
 
@@ -889,8 +871,6 @@ const Auth = {
     }
   },
 
-
-  // ===================== EMAIL/PASSWORD AUTH =====================
   async registerWithEmail(email, password, displayName) {
     if (!this.firebaseReady || window._firebaseSuspended) {
       this.showError('Firebase not available. Cannot create account.');
@@ -907,7 +887,6 @@ const Auth = {
       this.broadcastProfileUpdate();
       if (typeof Utils !== 'undefined') Utils.toast('Account created! Welcome, ' + (displayName || 'User') + '!', 'success');
 
-      // Post-login maintenance redirect
       setTimeout(() => this._postLoginRedirect(), 150);
 
     } catch (error) {
@@ -937,7 +916,6 @@ const Auth = {
       this.broadcastProfileUpdate();
       if (typeof Utils !== 'undefined') Utils.toast('Welcome back, ' + (result.user.displayName || 'User') + '!', 'success');
 
-      // Post-login maintenance redirect
       setTimeout(() => this._postLoginRedirect(), 150);
 
     } catch (error) {
@@ -978,37 +956,16 @@ const Auth = {
     if (registerPanel) registerPanel.style.display = mode === 'register' ? 'block' : 'none';
     if (forgotPanel) forgotPanel.style.display = mode === 'forgot' ? 'block' : 'none';
 
-    // Clear any previous errors
     const errEl = document.getElementById('auth-error-msg');
     if (errEl) errEl.textContent = '';
     const retryBtn = document.getElementById('auth-retry-btn');
     if (retryBtn) retryBtn.remove();
   },
-  _postLoginRedirect() {
-    const isAdmin = (typeof Admin !== 'undefined' && Admin.isAdmin && Admin.isAdmin());
-    const maintenanceActive = (typeof Admin !== 'undefined' && Admin.maintenanceMode);
 
-    if (maintenanceActive && !isAdmin) {
-      // Maintenance is on and user is NOT admin → show maintenance page
-      console.log('[Auth] Post-login: maintenance active, user is not admin → redirecting to maintenance');
-      // Hide login modal first
-      this.hideLoginModal();
-      // Show maintenance page
-      window.location.hash = 'maintenance';
-      if (typeof App !== 'undefined') App.showPage('maintenance');
-      // Also show the overlay as backup
-      const overlay = document.getElementById('maintenanceOverlay');
-      if (overlay) overlay.classList.remove('hidden');
-    } else {
-      // Maintenance off OR user is admin → go to home
-      console.log('[Auth] Post-login: redirecting to home');
-      this.hideLoginModal();
-      // Hide maintenance overlay if it was shown
-      const overlay = document.getElementById('maintenanceOverlay');
-      if (overlay) overlay.classList.add('hidden');
-      window.location.hash = 'home';
-      if (typeof App !== 'undefined') App.showPage('home');
-    }
+  _postLoginRedirect() {
+    this.hideLoginModal();
+    window.location.hash = 'home';
+    if (typeof App !== 'undefined') App.showPage('home');
   },
 
   getUserId() {
