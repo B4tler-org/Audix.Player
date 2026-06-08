@@ -609,6 +609,9 @@ const Auth = {
 
       if (typeof Utils !== 'undefined') Utils.toast('Welcome, ' + (result.user.displayName || 'User') + '!');
 
+      // Post-login maintenance redirect
+      setTimeout(() => this._postLoginRedirect(), 150);
+
     } catch (error) {
       console.error('[Auth] Google login failed:', error.code, error.message);
 
@@ -900,6 +903,10 @@ const Auth = {
       this.loadUserData();
       this.broadcastProfileUpdate();
       if (typeof Utils !== 'undefined') Utils.toast('Account created! Welcome, ' + (displayName || 'User') + '!', 'success');
+
+      // Post-login maintenance redirect
+      setTimeout(() => this._postLoginRedirect(), 150);
+
     } catch (error) {
       console.error('[Auth] Email registration failed:', error.code, error.message);
       let message = 'Registration failed';
@@ -926,6 +933,10 @@ const Auth = {
       this.loadUserData();
       this.broadcastProfileUpdate();
       if (typeof Utils !== 'undefined') Utils.toast('Welcome back, ' + (result.user.displayName || 'User') + '!', 'success');
+
+      // Post-login maintenance redirect
+      setTimeout(() => this._postLoginRedirect(), 150);
+
     } catch (error) {
       console.error('[Auth] Email login failed:', error.code, error.message);
       let message = 'Login failed';
@@ -970,6 +981,20 @@ const Auth = {
     const retryBtn = document.getElementById('auth-retry-btn');
     if (retryBtn) retryBtn.remove();
   },
+  _postLoginRedirect() {
+    if (typeof Admin !== 'undefined' && Admin.checkMaintenance()) {
+      // Maintenance is on and user is NOT admin → show maintenance page
+      console.log('[Auth] Post-login: maintenance active, user is not admin → redirecting to maintenance');
+      window.location.hash = 'maintenance';
+      if (typeof App !== 'undefined') App.showPage('maintenance');
+    } else {
+      // Maintenance off OR user is admin → go to home
+      console.log('[Auth] Post-login: redirecting to home');
+      window.location.hash = 'home';
+      if (typeof App !== 'undefined') App.showPage('home');
+    }
+  },
+
   getUserId() {
     return this.currentUser ? this.currentUser.uid : null;
   }
