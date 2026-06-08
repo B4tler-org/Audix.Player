@@ -47,6 +47,15 @@ const Admin = {
     // Show admin nav link
     const adminNav = document.querySelector('.nav-link[data-page="admin"]');
     if (adminNav) adminNav.classList.remove('hidden');
+    // Show admin badge
+    const adminBadge = document.getElementById('adminBadgeContainer');
+    if (adminBadge) adminBadge.classList.remove('hidden');
+    const sidebarAdminBadge = document.getElementById('sidebarAdminBadge');
+    if (sidebarAdminBadge) sidebarAdminBadge.classList.remove('hidden');
+    // Ensure admin inventory
+    if (typeof Auth !== 'undefined') {
+      Auth.ensureAdminInventory();
+    }
     console.log('[Admin] All perks applied');
   },
 

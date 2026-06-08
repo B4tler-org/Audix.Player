@@ -8,6 +8,18 @@ const Library = {
   songs: [],
   currentFilter: 'all',
   searchQuery: '',
+  SUPPORTED_FORMATS: ['mp3', 'm4a', 'wav', 'ogg', 'aac', 'flac', 'webm'],
+
+  isValidAudioFile(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const mimeType = file.type || '';
+    const validMimeTypes = [
+      'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a',
+      'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/aac',
+      'audio/x-aac', 'audio/flac', 'audio/webm'
+    ];
+    return this.SUPPORTED_FORMATS.includes(ext) || validMimeTypes.includes(mimeType);
+  },
 
   async init() {
     console.log('[Library] init() starting...');
@@ -52,8 +64,14 @@ const Library = {
     }
     console.log('[Library] handleUpload() — processing', files.length, 'files');
 
+    let addedCount = 0;
     for (const file of files) {
+      if (!this.isValidAudioFile(file)) {
+        if (typeof Utils !== 'undefined') Utils.toast(`Unsupported format: ${file.name}. Supported: MP3, M4A, WAV, OGG, AAC`, 'error');
+        continue;
+      }
       await this.processFile(file);
+      addedCount++;
     }
 
     this.render();
@@ -64,18 +82,18 @@ const Library = {
       Achievements.track('songsUploaded', this.songs.length);
     }
 
-    // Auto-play first uploaded if enabled
-    if (typeof Settings !== 'undefined' && Settings.prefs.autoplayOnUpload && this.songs.length > 0) {
-      const lastIndex = this.songs.length - 1;
-      console.log('[Library] Auto-play enabled — loading track', lastIndex);
-      if (typeof Player !== 'undefined') {
-        Player.loadTrack(lastIndex);
-        Player.play();
+    if (addedCount > 0) {
+      if (typeof Settings !== 'undefined' && Settings.prefs.autoplayOnUpload && this.songs.length > 0) {
+        const lastIndex = this.songs.length - 1;
+        console.log('[Library] Auto-play enabled — loading track', lastIndex);
+        if (typeof Player !== 'undefined') {
+          Player.loadTrack(lastIndex);
+          Player.play();
+        }
       }
-    }
-
-    if (typeof Utils !== 'undefined') {
-      Utils.toast(`${files.length} song(s) added to Library`, 'success');
+      if (typeof Utils !== 'undefined') {
+        Utils.toast(`${addedCount} song(s) added to Library`, 'success');
+      }
     }
   },
 
@@ -225,8 +243,39 @@ const Library = {
       return '';
     }
     try {
-      const blob = new Blob([song.data], { type: song.fileType || 'audio/mpeg' });
-      return URL.createObjectURL(blob);
+      // Ensure we have a proper ArrayBuffer
+      let buffer = song.data;
+      if (buffer instanceof Uint8Array) {
+        buffer = buffer.buffer;
+      }
+      if (!(buffer instanceof ArrayBuffer)) {
+        if (typeof buffer === 'object' && buffer !== null) {
+          console.warn('[Library] Converting object data to ArrayBuffer for', song.id);
+          const arr = Object.values(buffer);
+          buffer = new Uint8Array(arr).buffer;
+        }
+      }
+
+      // Normalize MIME type based on extension
+      let mimeType = song.fileType;
+      if (!mimeType || mimeType === 'application/octet-stream') {
+        const ext = (song.fileName || '').split('.').pop().toLowerCase();
+        const mimeMap = {
+          'mp3': 'audio/mpeg',
+          'm4a': 'audio/mp4',
+          'wav': 'audio/wav',
+          'ogg': 'audio/ogg',
+          'aac': 'audio/aac',
+          'flac': 'audio/flac',
+          'webm': 'audio/webm'
+        };
+        mimeType = mimeMap[ext] || 'audio/mpeg';
+      }
+
+      const blob = new Blob([buffer], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      console.log('[Library] Created blob URL for', song.title, 'type:', mimeType, 'size:', blob.size);
+      return url;
     } catch (e) {
       console.error('[Library] getSongUrl() blob creation failed:', e);
       return '';

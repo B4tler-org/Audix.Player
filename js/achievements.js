@@ -107,6 +107,7 @@ const Achievements = {
       this.save();
       this.render();
       this.renderRewards();
+      this.checkMilestoneRewards();
     }
   },
 
@@ -207,6 +208,32 @@ const Achievements = {
     };
     if (map[ach.id]) return map[ach.id]();
     return [this.unlocked.has(ach.id) ? 1 : 0, 1];
+  },
+
+  checkMilestoneRewards() {
+    const unlockedCount = this.unlocked.size;
+    const milestones = {
+      5: { id: 'milestone_5', type: 'frame', name: 'Bronze Frame', rarity: 'common' },
+      10: { id: 'milestone_10', type: 'background', name: 'Silver Background', rarity: 'common' },
+      15: { id: 'milestone_15', type: 'avatarBorder', name: 'Gold Border', rarity: 'rare' },
+      20: { id: 'milestone_20', type: 'nameEffect', name: 'Animated Glow', rarity: 'rare', animated: true },
+      25: { id: 'milestone_25', type: 'animatedAvatar', name: 'Animated Avatar Frame', rarity: 'epic', animated: true },
+      30: { id: 'milestone_30', type: 'theme', name: 'Rare Profile Theme', rarity: 'epic' },
+      35: { id: 'milestone_35', type: 'frame', name: 'Visualizer Frame', rarity: 'epic', animated: true },
+      40: { id: 'milestone_40', type: 'background', name: 'Premium Banner', rarity: 'legendary' },
+      45: { id: 'milestone_45', type: 'badge', name: 'Exclusive Badge', rarity: 'legendary' },
+      50: { id: 'milestone_50', type: 'theme', name: 'Nitro Premium Package', rarity: 'mythic' }
+    };
+    const userId = (typeof Auth !== 'undefined' && Auth.getUserId) ? Auth.getUserId() : 'guest';
+    const granted = JSON.parse(localStorage.getItem('audix_milestones_' + userId) || '[]');
+    for (const [count, reward] of Object.entries(milestones)) {
+      if (unlockedCount >= parseInt(count) && !granted.includes(count)) {
+        granted.push(count);
+        if (typeof Auth !== 'undefined') Auth.addItemToInventory(reward);
+        if (typeof Utils !== 'undefined') Utils.toast(`🏆 Milestone Reward: ${reward.name} unlocked!`, 'success');
+      }
+    }
+    localStorage.setItem('audix_milestones_' + userId, JSON.stringify(granted));
   },
 
   render() {

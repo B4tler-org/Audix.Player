@@ -131,25 +131,103 @@ const Auth = {
       const userRef = this.db.collection('users').doc(user.uid);
       const doc = await userRef.get();
       if (!doc.exists) {
+        const audixId = await this.generateUniqueAudixId();
         await userRef.set({
           uid: user.uid,
+          audixId: audixId,
           displayName: user.displayName || 'User',
           email: user.email,
           photoURL: user.photoURL || null,
           customPhotoURL: null,
           xp: 0,
           level: 1,
+          coins: 0,
           achievements: [],
           unlockedRewards: [],
+          inventory: {
+            frames: [],
+            backgrounds: [],
+            avatarBorders: [],
+            nameEffects: [],
+            badges: [],
+            animatedAvatars: [],
+            themes: [],
+            equipped: {
+              frame: null,
+              background: null,
+              avatarBorder: null,
+              nameEffect: null,
+              badge: null,
+              animatedAvatar: null,
+              theme: null
+            }
+          },
+          friends: {
+            list: [],
+            incoming: [],
+            outgoing: [],
+            blocked: []
+          },
+          activityStatus: {
+            currentlyPlaying: null,
+            artist: null,
+            album: null,
+            isPlaying: false,
+            lastUpdated: null,
+            privacy: 'friends'
+          },
+          adminPerks: {
+            equipped: { badge: null, frame: null, verifiedIcon: true, tag: null }
+          },
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        console.log('[Auth] Firestore profile created');
+        console.log('[Auth] Firestore profile created with ID:', audixId);
       } else {
+        const data = doc.data();
+        const updates = {};
+        if (!data.audixId) updates.audixId = await this.generateUniqueAudixId();
+        if (data.coins === undefined) updates.coins = 0;
+        if (!data.inventory) {
+          updates.inventory = {
+            frames: [], backgrounds: [], avatarBorders: [], nameEffects: [],
+            badges: [], animatedAvatars: [], themes: [],
+            equipped: { frame: null, background: null, avatarBorder: null, nameEffect: null, badge: null, animatedAvatar: null, theme: null }
+          };
+        }
+        if (!data.friends) {
+          updates.friends = { list: [], incoming: [], outgoing: [], blocked: [] };
+        }
+        if (!data.activityStatus) {
+          updates.activityStatus = { currentlyPlaying: null, artist: null, album: null, isPlaying: false, lastUpdated: null, privacy: 'friends' };
+        }
+        if (!data.adminPerks && this.isAdmin()) {
+          updates.adminPerks = { equipped: { badge: null, frame: null, verifiedIcon: true, tag: null } };
+        }
+        if (Object.keys(updates).length > 0) {
+          await userRef.update(updates);
+          console.log('[Auth] Migrated user profile');
+        }
         console.log('[Auth] Firestore profile exists');
       }
     } catch (err) {
       console.error('[Auth] ensureUserProfile error:', err);
     }
+  },
+
+  async generateUniqueAudixId() {
+    let attempts = 0;
+    while (attempts < 100) {
+      const num = Math.floor(1000 + Math.random() * 9000);
+      const id = `Audix ${num}`;
+      try {
+        const snap = await this.db.collection('users').where('audixId', '==', id).limit(1).get();
+        if (snap.empty) return id;
+      } catch (e) {
+        console.warn('[Auth] ID check failed:', e);
+      }
+      attempts++;
+    }
+    return `Audix ${Date.now().toString().slice(-4)}${Math.floor(Math.random() * 10)}`;
   },
 
   async loadUserData() {
@@ -160,6 +238,295 @@ const Auth = {
       if (typeof Gamification !== 'undefined') Gamification.load();
     } catch (e) {
       console.error('[Auth] loadUserData error:', e);
+    }
+  },
+
+  // ===================== FRIEND SYSTEM =====================
+  async searchUserByAudixId(audixId) {
+    try {
+      const snap = await this.db.collection('users').where('audixId', '==', audixId).limit(1).get();
+      if (snap.empty) return null;
+      const doc = snap.docs[0];
+      const data = doc.data();
+      return {
+        uid: doc.id,
+        audixId: data.audixId,
+        displayName: data.displayName,
+        photoURL: data.photoURL,
+        level: data.level || 1,
+        xp: data.xp || 0,
+        isAdmin: this.ADMIN_EMAILS.includes(data.email)
+      };
+    } catch (e) {
+      console.error('[Auth] searchUserByAudixId error:', e);
+      return null;
+    }
+  },
+
+  async sendFriendRequest(targetUid) {
+    if (!this.currentUser) throw new Error('Not logged in');
+    if (targetUid === this.currentUser.uid) throw new Error('Cannot friend yourself');
+    const myUid = this.currentUser.uid;
+    const myRef = this.db.collection('users').doc(myUid);
+    const targetRef = this.db.collection('users').doc(targetUid);
+    const myDoc = await myRef.get();
+    const myData = myDoc.data();
+    if (myData.friends?.list?.includes(targetUid)) throw new Error('Already friends');
+    if (myData.friends?.outgoing?.includes(targetUid)) throw new Error('Request already sent');
+    if (myData.friends?.incoming?.includes(targetUid)) {
+      return this.acceptFriendRequest(targetUid);
+    }
+    await myRef.update({ 'friends.outgoing': firebase.firestore.FieldValue.arrayUnion(targetUid) });
+    await targetRef.update({ 'friends.incoming': firebase.firestore.FieldValue.arrayUnion(myUid) });
+    if (typeof Utils !== 'undefined') Utils.toast('Friend request sent!', 'success');
+  },
+
+  async acceptFriendRequest(targetUid) {
+    if (!this.currentUser) throw new Error('Not logged in');
+    const myUid = this.currentUser.uid;
+    const myRef = this.db.collection('users').doc(myUid);
+    const targetRef = this.db.collection('users').doc(targetUid);
+    await myRef.update({
+      'friends.incoming': firebase.firestore.FieldValue.arrayRemove(targetUid),
+      'friends.list': firebase.firestore.FieldValue.arrayUnion(targetUid)
+    });
+    await targetRef.update({
+      'friends.outgoing': firebase.firestore.FieldValue.arrayRemove(myUid),
+      'friends.list': firebase.firestore.FieldValue.arrayUnion(myUid)
+    });
+    if (typeof Utils !== 'undefined') Utils.toast('Friend request accepted!', 'success');
+  },
+
+  async rejectFriendRequest(targetUid) {
+    if (!this.currentUser) throw new Error('Not logged in');
+    const myUid = this.currentUser.uid;
+    await this.db.collection('users').doc(myUid).update({
+      'friends.incoming': firebase.firestore.FieldValue.arrayRemove(targetUid)
+    });
+    await this.db.collection('users').doc(targetUid).update({
+      'friends.outgoing': firebase.firestore.FieldValue.arrayRemove(myUid)
+    });
+  },
+
+  async removeFriend(targetUid) {
+    if (!this.currentUser) throw new Error('Not logged in');
+    const myUid = this.currentUser.uid;
+    await this.db.collection('users').doc(myUid).update({
+      'friends.list': firebase.firestore.FieldValue.arrayRemove(targetUid)
+    });
+    await this.db.collection('users').doc(targetUid).update({
+      'friends.list': firebase.firestore.FieldValue.arrayRemove(myUid)
+    });
+    if (typeof Utils !== 'undefined') Utils.toast('Friend removed', 'info');
+  },
+
+  async getFriends() {
+    if (!this.currentUser) return [];
+    const doc = await this.db.collection('users').doc(this.currentUser.uid).get();
+    const data = doc.data();
+    const friendUids = data.friends?.list || [];
+    if (friendUids.length === 0) return [];
+    const friends = [];
+    for (let i = 0; i < friendUids.length; i += 10) {
+      const batch = friendUids.slice(i, i + 10);
+      const snap = await this.db.collection('users').where(firebase.firestore.FieldPath.documentId(), 'in', batch).get();
+      snap.forEach(d => {
+        const f = d.data();
+        friends.push({
+          uid: d.id,
+          audixId: f.audixId,
+          displayName: f.displayName,
+          photoURL: f.photoURL,
+          level: f.level || 1,
+          activityStatus: f.activityStatus || null
+        });
+      });
+    }
+    return friends;
+  },
+
+  async getMutualFriends(otherUid) {
+    if (!this.currentUser) return [];
+    const myDoc = await this.db.collection('users').doc(this.currentUser.uid).get();
+    const theirDoc = await this.db.collection('users').doc(otherUid).get();
+    const myFriends = new Set(myDoc.data().friends?.list || []);
+    const theirFriends = new Set(theirDoc.data().friends?.list || []);
+    return [...myFriends].filter(uid => theirFriends.has(uid));
+  },
+
+  async getFriendRequests() {
+    if (!this.currentUser) return { incoming: [], outgoing: [] };
+    const doc = await this.db.collection('users').doc(this.currentUser.uid).get();
+    const data = doc.data();
+    const incomingUids = data.friends?.incoming || [];
+    const outgoingUids = data.friends?.outgoing || [];
+    const incoming = [];
+    for (const uid of incomingUids) {
+      const d = await this.db.collection('users').doc(uid).get();
+      if (d.exists) {
+        const u = d.data();
+        incoming.push({ uid, audixId: u.audixId, displayName: u.displayName, photoURL: u.photoURL, level: u.level || 1 });
+      }
+    }
+    const outgoing = [];
+    for (const uid of outgoingUids) {
+      const d = await this.db.collection('users').doc(uid).get();
+      if (d.exists) {
+        const u = d.data();
+        outgoing.push({ uid, audixId: u.audixId, displayName: u.displayName, photoURL: u.photoURL, level: u.level || 1 });
+      }
+    }
+    return { incoming, outgoing };
+  },
+
+  // ===================== ACTIVITY STATUS =====================
+  async updateActivityStatus(songInfo) {
+    if (!this.currentUser) return;
+    try {
+      await this.db.collection('users').doc(this.currentUser.uid).update({
+        'activityStatus.currentlyPlaying': songInfo.title || null,
+        'activityStatus.artist': songInfo.artist || null,
+        'activityStatus.album': songInfo.album || null,
+        'activityStatus.isPlaying': songInfo.isPlaying || false,
+        'activityStatus.lastUpdated': firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch (e) {
+      console.error('[Auth] updateActivityStatus error:', e);
+    }
+  },
+
+  async clearActivityStatus() {
+    if (!this.currentUser) return;
+    try {
+      await this.db.collection('users').doc(this.currentUser.uid).update({
+        'activityStatus.currentlyPlaying': null,
+        'activityStatus.artist': null,
+        'activityStatus.album': null,
+        'activityStatus.isPlaying': false,
+        'activityStatus.lastUpdated': firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch (e) {
+      console.error('[Auth] clearActivityStatus error:', e);
+    }
+  },
+
+  async toggleActivityPrivacy(setting) {
+    if (!this.currentUser) return;
+    const valid = ['public', 'friends', 'private'];
+    if (!valid.includes(setting)) return;
+    await this.db.collection('users').doc(this.currentUser.uid).update({
+      'activityStatus.privacy': setting
+    });
+    if (typeof Utils !== 'undefined') Utils.toast(`Activity status set to ${setting}`, 'success');
+  },
+
+  // ===================== INVENTORY & COINS =====================
+  async getInventory() {
+    if (!this.currentUser) return null;
+    const doc = await this.db.collection('users').doc(this.currentUser.uid).get();
+    return doc.data()?.inventory || null;
+  },
+
+  async equipItem(itemId, slot) {
+    if (!this.currentUser) return;
+    const validSlots = ['frame', 'background', 'avatarBorder', 'nameEffect', 'badge', 'animatedAvatar', 'theme'];
+    if (!validSlots.includes(slot)) return;
+    const path = `inventory.equipped.${slot}`;
+    await this.db.collection('users').doc(this.currentUser.uid).update({ [path]: itemId });
+    if (typeof Utils !== 'undefined') Utils.toast(`${slot} equipped!`, 'success');
+  },
+
+  async unequipItem(slot) {
+    if (!this.currentUser) return;
+    const validSlots = ['frame', 'background', 'avatarBorder', 'nameEffect', 'badge', 'animatedAvatar', 'theme'];
+    if (!validSlots.includes(slot)) return;
+    const path = `inventory.equipped.${slot}`;
+    await this.db.collection('users').doc(this.currentUser.uid).update({ [path]: null });
+  },
+
+  async addItemToInventory(item) {
+    if (!this.currentUser) return;
+    const categoryMap = {
+      'frame': 'inventory.frames',
+      'background': 'inventory.backgrounds',
+      'avatarBorder': 'inventory.avatarBorders',
+      'nameEffect': 'inventory.nameEffects',
+      'badge': 'inventory.badges',
+      'animatedAvatar': 'inventory.animatedAvatars',
+      'theme': 'inventory.themes'
+    };
+    const path = categoryMap[item.type];
+    if (!path) return;
+    await this.db.collection('users').doc(this.currentUser.uid).update({
+      [path]: firebase.firestore.FieldValue.arrayUnion(item)
+    });
+  },
+
+  async addCoins(amount) {
+    if (!this.currentUser || amount <= 0) return;
+    await this.db.collection('users').doc(this.currentUser.uid).update({
+      coins: firebase.firestore.FieldValue.increment(amount)
+    });
+    if (typeof Utils !== 'undefined') Utils.toast(`+${amount} coins!`, 'success');
+  },
+
+  async getCoins() {
+    if (!this.currentUser) return 0;
+    const doc = await this.db.collection('users').doc(this.currentUser.uid).get();
+    return doc.data()?.coins || 0;
+  },
+
+  // ===================== QR CODE =====================
+  generateUserQRCode(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    if (!this.currentUser) return;
+    this.db.collection('users').doc(this.currentUser.uid).get().then(doc => {
+      const data = doc.data();
+      if (!data || !data.audixId) return;
+      const qrData = JSON.stringify({ audixId: data.audixId, name: data.displayName, app: 'audix' });
+      if (typeof QRCode !== 'undefined') {
+        new QRCode(container, {
+          text: qrData,
+          width: 128,
+          height: 128,
+          colorDark: '#0f0f1a',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
+    });
+  },
+
+  // ===================== ADMIN PROFILE =====================
+  async ensureAdminInventory() {
+    if (!this.currentUser || !this.isAdmin()) return;
+    const doc = await this.db.collection('users').doc(this.currentUser.uid).get();
+    const data = doc.data();
+    const inv = data.inventory || { equipped: {} };
+    const adminItems = [
+      { id: 'admin_frame_gold', type: 'frame', name: 'Gold Admin Frame', rarity: 'admin', animated: true },
+      { id: 'admin_badge_crown', type: 'badge', name: 'Admin Crown', rarity: 'admin', animated: true },
+      { id: 'admin_border_verified', type: 'avatarBorder', name: 'Verified Border', rarity: 'admin', animated: true },
+      { id: 'admin_effect_shimmer', type: 'nameEffect', name: 'Shimmer Name', rarity: 'admin', animated: true },
+      { id: 'admin_theme_exclusive', type: 'theme', name: 'Admin Exclusive', rarity: 'admin', animated: false }
+    ];
+    for (const item of adminItems) {
+      const list = inv[item.type + 's'] || [];
+      if (!list.find(i => i.id === item.id)) {
+        await this.addItemToInventory(item);
+      }
+    }
+    const equipped = inv.equipped || {};
+    const updates = {};
+    if (!equipped.frame) updates['inventory.equipped.frame'] = 'admin_frame_gold';
+    if (!equipped.badge) updates['inventory.equipped.badge'] = 'admin_badge_crown';
+    if (!equipped.avatarBorder) updates['inventory.equipped.avatarBorder'] = 'admin_border_verified';
+    if (!equipped.nameEffect) updates['inventory.equipped.nameEffect'] = 'admin_effect_shimmer';
+    if (!equipped.theme) updates['inventory.equipped.theme'] = 'admin_theme_exclusive';
+    if (Object.keys(updates).length > 0) {
+      await this.db.collection('users').doc(this.currentUser.uid).update(updates);
     }
   },
 
@@ -409,6 +776,10 @@ const Auth = {
     if (isAdmin && typeof Admin !== 'undefined') {
       Admin.applyAdminPerks();
     }
+
+    // NEW: Admin badge in sidebar
+    const sidebarAdminBadge = document.getElementById('sidebarAdminBadge');
+    if (sidebarAdminBadge) sidebarAdminBadge.classList.toggle('hidden', !isAdmin);
 
     if (isLoggedIn) {
       this.hideLoginModal();
