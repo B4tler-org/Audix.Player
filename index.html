@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <!-- Firebase SDK (Compat) — Auth + Firestore only (no Storage needed) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -121,6 +122,74 @@
 .toast.fade-out { animation: fadeOut 0.3s ease forwards; }
 @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+/* Admin Badge */
+.admin-badge-container { display: flex; align-items: center; gap: 8px; margin: 12px 0; justify-content: center; flex-wrap: wrap; }
+.admin-badge { background: linear-gradient(45deg, #e74c3c, #f39c12); color: #fff; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; animation: adminPulse 2s infinite; }
+.admin-verified { color: #3498db; font-size: 1rem; }
+.admin-tag { font-size: 0.75rem; color: #888; }
+@keyframes adminPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(231, 76, 60, 0); } }
+
+/* Audix ID */
+.audix-id-row { display: flex; align-items: center; gap: 8px; }
+.audix-id-row span { font-family: monospace; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 6px; font-size: 0.9rem; }
+
+/* Activity Status */
+.activity-status-card { background: var(--bg-card); border: 1px solid var(--glass-border, rgba(255,255,255,0.05)); border-radius: 12px; padding: 16px; margin: 16px 0; }
+.activity-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.activity-indicator { width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; animation: pulse 2s infinite; }
+.activity-label { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+.activity-song { font-weight: 600; font-size: 1rem; color: var(--accent); }
+.activity-artist { font-size: 0.85rem; color: #888; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* QR Section */
+.qr-section { text-align: center; margin: 20px 0; }
+.qr-section h4 { margin-bottom: 12px; color: var(--accent); }
+#profileQRCode { display: inline-block; padding: 12px; background: #fff; border-radius: 12px; }
+.qr-hint { font-size: 0.8rem; color: #888; margin-top: 8px; }
+
+/* Friend System */
+.friend-system-section { margin: 20px 0; }
+.friend-system-section h4 { color: var(--accent); margin-bottom: 12px; }
+.friend-search { display: flex; gap: 8px; margin-bottom: 16px; }
+.friend-search input { flex: 1; background: var(--bg-base); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 12px; color: #fff; }
+.friend-item, .friend-request, .friend-result { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--bg-card); border-radius: 10px; margin-bottom: 8px; }
+.friend-pic { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: rgba(255,255,255,0.05); }
+.friend-info { flex: 1; min-width: 0; }
+.friend-name { display: block; font-weight: 600; font-size: 0.9rem; }
+.friend-id { display: block; font-size: 0.75rem; color: #888; font-family: monospace; }
+.friend-activity { display: block; font-size: 0.75rem; color: #2ecc71; margin-top: 2px; }
+.friend-request .btn-small { margin-left: 4px; }
+.empty-friends, .empty-requests, .empty-results { color: #666; font-size: 0.85rem; padding: 12px; text-align: center; }
+.request-status { font-size: 0.7rem; color: #888; }
+
+/* Inventory */
+.inventory-section { margin: 20px 0; }
+.inventory-section h4 { color: var(--accent); margin-bottom: 12px; }
+.inventory-tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.inv-tab { padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #888; cursor: pointer; font-size: 0.8rem; }
+.inv-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+.inventory-item { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 12px; text-align: center; cursor: pointer; transition: transform 0.2s; }
+.inventory-item:hover { transform: translateY(-2px); }
+.inventory-item.equipped { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.inv-icon { font-size: 1.5rem; margin-bottom: 6px; }
+.inv-name { font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; }
+.inv-rarity { font-size: 0.7rem; color: #f1c40f; text-transform: uppercase; margin-bottom: 8px; }
+.btn-equip { padding: 4px 12px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 0.75rem; cursor: pointer; }
+.empty-inventory { color: #666; text-align: center; padding: 20px; grid-column: 1 / -1; }
+
+/* Quiz Rewards */
+.quiz-rewards { margin: 12px 0; padding: 12px; background: rgba(241,196,15,0.1); border-radius: 10px; }
+.quiz-reward-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 0.85rem; color: #f1c40f; }
+
+/* Sidebar Admin Badge */
+.sidebar-admin-badge { font-size: 0.65rem; background: linear-gradient(45deg, #e74c3c, #f39c12); color: #fff; padding: 2px 6px; border-radius: 8px; margin-left: 4px; animation: adminPulse 2s infinite; }
+
+/* QR Scan Modal */
+#qrVideo { width: 100%; max-width: 300px; border-radius: 12px; }
+
 </style>
 </head>
 <body>
@@ -155,7 +224,7 @@
         <img class="sidebar-pfp" id="sidebarPfp" src="" alt="">
         <div class="sidebar-user-info">
           <span class="sidebar-username" id="sidebarUsername">Guest</span>
-          <span class="sidebar-email" id="sidebarEmail"></span>
+          <span class="sidebar-email" id="sidebarEmail"></span><span class="sidebar-admin-badge hidden" id="sidebarAdminBadge">ADMIN</span>
         </div>
       </div>
       <!-- XP & Level Display -->
@@ -224,6 +293,19 @@
       <div class="modal-content achievement-detail-content">
         <div id="achievementDetailContent"></div>
         <button class="ach-close-detail">Close</button>
+      </div>
+    </div>
+
+    <!-- QR Scan Modal -->
+    <div class="modal-overlay hidden" id="qrScanModal">
+      <div class="modal-content">
+        <h3>Scan Friend QR Code</h3>
+        <video id="qrVideo" width="300" height="200" autoplay playsinline></video>
+        <canvas id="qrCanvas" hidden></canvas>
+        <p class="qr-hint">Point your camera at a friend's QR code</p>
+        <div class="modal-actions">
+          <button class="btn-text" id="btn-close-qr">Cancel</button>
+        </div>
       </div>
     </div>
 
@@ -394,6 +476,7 @@
             <h3>Quiz Complete!</h3>
             <div class="final-score" id="final-score"></div>
             <div class="xp-gained" id="quiz-xp-gained"></div>
+            <div class="quiz-rewards hidden" id="quiz-rewards"></div>
             <div class="achievement-unlock hidden" id="quiz-achievement"></div>
             <button class="btn-primary" id="btn-restart-quiz">Play Again</button>
           </div>
@@ -567,7 +650,21 @@
               <span id="profileTotalXp">0 XP Total</span>
             </div>
           </div>
+          <!-- Admin Badge -->
+          <div class="admin-badge-container hidden" id="adminBadgeContainer">
+            <span class="admin-badge animated">ADMIN</span>
+            <span class="admin-verified">&#10004;</span>
+            <span class="admin-tag">System Administrator</span>
+          </div>
+
           <div class="profile-info">
+            <div class="info-row">
+              <label>Audix ID</label>
+              <div class="audix-id-row">
+                <span id="profileAudixId">—</span>
+                <button class="btn-icon btn-small" id="btn-copy-id" title="Copy ID">&#128203;</button>
+              </div>
+            </div>
             <div class="info-row">
               <label>Username</label>
               <span id="profileUsername">Guest</span>
@@ -592,7 +689,63 @@
               <label>Listening Time</label>
               <span id="profileListenTime">0 min</span>
             </div>
+            <div class="info-row">
+              <label>Coins</label>
+              <span id="profileCoins">0 Coins</span>
+            </div>
           </div>
+
+          <!-- Activity Status -->
+          <div class="activity-status-card hidden" id="activityStatusCard">
+            <div class="activity-header">
+              <span class="activity-indicator"></span>
+              <span class="activity-label">Currently Playing</span>
+            </div>
+            <div class="activity-song" id="activitySong">—</div>
+            <div class="activity-artist" id="activityArtist">—</div>
+          </div>
+
+          <!-- QR Code -->
+          <div class="qr-section">
+            <h4>My QR Code</h4>
+            <div id="profileQRCode"></div>
+            <p class="qr-hint">Scan to add me as a friend</p>
+            <button class="btn-secondary btn-small" id="btn-scan-qr">Scan Friend QR</button>
+          </div>
+
+          <!-- Friend System -->
+          <div class="friend-system-section">
+            <h4>Friends</h4>
+            <div class="friend-search">
+              <input type="text" id="friendSearchInput" placeholder="Search Audix ID (e.g., Audix 1234)">
+              <button class="btn-secondary" id="btn-search-friend">Search</button>
+            </div>
+            <div class="friend-search-results" id="friendSearchResults"></div>
+            <div class="friend-requests" id="friendRequests">
+              <h5>Requests</h5>
+              <div id="friendRequestsList"></div>
+            </div>
+            <div class="friend-list" id="friendList">
+              <h5>My Friends</h5>
+              <div id="friendListContainer"></div>
+            </div>
+          </div>
+
+          <!-- Inventory -->
+          <div class="inventory-section">
+            <h4>Inventory</h4>
+            <div class="inventory-tabs">
+              <button class="inv-tab active" data-tab="frames">Frames</button>
+              <button class="inv-tab" data-tab="backgrounds">Backgrounds</button>
+              <button class="inv-tab" data-tab="borders">Borders</button>
+              <button class="inv-tab" data-tab="badges">Badges</button>
+              <button class="inv-tab" data-tab="effects">Effects</button>
+              <button class="inv-tab" data-tab="avatars">Avatars</button>
+              <button class="inv-tab" data-tab="themes">Themes</button>
+            </div>
+            <div class="inventory-grid" id="inventoryGrid" data-tab="frames"></div>
+          </div>
+
           <div class="profile-actions">
             <button class="btn-primary" id="btn-logout">Logout</button>
           </div>
@@ -640,6 +793,14 @@
                 <input type="checkbox" id="toggleAutoplay" checked>
                 <span class="toggle-slider"></span>
               </label>
+            </div>
+            <div class="setting-item">
+              <label>Music Activity Status</label>
+              <select id="activityPrivacy" style="background:var(--bg-base);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px;color:#fff;">
+                <option value="friends">Friends Only</option>
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+              </select>
             </div>
           </div>
           <!-- Theme Settings -->
