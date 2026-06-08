@@ -190,6 +190,29 @@
 /* QR Scan Modal */
 #qrVideo { width: 100%; max-width: 300px; border-radius: 12px; }
 
+
+/* Tag System */
+.tag-edit-row { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+.tag-edit-row input { flex: 1; background: var(--bg-base); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 10px; color: #fff; font-size: 0.85rem; }
+.profile-tag-display { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 0.75rem; font-weight: 600; }
+
+/* Admin Role Badge */
+.admin-role-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+.admin-role-badge.admin { background: rgba(231,76,60,0.15); color: #e74c3c; }
+.admin-role-badge.user { background: rgba(52,152,219,0.15); color: #3498db; }
+
+/* Avatar Frame Animation */
+@keyframes framePulse { 0%, 100% { box-shadow: 0 0 8px var(--accent); } 50% { box-shadow: 0 0 20px var(--accent); } }
+
+/* Share Section */
+.share-section { text-align: center; margin: 16px 0; }
+.share-section h4 { margin-bottom: 10px; color: var(--accent); }
+
+/* Maintenance Page */
+.maintenance-page { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; padding: 40px 20px; }
+.maintenance-page .logo { font-size: 4rem; margin-bottom: 20px; }
+.maintenance-page h2 { margin-bottom: 12px; font-size: 1.5rem; }
+.maintenance-page p { color: #888; max-width: 400px; line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -296,18 +319,7 @@
       </div>
     </div>
 
-    <!-- QR Scan Modal -->
-    <div class="modal-overlay hidden" id="qrScanModal">
-      <div class="modal-content">
-        <h3>Scan Friend QR Code</h3>
-        <video id="qrVideo" width="300" height="200" autoplay playsinline></video>
-        <canvas id="qrCanvas" hidden></canvas>
-        <p class="qr-hint">Point your camera at a friend's QR code</p>
-        <div class="modal-actions">
-          <button class="btn-text" id="btn-close-qr">Cancel</button>
-        </div>
-      </div>
-    </div>
+
 
     <!-- Main Content -->
     <main class="main-content">
@@ -588,40 +600,7 @@
       </section>
 
       <!-- ACHIEVEMENTS PAGE -->
-      <section id="page-achievements" class="page">
-        <div class="page-header"><h2>Achievements</h2><p>Unlock all 50 badges and earn rewards</p></div>
-        <div class="achievements-stats">
-          <div class="stat-card">
-            <span class="stat-num" id="achieve-unlocked">0</span>
-            <span class="stat-label">Unlocked</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-num">50</span>
-            <span class="stat-label">Total</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-num" id="total-xp">0</span>
-            <span class="stat-label">Total XP</span>
-          </div>
-        </div>
-        <div class="rewards-bar" id="rewardsBar">
-          <h4>Your Rewards</h4>
-          <div class="rewards-list" id="rewardsList"></div>
-        </div>
-        <!-- Achievement Filters -->
-        <div class="ach-filters">
-          <button class="ach-filter-btn active" data-filter="all">All</button>
-          <button class="ach-filter-btn" data-filter="unlocked">Unlocked</button>
-          <button class="ach-filter-btn" data-filter="locked">Locked</button>
-          <button class="ach-filter-btn" data-filter="near">Near Completion</button>
-        </div>
-        <div class="achievements-grid" id="achievements-grid" data-filter="all"></div>
-        <footer class="page-footer">
-          <p class="footer-ai">Proudly built with the help of ChatGPT, Kimi AI, and Claude.</p>
-        </footer>
-      </section>
-
-      <!-- PROFILE PAGE -->
+      <section id="page-achievements" class="pag      <!-- PROFILE PAGE -->
       <section id="page-profile" class="page">
         <div class="page-header"><h2>Profile</h2><p>Your Audix account</p></div>
         <div class="profile-card">
@@ -670,6 +649,14 @@
               <span id="profileUsername">Guest</span>
             </div>
             <div class="info-row">
+              <label>Tag</label>
+              <div class="tag-edit-row">
+                <input type="text" id="tagInput" placeholder="Music Lover, DJ, Producer..." maxlength="25">
+                <button class="btn-secondary btn-small" id="btn-save-tag">Save</button>
+              </div>
+              <span id="profileTag" class="profile-tag-display"></span>
+            </div>
+            <div class="info-row">
               <label>Email</label>
               <span id="profileEmail">—</span>
             </div>
@@ -705,12 +692,10 @@
             <div class="activity-artist" id="activityArtist">—</div>
           </div>
 
-          <!-- QR Code -->
-          <div class="qr-section">
-            <h4>My QR Code</h4>
-            <div id="profileQRCode"></div>
-            <p class="qr-hint">Scan to add me as a friend</p>
-            <button class="btn-secondary btn-small" id="btn-scan-qr">Scan Friend QR</button>
+          <!-- Share Profile -->
+          <div class="share-section">
+            <h4>Share Profile</h4>
+            <button class="btn-secondary btn-small" id="btn-share-profile">🔗 Share</button>
           </div>
 
           <!-- Friend System -->
@@ -721,6 +706,41 @@
               <button class="btn-secondary" id="btn-search-friend">Search</button>
             </div>
             <div class="friend-search-results" id="friendSearchResults"></div>
+            <div class="friend-requests" id="friendRequests">
+              <h5>Requests</h5>
+              <div id="friendRequestsList"></div>
+            </div>
+            <div class="friend-list" id="friendList">
+              <h5>My Friends</h5>
+              <div id="friendListContainer"></div>
+            </div>
+          </div>
+
+          <!-- Inventory -->
+          <div class="inventory-section">
+            <h4>Inventory</h4>
+            <div class="inventory-tabs">
+              <button class="inv-tab active" data-tab="frames">Frames</button>
+              <button class="inv-tab" data-tab="backgrounds">Backgrounds</button>
+              <button class="inv-tab" data-tab="borders">Borders</button>
+              <button class="inv-tab" data-tab="badges">Badges</button>
+              <button class="inv-tab" data-tab="effects">Effects</button>
+              <button class="inv-tab" data-tab="avatars">Avatars</button>
+              <button class="inv-tab" data-tab="themes">Themes</button>
+            </div>
+            <div class="inventory-grid" id="inventoryGrid" data-tab="frames"></div>
+          </div>
+
+          <div class="profile-actions">
+            <button class="btn-primary" id="btn-logout">Logout</button>
+          </div>
+        </div>
+        <footer class="page-footer">
+          <p class="footer-ai">Proudly built with the help of ChatGPT, Kimi AI, and Claude.</p>
+        </footer>
+      </section>
+
+dSearchResults"></div>
             <div class="friend-requests" id="friendRequests">
               <h5>Requests</h5>
               <div id="friendRequestsList"></div>
@@ -830,6 +850,15 @@
         </footer>
       </section>
 
+      <!-- MAINTENANCE PAGE -->
+      <section id="page-maintenance" class="page">
+        <div class="maintenance-page">
+          <div class="logo">&#9836;</div>
+          <h2>Under Maintenance</h2>
+          <p id="maintenancePageMessage">Audix is under maintenance. We will be back soon!</p>
+        </div>
+      </section>
+
       <!-- ABOUT PAGE -->
       <section id="page-about" class="page">
         <div class="page-header"><h2>About</h2></div>
@@ -913,7 +942,7 @@
           <div class="admin-section">
             <h3>User Management</h3>
             <div class="admin-btn-row">
-              <button class="btn-secondary" id="btn-refresh-users">Refresh Users</button>
+              <button class="btn-secondary" id="btn-refresh-users">Refresh Users</button><span style="font-size:0.75rem;color:#888;margin-left:8px;">Auto-updates in real-time</span>
             </div>
             <div id="admin-users-list">
               <p class="admin-empty">Click Refresh to load users from Firestore.</p>
