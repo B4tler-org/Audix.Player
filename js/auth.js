@@ -424,7 +424,16 @@ const Auth = {
   async getInventory() {
     if (!this.currentUser) return null;
     const doc = await this.db.collection('users').doc(this.currentUser.uid).get();
-    return doc.data()?.inventory || null;
+    const data = doc.data();
+    if (!data || !data.inventory) {
+      // Return empty inventory structure as fallback
+      return {
+        frames: [], backgrounds: [], avatarBorders: [], nameEffects: [],
+        badges: [], animatedAvatars: [], themes: [],
+        equipped: { frame: null, background: null, avatarBorder: null, nameEffect: null, badge: null, animatedAvatar: null, theme: null }
+      };
+    }
+    return data.inventory;
   },
 
   async equipItem(itemId, slot) {
@@ -502,31 +511,46 @@ const Auth = {
   // ===================== ADMIN PROFILE =====================
   async ensureAdminInventory() {
     if (!this.currentUser || !this.isAdmin()) return;
-    const doc = await this.db.collection('users').doc(this.currentUser.uid).get();
-    const data = doc.data();
-    const inv = data.inventory || { equipped: {} };
-    const adminItems = [
-      { id: 'admin_frame_gold', type: 'frame', name: 'Gold Admin Frame', rarity: 'admin', animated: true },
-      { id: 'admin_badge_crown', type: 'badge', name: 'Admin Crown', rarity: 'admin', animated: true },
-      { id: 'admin_border_verified', type: 'avatarBorder', name: 'Verified Border', rarity: 'admin', animated: true },
-      { id: 'admin_effect_shimmer', type: 'nameEffect', name: 'Shimmer Name', rarity: 'admin', animated: true },
-      { id: 'admin_theme_exclusive', type: 'theme', name: 'Admin Exclusive', rarity: 'admin', animated: false }
-    ];
-    for (const item of adminItems) {
-      const list = inv[item.type + 's'] || [];
-      if (!list.find(i => i.id === item.id)) {
-        await this.addItemToInventory(item);
+    try {
+      const doc = await this.db.collection('users').doc(this.currentUser.uid).get();
+      const data = doc.data();
+      // Ensure inventory structure exists first
+      if (!data.inventory) {
+        await this.db.collection('users').doc(this.currentUser.uid).update({
+          inventory: {
+            frames: [], backgrounds: [], avatarBorders: [], nameEffects: [],
+            badges: [], animatedAvatars: [], themes: [],
+            equipped: { frame: null, background: null, avatarBorder: null, nameEffect: null, badge: null, animatedAvatar: null, theme: null }
+          }
+        });
       }
-    }
-    const equipped = inv.equipped || {};
-    const updates = {};
-    if (!equipped.frame) updates['inventory.equipped.frame'] = 'admin_frame_gold';
-    if (!equipped.badge) updates['inventory.equipped.badge'] = 'admin_badge_crown';
-    if (!equipped.avatarBorder) updates['inventory.equipped.avatarBorder'] = 'admin_border_verified';
-    if (!equipped.nameEffect) updates['inventory.equipped.nameEffect'] = 'admin_effect_shimmer';
-    if (!equipped.theme) updates['inventory.equipped.theme'] = 'admin_theme_exclusive';
-    if (Object.keys(updates).length > 0) {
-      await this.db.collection('users').doc(this.currentUser.uid).update(updates);
+      const inv = data.inventory || { equipped: {} };
+      const adminItems = [
+        { id: 'admin_frame_gold', type: 'frame', name: 'Gold Admin Frame', rarity: 'admin', animated: true },
+        { id: 'admin_badge_crown', type: 'badge', name: 'Admin Crown', rarity: 'admin', animated: true },
+        { id: 'admin_border_verified', type: 'avatarBorder', name: 'Verified Border', rarity: 'admin', animated: true },
+        { id: 'admin_effect_shimmer', type: 'nameEffect', name: 'Shimmer Name', rarity: 'admin', animated: true },
+        { id: 'admin_theme_exclusive', type: 'theme', name: 'Admin Exclusive', rarity: 'admin', animated: false }
+      ];
+      for (const item of adminItems) {
+        const list = inv[item.type + 's'] || [];
+        if (!list.find(i => i.id === item.id)) {
+          await this.addItemToInventory(item);
+        }
+      }
+      const equipped = inv.equipped || {};
+      const updates = {};
+      if (!equipped.frame) updates['inventory.equipped.frame'] = 'admin_frame_gold';
+      if (!equipped.badge) updates['inventory.equipped.badge'] = 'admin_badge_crown';
+      if (!equipped.avatarBorder) updates['inventory.equipped.avatarBorder'] = 'admin_border_verified';
+      if (!equipped.nameEffect) updates['inventory.equipped.nameEffect'] = 'admin_effect_shimmer';
+      if (!equipped.theme) updates['inventory.equipped.theme'] = 'admin_theme_exclusive';
+      if (Object.keys(updates).length > 0) {
+        await this.db.collection('users').doc(this.currentUser.uid).update(updates);
+      }
+      console.log('[Auth] Admin inventory ensured');
+    } catch (e) {
+      console.error('[Auth] ensureAdminInventory failed:', e);
     }
   },
 

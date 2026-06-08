@@ -9,6 +9,34 @@ const Profile = {
     const audixIdEl = document.getElementById('profileAudixId');
     if (audixIdEl) audixIdEl.textContent = data.audixId || '—';
 
+    const profileUsername = document.getElementById('profileUsername');
+    if (profileUsername) profileUsername.textContent = data.displayName || user.displayName || 'User';
+
+    const profileEmail = document.getElementById('profileEmail');
+    if (profileEmail) profileEmail.textContent = data.email || user.email || '—';
+
+    const profileJoined = document.getElementById('profileJoined');
+    if (profileJoined && data.createdAt) {
+      const date = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+      profileJoined.textContent = date.toLocaleDateString();
+    } else if (profileJoined) {
+      profileJoined.textContent = '—';
+    }
+
+    // Add verified tick next to username for admins
+    const profileUsernameRow = document.getElementById('profileUsername')?.closest('.info-row');
+    if (profileUsernameRow && Auth.isAdmin()) {
+      let tick = profileUsernameRow.querySelector('.admin-verified-tick');
+      if (!tick) {
+        tick = document.createElement('span');
+        tick.className = 'admin-verified-tick';
+        tick.innerHTML = ' &#10004;';
+        tick.style.color = '#3498db';
+        tick.style.fontSize = '1rem';
+        profileUsernameRow.appendChild(tick);
+      }
+    }
+
     const adminBadgeContainer = document.getElementById('adminBadgeContainer');
     if (adminBadgeContainer) adminBadgeContainer.classList.toggle('hidden', !Auth.isAdmin());
 
@@ -103,12 +131,21 @@ const Profile = {
   async renderInventory() {
     const grid = document.getElementById('inventoryGrid');
     if (!grid) return;
-    const inventory = await Auth.getInventory();
+    const tab = grid.dataset.tab || 'frames';
+    const tabNames = { 'frames': 'Profile Frames', 'backgrounds': 'Backgrounds', 'borders': 'Avatar Borders', 'badges': 'Badges', 'effects': 'Name Effects', 'avatars': 'Animated Avatars', 'themes': 'Themes' };
+
+    let inventory;
+    try {
+      inventory = await Auth.getInventory();
+    } catch (e) {
+      console.error('[Profile] getInventory failed:', e);
+      inventory = null;
+    }
+
     if (!inventory) {
-      grid.innerHTML = '<p class="empty-inventory">No items yet. Unlock achievements to earn rewards!</p>';
+      grid.innerHTML = `<p class="empty-inventory">No items yet in <strong>${tabNames[tab]}</strong>.<br>Unlock achievements to earn rewards!</p>`;
       return;
     }
-    const tab = grid.dataset.tab || 'frames';
     const map = {
       'frames': 'frames',
       'backgrounds': 'backgrounds',
@@ -128,9 +165,10 @@ const Profile = {
       const equipClass = isEquipped ? 'equipped' : '';
       html += `<div class="inventory-item ${equipClass}" data-id="${item.id}" data-type="${item.type}"><div class="inv-icon">${item.animated ? '✨' : '🎁'}</div><div class="inv-name">${item.name}</div><div class="inv-rarity">${item.rarity}</div><button class="btn-equip">${isEquipped ? 'Unequip' : 'Equip'}</button></div>`;
     }
-    grid.innerHTML = html || '<p class="empty-inventory">No items in this category.</p>';
+    grid.innerHTML = html || `<p class="empty-inventory">No <strong>${tabNames[tab]}</strong> items yet.<br>Keep unlocking achievements!</p>`;
     grid.querySelectorAll('.btn-equip').forEach(btn => {
       btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
         const item = e.target.closest('.inventory-item');
         const id = item.dataset.id;
         const type = item.dataset.type;
@@ -143,13 +181,14 @@ const Profile = {
   },
 
   bindEvents() {
-    document.querySelectorAll('.inv-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
+    // Use event delegation for inventory tabs so they work even if DOM is re-rendered
+    document.body.addEventListener('click', (e) => {
+      if (e.target.matches('.inv-tab')) {
         document.querySelectorAll('.inv-tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
+        e.target.classList.add('active');
         const grid = document.getElementById('inventoryGrid');
-        if (grid) { grid.dataset.tab = tab.dataset.tab; this.renderInventory(); }
-      });
+        if (grid) { grid.dataset.tab = e.target.dataset.tab; this.renderInventory(); }
+      }
     });
 
     const searchBtn = document.getElementById('btn-search-friend');

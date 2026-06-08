@@ -68,6 +68,7 @@ const Achievements = {
     console.log('[Achievements] init()');
     this.load();
     this.checkAll();
+    this.checkMilestoneRewards(); // Retroactive check for existing users
     this.render();
     this.renderRewards();
     console.log('[Achievements] init complete —', this.unlocked.size, 'unlocked');
@@ -212,6 +213,7 @@ const Achievements = {
 
   checkMilestoneRewards() {
     const unlockedCount = this.unlocked.size;
+    if (unlockedCount === 0) return;
     const milestones = {
       5: { id: 'milestone_5', type: 'frame', name: 'Bronze Frame', rarity: 'common' },
       10: { id: 'milestone_10', type: 'background', name: 'Silver Background', rarity: 'common' },
@@ -226,14 +228,21 @@ const Achievements = {
     };
     const userId = (typeof Auth !== 'undefined' && Auth.getUserId) ? Auth.getUserId() : 'guest';
     const granted = JSON.parse(localStorage.getItem('audix_milestones_' + userId) || '[]');
+    let newRewards = 0;
     for (const [count, reward] of Object.entries(milestones)) {
       if (unlockedCount >= parseInt(count) && !granted.includes(count)) {
         granted.push(count);
-        if (typeof Auth !== 'undefined') Auth.addItemToInventory(reward);
+        if (typeof Auth !== 'undefined' && Auth.addItemToInventory) {
+          Auth.addItemToInventory(reward);
+        }
         if (typeof Utils !== 'undefined') Utils.toast(`🏆 Milestone Reward: ${reward.name} unlocked!`, 'success');
+        newRewards++;
       }
     }
-    localStorage.setItem('audix_milestones_' + userId, JSON.stringify(granted));
+    if (newRewards > 0) {
+      localStorage.setItem('audix_milestones_' + userId, JSON.stringify(granted));
+      console.log('[Achievements] Granted', newRewards, 'milestone rewards');
+    }
   },
 
   render() {
