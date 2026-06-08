@@ -419,15 +419,8 @@ const App = {
   },
 
   showPage(page) {
-    // FIXED: Maintenance mode check — allow login modal to work, block pages after login
-    const isLoggedIn = (typeof Auth !== 'undefined' && Auth.currentUser);
-    const isAdmin = (typeof Admin !== 'undefined' && Admin.isAdmin());
-    const maintenanceActive = (typeof Admin !== 'undefined' && Admin.maintenanceMode);
-
-    if (maintenanceActive && isLoggedIn && !isAdmin && page !== 'maintenance') {
-      console.log('[App] Maintenance mode active — redirecting non-admin to maintenance');
-      page = 'maintenance';
-    }
+    // Maintenance mode is ONLY enforced AFTER login (see auth.js _postLoginRedirect).
+    // The login modal is never blocked — it has z-index 3000 above everything.
 
     this.currentPage = page;
 

@@ -657,9 +657,12 @@ const Auth = {
         Player.audio.pause();
         Player.audio.src = '';
       }
-      // Clear local gamification cache for privacy
       const userId = this.currentUser ? this.currentUser.uid : 'guest';
       this.currentUser = null;
+
+      // Hide maintenance overlay so login modal is accessible
+      const overlay = document.getElementById('maintenanceOverlay');
+      if (overlay) overlay.classList.add('hidden');
 
       // Reset UI immediately
       this.updateUI();
@@ -678,7 +681,7 @@ const Auth = {
       const adminDivider = document.querySelector('.admin-nav-divider');
       if (adminDivider) adminDivider.classList.add('hidden');
 
-      // Show login modal
+      // Show login modal (always accessible)
       this.showLoginModal();
 
       // Redirect to home
@@ -982,14 +985,27 @@ const Auth = {
     if (retryBtn) retryBtn.remove();
   },
   _postLoginRedirect() {
-    if (typeof Admin !== 'undefined' && Admin.checkMaintenance()) {
+    const isAdmin = (typeof Admin !== 'undefined' && Admin.isAdmin && Admin.isAdmin());
+    const maintenanceActive = (typeof Admin !== 'undefined' && Admin.maintenanceMode);
+
+    if (maintenanceActive && !isAdmin) {
       // Maintenance is on and user is NOT admin → show maintenance page
       console.log('[Auth] Post-login: maintenance active, user is not admin → redirecting to maintenance');
+      // Hide login modal first
+      this.hideLoginModal();
+      // Show maintenance page
       window.location.hash = 'maintenance';
       if (typeof App !== 'undefined') App.showPage('maintenance');
+      // Also show the overlay as backup
+      const overlay = document.getElementById('maintenanceOverlay');
+      if (overlay) overlay.classList.remove('hidden');
     } else {
       // Maintenance off OR user is admin → go to home
       console.log('[Auth] Post-login: redirecting to home');
+      this.hideLoginModal();
+      // Hide maintenance overlay if it was shown
+      const overlay = document.getElementById('maintenanceOverlay');
+      if (overlay) overlay.classList.add('hidden');
       window.location.hash = 'home';
       if (typeof App !== 'undefined') App.showPage('home');
     }

@@ -348,15 +348,5 @@ const Admin = {
   }
 };
 
-// Maintenance overlay check
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    if (typeof Admin !== 'undefined' && Admin.checkMaintenance()) {
-      console.log('[Admin] Maintenance mode active — showing overlay');
-      const overlay = document.getElementById('maintenanceOverlay');
-      const msg = document.getElementById('maintenanceOverlayMessage');
-      if (overlay) overlay.classList.remove('hidden');
-      if (msg) msg.textContent = Admin.getMaintenanceMessage();
-    }
-  }, 500);
-});
+// Maintenance overlay is now controlled by app.js AFTER login, not before.
+// DO NOT add DOMContentLoaded checks here — they block the login modal.
