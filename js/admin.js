@@ -5,7 +5,7 @@
    ============================================ */
 
 const Admin = {
-  ADMIN_EMAILS: ['samirkhadka2001@gmail.com', 'utilitiesnepal@gmail.com'],
+  ADMIN_EMAILS: ['samikkhadka2001@gmail.com', 'utilitiesnepal@gmail.com'],
   maintenanceMode: false,
   maintenanceMessage: 'Audix is under maintenance. We will be back soon!',
   users: [],
