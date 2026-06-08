@@ -213,6 +213,54 @@
 .maintenance-page .logo { font-size: 4rem; margin-bottom: 20px; }
 .maintenance-page h2 { margin-bottom: 12px; font-size: 1.5rem; }
 .maintenance-page p { color: #888; max-width: 400px; line-height: 1.6; }
+
+/* Auth Form Styles */
+.auth-form { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.auth-form input {
+  width: 100%;
+  background: var(--bg-base);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #fff;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.auth-form input:focus { border-color: var(--accent); }
+.auth-form input::placeholder { color: #666; }
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+  color: #666;
+  font-size: 0.8rem;
+}
+.auth-divider::before, .auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.1);
+}
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.auth-links .btn-text {
+  font-size: 0.8rem;
+  color: var(--accent);
+  padding: 4px 8px;
+}
+.auth-panel h3 {
+  text-align: center;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+  color: var(--accent);
+}
 </style>
 </head>
 <body>
@@ -293,20 +341,58 @@
       <p id="maintenanceOverlayMessage">Audix is under maintenance. We will be back soon!</p>
     </div>
 
-    <!-- Login Modal — Simplified: Google Sign-In only -->
+    <!-- Login Modal — Google + Email/Password -->
     <div class="modal-overlay hidden" id="loginModal">
       <div class="modal-content auth-modal">
         <div class="auth-brand">
           <div class="logo">&#9836;</div>
           <h2>Audix Music Player</h2>
-          <p>Sign in with Google to sync your music</p>
+          <p>Sign in to sync your music</p>
         </div>
+
+        <!-- Google Sign In -->
         <div class="auth-panel active" id="loginPanel" style="display:block;">
-          <button type="button" class="btn-primary btn-full" id="googleSignInBtn" style="display:flex;align-items:center;justify-content:center;gap:10px;">
+          <button type="button" class="btn-primary btn-full" id="googleSignInBtn" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;">
             <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
             Sign in with Google
           </button>
+          <div class="auth-divider"><span>or</span></div>
+          <div class="auth-form">
+            <input type="email" id="emailLoginInput" placeholder="Email address" autocomplete="email">
+            <input type="password" id="passwordLoginInput" placeholder="Password" autocomplete="current-password">
+            <button type="button" class="btn-primary btn-full" id="emailSignInBtn">Sign In with Email</button>
+          </div>
+          <div class="auth-links">
+            <button type="button" class="btn-text btn-small" id="switchToRegister">Create Account</button>
+            <button type="button" class="btn-text btn-small" id="switchToForgot">Forgot Password?</button>
+          </div>
           <p class="auth-hint">Your music and progress are securely synced to the cloud.</p>
+        </div>
+
+        <!-- Register Panel -->
+        <div class="auth-panel" id="registerPanel" style="display:none;">
+          <h3>Create Account</h3>
+          <div class="auth-form">
+            <input type="text" id="registerNameInput" placeholder="Display Name" autocomplete="name">
+            <input type="email" id="registerEmailInput" placeholder="Email address" autocomplete="email">
+            <input type="password" id="registerPasswordInput" placeholder="Password (min 6 chars)" autocomplete="new-password">
+            <button type="button" class="btn-primary btn-full" id="emailRegisterBtn">Create Account</button>
+          </div>
+          <div class="auth-links">
+            <button type="button" class="btn-text btn-small" id="switchToLoginFromReg">Already have an account? Sign In</button>
+          </div>
+        </div>
+
+        <!-- Forgot Password Panel -->
+        <div class="auth-panel" id="forgotPanel" style="display:none;">
+          <h3>Reset Password</h3>
+          <div class="auth-form">
+            <input type="email" id="forgotEmailInput" placeholder="Email address" autocomplete="email">
+            <button type="button" class="btn-primary btn-full" id="sendResetBtn">Send Reset Link</button>
+          </div>
+          <div class="auth-links">
+            <button type="button" class="btn-text btn-small" id="switchToLoginFromForgot">Back to Sign In</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1037,7 +1123,63 @@ dSearchResults"></div>
   <script src="js/settings.js"></script>
   <script src="js/notifications.js"></script>
   <script src="js/admin.js"></script>
-  <script src="js/app.js"></script>
+  
+  <!-- Email/Password Auth Event Bindings -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Switch auth modes
+      document.getElementById('switchToRegister')?.addEventListener('click', () => Auth.switchAuthMode('register'));
+      document.getElementById('switchToLoginFromReg')?.addEventListener('click', () => Auth.switchAuthMode('login'));
+      document.getElementById('switchToForgot')?.addEventListener('click', () => Auth.switchAuthMode('forgot'));
+      document.getElementById('switchToLoginFromForgot')?.addEventListener('click', () => Auth.switchAuthMode('login'));
+
+      // Email sign in
+      document.getElementById('emailSignInBtn')?.addEventListener('click', () => {
+        const email = document.getElementById('emailLoginInput').value.trim();
+        const password = document.getElementById('passwordLoginInput').value;
+        if (!email || !password) {
+          if (typeof Utils !== 'undefined') Utils.toast('Please enter email and password', 'error');
+          return;
+        }
+        Auth.loginWithEmail(email, password);
+      });
+
+      // Email register
+      document.getElementById('emailRegisterBtn')?.addEventListener('click', () => {
+        const name = document.getElementById('registerNameInput').value.trim();
+        const email = document.getElementById('registerEmailInput').value.trim();
+        const password = document.getElementById('registerPasswordInput').value;
+        if (!email || !password) {
+          if (typeof Utils !== 'undefined') Utils.toast('Please enter email and password', 'error');
+          return;
+        }
+        if (password.length < 6) {
+          if (typeof Utils !== 'undefined') Utils.toast('Password must be at least 6 characters', 'error');
+          return;
+        }
+        Auth.registerWithEmail(email, password, name);
+      });
+
+      // Password reset
+      document.getElementById('sendResetBtn')?.addEventListener('click', () => {
+        const email = document.getElementById('forgotEmailInput').value.trim();
+        if (!email) {
+          if (typeof Utils !== 'undefined') Utils.toast('Please enter your email', 'error');
+          return;
+        }
+        Auth.sendPasswordReset(email);
+      });
+
+      // Enter key support
+      document.getElementById('passwordLoginInput')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') document.getElementById('emailSignInBtn')?.click();
+      });
+      document.getElementById('registerPasswordInput')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') document.getElementById('emailRegisterBtn')?.click();
+      });
+    });
+  </script>
+<script src="js/app.js"></script>
 
   <!-- Service Worker Registration -->
   <script>
