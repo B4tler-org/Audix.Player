@@ -20,6 +20,11 @@ const Auth = {
       this.showError('Firebase failed to load. Check your internet connection.');
       return;
     }
+    if (window._firebaseSuspended) {
+      console.error('[Auth] Firebase API key is suspended. App running in offline mode.');
+      this.showError('Firebase API key suspended. The app will work in offline mode. Sign-in is unavailable until a new key is configured.');
+      return;
+    }
     if (!firebase.apps || firebase.apps.length === 0) {
       console.error('[Auth] Firebase not initialized!');
       this.showError('Firebase not initialized.');
@@ -610,6 +615,10 @@ const Auth = {
       let message = 'Google login failed';
       let isPopupBlocked = false;
 
+      if (error.code === 'auth/invalid-api-key' || error.message.includes('API key')) {
+        message = 'Firebase API key is suspended. Please contact the developer to generate a new key in Firebase Console.';
+      } else
+
       if (error.code === 'auth/popup-closed-by-user') {
         message = 'Login cancelled';
       } else if (error.code === 'auth/popup-blocked') {
@@ -874,6 +883,93 @@ const Auth = {
     }
   },
 
+
+  // ===================== EMAIL/PASSWORD AUTH =====================
+  async registerWithEmail(email, password, displayName) {
+    if (!this.firebaseReady || window._firebaseSuspended) {
+      this.showError('Firebase not available. Cannot create account.');
+      return;
+    }
+    try {
+      const result = await firebase.auth().createUserWithEmailAndPassword(email, password);
+      this.currentUser = result.user;
+      await result.user.updateProfile({ displayName: displayName || 'User' });
+      await this.ensureUserProfile(result.user);
+      this.hideLoginModal();
+      this.updateUI();
+      this.loadUserData();
+      this.broadcastProfileUpdate();
+      if (typeof Utils !== 'undefined') Utils.toast('Account created! Welcome, ' + (displayName || 'User') + '!', 'success');
+    } catch (error) {
+      console.error('[Auth] Email registration failed:', error.code, error.message);
+      let message = 'Registration failed';
+      if (error.code === 'auth/email-already-in-use') message = 'This email is already registered. Try logging in instead.';
+      else if (error.code === 'auth/invalid-email') message = 'Invalid email address.';
+      else if (error.code === 'auth/weak-password') message = 'Password is too weak. Use at least 6 characters.';
+      else if (error.code === 'auth/invalid-api-key') message = 'Firebase API key is suspended. Contact developer.';
+      else message = error.message || 'Unknown error';
+      this.showError(message);
+    }
+  },
+
+  async loginWithEmail(email, password) {
+    if (!this.firebaseReady || window._firebaseSuspended) {
+      this.showError('Firebase not available. Cannot sign in.');
+      return;
+    }
+    try {
+      const result = await firebase.auth().signInWithEmailAndPassword(email, password);
+      this.currentUser = result.user;
+      await this.ensureUserProfile(result.user);
+      this.hideLoginModal();
+      this.updateUI();
+      this.loadUserData();
+      this.broadcastProfileUpdate();
+      if (typeof Utils !== 'undefined') Utils.toast('Welcome back, ' + (result.user.displayName || 'User') + '!', 'success');
+    } catch (error) {
+      console.error('[Auth] Email login failed:', error.code, error.message);
+      let message = 'Login failed';
+      if (error.code === 'auth/user-not-found') message = 'No account found with this email.';
+      else if (error.code === 'auth/wrong-password') message = 'Incorrect password.';
+      else if (error.code === 'auth/invalid-email') message = 'Invalid email address.';
+      else if (error.code === 'auth/invalid-api-key') message = 'Firebase API key is suspended. Contact developer.';
+      else if (error.code === 'auth/too-many-requests') message = 'Too many failed attempts. Try again later.';
+      else message = error.message || 'Unknown error';
+      this.showError(message);
+    }
+  },
+
+  async sendPasswordReset(email) {
+    if (!this.firebaseReady || window._firebaseSuspended) {
+      this.showError('Firebase not available.');
+      return;
+    }
+    try {
+      await firebase.auth().sendPasswordResetEmail(email);
+      if (typeof Utils !== 'undefined') Utils.toast('Password reset email sent!', 'success');
+    } catch (error) {
+      let message = 'Failed to send reset email';
+      if (error.code === 'auth/user-not-found') message = 'No account found with this email.';
+      else if (error.code === 'auth/invalid-email') message = 'Invalid email address.';
+      else message = error.message;
+      this.showError(message);
+    }
+  },
+
+  switchAuthMode(mode) {
+    const loginPanel = document.getElementById('loginPanel');
+    const registerPanel = document.getElementById('registerPanel');
+    const forgotPanel = document.getElementById('forgotPanel');
+    if (loginPanel) loginPanel.style.display = mode === 'login' ? 'block' : 'none';
+    if (registerPanel) registerPanel.style.display = mode === 'register' ? 'block' : 'none';
+    if (forgotPanel) forgotPanel.style.display = mode === 'forgot' ? 'block' : 'none';
+
+    // Clear any previous errors
+    const errEl = document.getElementById('auth-error-msg');
+    if (errEl) errEl.textContent = '';
+    const retryBtn = document.getElementById('auth-retry-btn');
+    if (retryBtn) retryBtn.remove();
+  },
   getUserId() {
     return this.currentUser ? this.currentUser.uid : null;
   }
