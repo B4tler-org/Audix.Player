@@ -342,7 +342,7 @@
     </div>
 
     <!-- Login Modal — Google + Email/Password -->
-    <div class="modal-overlay hidden" id="loginModal">
+    <div class="modal-overlay hidden" id="loginModal" style="z-index:3000;">
       <div class="modal-content auth-modal">
         <div class="auth-brand">
           <div class="logo">&#9836;</div>
@@ -942,6 +942,7 @@ dSearchResults"></div>
           <div class="logo">&#9836;</div>
           <h2>Under Maintenance</h2>
           <p id="maintenancePageMessage">Audix is under maintenance. We will be back soon!</p>
+          <button class="btn-primary" id="btn-maintenance-logout" style="margin-top:20px;">Logout</button>
         </div>
       </section>
 
@@ -1124,6 +1125,15 @@ dSearchResults"></div>
   <script src="js/notifications.js"></script>
   <script src="js/admin.js"></script>
   
+  <!-- Maintenance Logout Button -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('btn-maintenance-logout')?.addEventListener('click', () => {
+        if (typeof Auth !== 'undefined') Auth.logout();
+      });
+    });
+  </script>
+
   <!-- Email/Password Auth Event Bindings -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
