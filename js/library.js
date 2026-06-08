@@ -243,17 +243,32 @@ const Library = {
       return '';
     }
     try {
-      // Ensure we have a proper ArrayBuffer
       let buffer = song.data;
+
+      // Handle various IndexedDB serialization formats
       if (buffer instanceof Uint8Array) {
         buffer = buffer.buffer;
-      }
-      if (!(buffer instanceof ArrayBuffer)) {
-        if (typeof buffer === 'object' && buffer !== null) {
-          console.warn('[Library] Converting object data to ArrayBuffer for', song.id);
-          const arr = Object.values(buffer);
-          buffer = new Uint8Array(arr).buffer;
+      } else if (Array.isArray(buffer)) {
+        buffer = new Uint8Array(buffer).buffer;
+      } else if (typeof buffer === 'object' && buffer !== null) {
+        // IndexedDB sometimes returns ArrayBuffer as plain object with byteLength
+        if (typeof buffer.byteLength === 'number') {
+          // It's an ArrayBuffer-like object, reconstruct it
+          const keys = Object.keys(buffer).map(Number).filter(k => !isNaN(k)).sort((a,b) => a-b);
+          if (keys.length > 0 && keys.length === buffer.byteLength) {
+            const arr = keys.map(k => buffer[k]);
+            buffer = new Uint8Array(arr).buffer;
+          } else if (buffer.byteLength > 0) {
+            // Fallback: try to read as typed array view
+            buffer = new Uint8Array(Object.values(buffer)).buffer;
+          }
         }
+      }
+
+      // Final safety: ensure it's an ArrayBuffer
+      if (!(buffer instanceof ArrayBuffer)) {
+        console.error('[Library] Could not convert song data to ArrayBuffer for', song.id, 'type:', typeof buffer);
+        return '';
       }
 
       // Normalize MIME type based on extension

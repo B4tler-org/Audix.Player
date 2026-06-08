@@ -1,151 +1,260 @@
-/* ============================================
-   PROFILE MANAGER — v3.1 (Firebase Auth)
-   NO STORAGE — Profile pics stored in Firestore as base64
-   XP/Level Display Integration
-   ============================================ */
-
 const Profile = {
-  init() {
-    this.bindEvents();
-    this.updateDisplay();
+  async updateDisplay() {
+    if (typeof Auth === 'undefined' || !Auth.currentUser) return;
+    const user = Auth.currentUser;
+    const doc = await Auth.db.collection('users').doc(user.uid).get();
+    const data = doc.data();
+    if (!data) return;
+
+    const audixIdEl = document.getElementById('profileAudixId');
+    if (audixIdEl) audixIdEl.textContent = data.audixId || '—';
+
+    const adminBadgeContainer = document.getElementById('adminBadgeContainer');
+    if (adminBadgeContainer) adminBadgeContainer.classList.toggle('hidden', !Auth.isAdmin());
+
+    const activityCard = document.getElementById('activityStatusCard');
+    const activitySong = document.getElementById('activitySong');
+    const activityArtist = document.getElementById('activityArtist');
+    if (activityCard && data.activityStatus) {
+      if (data.activityStatus.isPlaying && data.activityStatus.currentlyPlaying) {
+        activityCard.classList.remove('hidden');
+        activitySong.textContent = data.activityStatus.currentlyPlaying;
+        activityArtist.textContent = data.activityStatus.artist || '';
+      } else {
+        activityCard.classList.add('hidden');
+      }
+    }
+
+    const songCountEl = document.getElementById('profileSongCount');
+    if (songCountEl) songCountEl.textContent = (typeof Library !== 'undefined') ? Library.songs.length : 0;
+
+    const achieveCountEl = document.getElementById('profileAchieveCount');
+    if (achieveCountEl && typeof Achievements !== 'undefined') {
+      achieveCountEl.textContent = `${Achievements.unlocked.size} / 50`;
+    }
+
+    const listenTimeEl = document.getElementById('profileListenTime');
+    if (listenTimeEl && typeof Gamification !== 'undefined') {
+      listenTimeEl.textContent = Math.floor(Gamification.totalListenTime / 60) + ' min';
+    }
+
+    const coinsEl = document.getElementById('profileCoins');
+    if (coinsEl) coinsEl.textContent = (data.coins || 0) + ' Coins';
+
+    Auth.generateUserQRCode('profileQRCode');
+    this.renderFriends();
+    this.renderFriendRequests();
+    this.renderInventory();
+  },
+
+  async renderFriends() {
+    const container = document.getElementById('friendListContainer');
+    if (!container) return;
+    const friends = await Auth.getFriends();
+    if (friends.length === 0) {
+      container.innerHTML = '<p class="empty-friends">No friends yet. Search for users to add!</p>';
+      return;
+    }
+    let html = '';
+    for (const f of friends) {
+      const activity = f.activityStatus?.isPlaying ? `🎵 ${f.activityStatus.currentlyPlaying}` : 'Offline';
+      html += `<div class="friend-item"><img src="${f.photoURL || ''}" class="friend-pic" onerror="this.style.display='none'"><div class="friend-info"><span class="friend-name">${f.displayName}</span><span class="friend-id">${f.audixId}</span><span class="friend-activity">${activity}</span></div><button class="btn-text btn-small btn-remove-friend" data-uid="${f.uid}">Remove</button></div>`;
+    }
+    container.innerHTML = html;
+    container.querySelectorAll('.btn-remove-friend').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        await Auth.removeFriend(e.target.dataset.uid);
+        this.renderFriends();
+      });
+    });
+  },
+
+  async renderFriendRequests() {
+    const container = document.getElementById('friendRequestsList');
+    if (!container) return;
+    const { incoming, outgoing } = await Auth.getFriendRequests();
+    let html = '';
+    if (incoming.length === 0 && outgoing.length === 0) {
+      html = '<p class="empty-requests">No pending requests</p>';
+    } else {
+      for (const req of incoming) {
+        html += `<div class="friend-request"><img src="${req.photoURL || ''}" class="friend-pic" onerror="this.style.display='none'"><div class="friend-info"><span class="friend-name">${req.displayName}</span><span class="friend-id">${req.audixId}</span></div><button class="btn-primary btn-small btn-accept-request" data-uid="${req.uid}">Accept</button><button class="btn-text btn-small btn-reject-request" data-uid="${req.uid}">Reject</button></div>`;
+      }
+      for (const req of outgoing) {
+        html += `<div class="friend-request outgoing"><img src="${req.photoURL || ''}" class="friend-pic" onerror="this.style.display='none'"><div class="friend-info"><span class="friend-name">${req.displayName}</span><span class="friend-id">${req.audixId}</span><span class="request-status">Request sent</span></div></div>`;
+      }
+    }
+    container.innerHTML = html;
+    container.querySelectorAll('.btn-accept-request').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        await Auth.acceptFriendRequest(e.target.dataset.uid);
+        this.renderFriendRequests();
+        this.renderFriends();
+      });
+    });
+    container.querySelectorAll('.btn-reject-request').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        await Auth.rejectFriendRequest(e.target.dataset.uid);
+        this.renderFriendRequests();
+      });
+    });
+  },
+
+  async renderInventory() {
+    const grid = document.getElementById('inventoryGrid');
+    if (!grid) return;
+    const inventory = await Auth.getInventory();
+    if (!inventory) {
+      grid.innerHTML = '<p class="empty-inventory">No items yet. Unlock achievements to earn rewards!</p>';
+      return;
+    }
+    const tab = grid.dataset.tab || 'frames';
+    const map = {
+      'frames': 'frames',
+      'backgrounds': 'backgrounds',
+      'borders': 'avatarBorders',
+      'badges': 'badges',
+      'effects': 'nameEffects',
+      'avatars': 'animatedAvatars',
+      'themes': 'themes'
+    };
+    const items = inventory[map[tab]] || [];
+    const equipped = inventory.equipped || {};
+    const slotMap = { 'frames': 'frame', 'backgrounds': 'background', 'borders': 'avatarBorder', 'badges': 'badge', 'effects': 'nameEffect', 'avatars': 'animatedAvatar', 'themes': 'theme' };
+    const slot = slotMap[tab];
+    let html = '';
+    for (const item of items) {
+      const isEquipped = equipped[slot] === item.id;
+      const equipClass = isEquipped ? 'equipped' : '';
+      html += `<div class="inventory-item ${equipClass}" data-id="${item.id}" data-type="${item.type}"><div class="inv-icon">${item.animated ? '✨' : '🎁'}</div><div class="inv-name">${item.name}</div><div class="inv-rarity">${item.rarity}</div><button class="btn-equip">${isEquipped ? 'Unequip' : 'Equip'}</button></div>`;
+    }
+    grid.innerHTML = html || '<p class="empty-inventory">No items in this category.</p>';
+    grid.querySelectorAll('.btn-equip').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const item = e.target.closest('.inventory-item');
+        const id = item.dataset.id;
+        const type = item.dataset.type;
+        const isEquipped = item.classList.contains('equipped');
+        if (isEquipped) await Auth.unequipItem(type);
+        else await Auth.equipItem(id, type);
+        this.renderInventory();
+      });
+    });
   },
 
   bindEvents() {
-    const pfpInput = document.getElementById('pfp-input');
-    if (pfpInput) {
-      pfpInput.addEventListener('change', (e) => this.changePfp(e.target.files[0]));
+    document.querySelectorAll('.inv-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.inv-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const grid = document.getElementById('inventoryGrid');
+        if (grid) { grid.dataset.tab = tab.dataset.tab; this.renderInventory(); }
+      });
+    });
+
+    const searchBtn = document.getElementById('btn-search-friend');
+    const searchInput = document.getElementById('friendSearchInput');
+    if (searchBtn && searchInput) {
+      searchBtn.addEventListener('click', () => this.searchFriend(searchInput.value));
+      searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') this.searchFriend(searchInput.value); });
     }
 
-    const logoutBtn = document.getElementById('btn-logout');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => {
-        if (typeof Auth !== 'undefined') Auth.logout();
+    const copyBtn = document.getElementById('btn-copy-id');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        const id = document.getElementById('profileAudixId')?.textContent;
+        if (id && id !== '—') {
+          navigator.clipboard.writeText(id).then(() => {
+            if (typeof Utils !== 'undefined') Utils.toast('Audix ID copied!', 'success');
+          });
+        }
+      });
+    }
+
+    const scanBtn = document.getElementById('btn-scan-qr');
+    if (scanBtn) scanBtn.addEventListener('click', () => this.openQRScanner());
+    const closeQrBtn = document.getElementById('btn-close-qr');
+    if (closeQrBtn) closeQrBtn.addEventListener('click', () => this.closeQRScanner());
+
+    const privacySelect = document.getElementById('activityPrivacy');
+    if (privacySelect) {
+      privacySelect.addEventListener('change', (e) => {
+        if (typeof Auth !== 'undefined') Auth.toggleActivityPrivacy(e.target.value);
       });
     }
   },
 
-  async changePfp(file) {
-    if (!file || !file.type.startsWith('image/')) {
-      if (typeof Utils !== 'undefined') Utils.toast('Please select an image file', 'error');
-      return;
-    }
-    if (typeof Auth === 'undefined' || !Auth.currentUser) {
-      if (typeof Utils !== 'undefined') Utils.toast('Please log in first', 'error');
-      return;
-    }
-    try {
-      // Convert image to base64 data URL (compressed/resized for Firestore 1MB limit)
-      const dataUrl = await this.resizeAndCompressImage(file, 400, 400, 0.8);
-      const uid = Auth.currentUser.uid;
-
-      // Update Firestore profile with base64 image
-      await Auth.updateProfile(uid, { customPhotoURL: dataUrl, photoURL: dataUrl, profilePic: dataUrl });
-
-      // Update Firebase Auth profile
-      await Auth.currentUser.updateProfile({ photoURL: dataUrl });
-
-      this.updateDisplay();
-      Auth.broadcastProfileUpdate();
-      if (typeof Utils !== 'undefined') Utils.toast('Profile picture updated');
-    } catch (err) {
-      console.error('[Profile] changePfp error:', err);
-      if (typeof Utils !== 'undefined') Utils.toast('Failed to update picture', 'error');
-    }
-  },
-
-  resizeAndCompressImage(file, maxWidth, maxHeight, quality) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      const reader = new FileReader();
-      reader.onload = (e) => { img.src = e.target.result; };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth) {
-          height = Math.round(height * (maxWidth / width));
-          width = maxWidth;
-        }
-        if (height > maxHeight) {
-          width = Math.round(width * (maxHeight / height));
-          height = maxHeight;
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const dataUrl = canvas.toDataURL('image/jpeg', quality);
-        resolve(dataUrl);
-      };
-      img.onerror = reject;
+  async searchFriend(query) {
+    if (!query) return;
+    const results = document.getElementById('friendSearchResults');
+    if (!results) return;
+    results.innerHTML = '<p>Searching...</p>';
+    const user = await Auth.searchUserByAudixId(query.trim());
+    if (!user) { results.innerHTML = '<p class="empty-results">User not found</p>'; return; }
+    const isFriend = await this.isFriend(user.uid);
+    results.innerHTML = `<div class="friend-result"><img src="${user.photoURL || ''}" class="friend-pic" onerror="this.style.display='none'"><div class="friend-info"><span class="friend-name">${user.displayName}</span><span class="friend-id">${user.audixId}</span><span class="friend-level">Lv.${user.level}</span></div><button class="btn-primary btn-small" id="btn-add-searched-friend" data-uid="${user.uid}" ${isFriend ? 'disabled' : ''}>${isFriend ? 'Friends' : 'Add Friend'}</button></div>`;
+    document.getElementById('btn-add-searched-friend')?.addEventListener('click', async (e) => {
+      await Auth.sendFriendRequest(e.target.dataset.uid);
+      e.target.textContent = 'Request Sent';
+      e.target.disabled = true;
     });
   },
 
-  updateDisplay() {
-    const user = (typeof Auth !== 'undefined') ? Auth.currentUser : null;
-    const pfpImg = document.getElementById('profilePfp');
-    const placeholder = document.getElementById('avatarPlaceholder');
-    const usernameEl = document.getElementById('profileUsername');
-    const emailEl = document.getElementById('profileEmail');
-    const joinedEl = document.getElementById('profileJoined');
-    const songCountEl = document.getElementById('profileSongCount');
-    const achieveCountEl = document.getElementById('profileAchieveCount');
-    const listenTimeEl = document.getElementById('profileListenTime');
+  async isFriend(uid) {
+    if (!Auth.currentUser) return false;
+    const doc = await Auth.db.collection('users').doc(Auth.currentUser.uid).get();
+    return doc.data()?.friends?.list?.includes(uid) || false;
+  },
 
-    if (!user) {
-      if (pfpImg) pfpImg.classList.add('hidden');
-      if (placeholder) { placeholder.classList.remove('hidden'); placeholder.textContent = '👤'; }
-      if (usernameEl) usernameEl.textContent = 'Guest';
-      if (emailEl) emailEl.textContent = '—';
-      if (joinedEl) joinedEl.textContent = '—';
-      if (songCountEl) songCountEl.textContent = '0';
-      if (achieveCountEl) achieveCountEl.textContent = '0 / 50';
-      if (listenTimeEl) listenTimeEl.textContent = '0 min';
-      return;
-    }
+  openQRScanner() {
+    const modal = document.getElementById('qrScanModal');
+    if (modal) modal.classList.remove('hidden');
+    const video = document.getElementById('qrVideo');
+    const canvas = document.getElementById('qrCanvas');
+    if (!video || !canvas) return;
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => {
+        video.srcObject = stream;
+        video.play();
+        this.scanQRFrame(video, canvas, stream);
+      })
+      .catch(err => {
+        console.error('[Profile] Camera access denied:', err);
+        if (typeof Utils !== 'undefined') Utils.toast('Camera access denied. Use ID search instead.', 'error');
+        this.closeQRScanner();
+      });
+  },
 
-    // Use customPhotoURL if available, otherwise Google photoURL
-    const photoUrl = user.photoURL || null;
-
-    if (pfpImg && photoUrl) {
-      pfpImg.src = photoUrl;
-      pfpImg.classList.remove('hidden');
-      if (placeholder) placeholder.classList.add('hidden');
-    } else {
-      if (pfpImg) pfpImg.classList.add('hidden');
-      if (placeholder) {
-        placeholder.classList.remove('hidden');
-        placeholder.textContent = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
+  scanQRFrame(video, canvas, stream) {
+    if (!video.srcObject) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = video.videoWidth || 300;
+    canvas.height = video.videoHeight || 200;
+    const scan = () => {
+      if (!video.srcObject) return;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      if (typeof jsQR !== 'undefined') {
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code) {
+          try {
+            const data = JSON.parse(code.data);
+            if (data.audixId) { this.closeQRScanner(); stream.getTracks().forEach(t => t.stop()); document.getElementById('friendSearchInput').value = data.audixId; this.searchFriend(data.audixId); return; }
+          } catch (e) {
+            if (code.data.includes('Audix ')) { this.closeQRScanner(); stream.getTracks().forEach(t => t.stop()); document.getElementById('friendSearchInput').value = code.data; this.searchFriend(code.data); return; }
+          }
+        }
       }
-    }
+      requestAnimationFrame(scan);
+    };
+    requestAnimationFrame(scan);
+  },
 
-    if (usernameEl) usernameEl.textContent = user.displayName || 'User';
-    if (emailEl) emailEl.textContent = user.email || '—';
-    if (joinedEl) {
-      const date = user.metadata && user.metadata.creationTime
-        ? new Date(user.metadata.creationTime)
-        : new Date();
-      joinedEl.textContent = date.toLocaleDateString();
-    }
-    if (songCountEl) {
-      const songs = (typeof Library !== 'undefined' && Library.songs) ? Library.songs.length : 0;
-      songCountEl.textContent = songs;
-    }
-    if (achieveCountEl) {
-      const unlocked = (typeof Achievements !== 'undefined' && Achievements.unlocked) ? Achievements.unlocked.size : 0;
-      achieveCountEl.textContent = `${unlocked} / 50`;
-    }
-    if (listenTimeEl) {
-      const mins = (typeof Player !== 'undefined') ? Math.floor(Player.totalListened) : 0;
-      listenTimeEl.textContent = mins >= 60 ? `${Math.floor(mins/60)}h ${mins%60}m` : `${mins} min`;
-    }
-
-    if (typeof Gamification !== 'undefined') Gamification.updateUI();
+  closeQRScanner() {
+    const modal = document.getElementById('qrScanModal');
+    if (modal) modal.classList.add('hidden');
+    const video = document.getElementById('qrVideo');
+    if (video && video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
   }
 };
+
