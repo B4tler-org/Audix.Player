@@ -1,17 +1,17 @@
 /* ============================================
-   FIREBASE INITIALIZATION — v1.2 (Suspended Key Fix)
-   Centralized Firebase setup for Audix
-   Uses: Auth + Firestore only (Spark plan compatible)
+   FIREBASE INITIALIZATION — v2.0 (New Project)
+   Project: audix-8f929
+   Uses: Auth + Firestore (Spark plan compatible)
    ============================================ */
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDN_EWDxVXQiEXB0GV9esg3RZJIRrvMkpg",
-  authDomain: "audix-cf5dd.firebaseapp.com",
-  projectId: "audix-cf5dd",
-  storageBucket: "audix-cf5dd.firebasestorage.app",
-  messagingSenderId: "251879225148",
-  appId: "1:251879225148:web:59de2af7eba8bb631e9039",
-  measurementId: "G-858KTP0X10"
+  apiKey: "AIzaSyB3tUxnLXhoTcobfL70pUtQvWGOT2pHqe4",
+  authDomain: "audix-8f929.firebaseapp.com",
+  projectId: "audix-8f929",
+  storageBucket: "audix-8f929.firebasestorage.app",
+  messagingSenderId: "609920254787",
+  appId: "1:609920254787:web:7bde862a5fed012181e5f6",
+  measurementId: "G-6GJMQ3925R"
 };
 
 // Global flag for Firebase health
@@ -20,16 +20,16 @@ window._firebaseSuspended = false;
 if (typeof firebase !== 'undefined' && !firebase.apps.length) {
   try {
     firebase.initializeApp(firebaseConfig);
-    console.log('[Firebase] Initialized successfully (Auth + Firestore)');
+    console.log('[Firebase] Initialized successfully — Project: audix-8f929');
 
-    // Test the key with a lightweight call to detect suspension early
+    // Test auth responsiveness
     firebase.auth().onAuthStateChanged((user) => {
       console.log('[Firebase] Auth state listener active — SDK is responsive');
     }, (err) => {
       if (err && err.code === 'auth/invalid-api-key') {
-        console.error('[Firebase] API Key appears invalid or suspended:', err.message);
+        console.error('[Firebase] API Key invalid or suspended:', err.message);
         window._firebaseSuspended = true;
-        showFirebaseError('Your Firebase API key has been suspended by Google. Please generate a new key in Firebase Console.');
+        showFirebaseError('Firebase API key issue detected. Please check your Firebase Console.');
       }
     });
 

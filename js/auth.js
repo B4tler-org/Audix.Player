@@ -10,7 +10,7 @@ const Auth = {
   idb: null,
   firebaseReady: false,
   uiUpdatePending: false,
-  ADMIN_EMAILS: ['samirkhadka2001@gmail.com', 'utilitiesnepal@gmail.com'],
+  ADMIN_EMAILS: ['samirkhadka2001@gmail.com', 'utilitiesnepal@gmail.com'], // Project: audix-8f929
 
   async init() {
     console.log('[Auth] init() starting...');
