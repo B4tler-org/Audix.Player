@@ -1,7 +1,7 @@
 /* ============================================
-   AUTHENTICATION SYSTEM — v3.5 (Firebase Google Auth + Admin)
-   FIX: Explicit UI update after popup success + guards against modal re-show
-   NEW: Admin email detection, isAdmin() method
+   AUTHENTICATION SYSTEM — v3.6 (Critical Fixes)
+   PFP Upload, Tag System, Inventory Fix, 
+   Level Recalc, Logout, Admin Badge SVG
    ============================================ */
 
 const Auth = {
@@ -43,7 +43,6 @@ const Auth = {
     this.db = firebase.firestore();
     this.bindEvents();
 
-    // Handle redirect result (if user came back from a redirect)
     try {
       const result = await firebase.auth().getRedirectResult();
       if (result.user) {
@@ -61,7 +60,6 @@ const Auth = {
       }
     }
 
-    // Auth state listener
     firebase.auth().onAuthStateChanged(async (user) => {
       console.log('[Auth] onAuthStateChanged fired. User:', user ? user.uid : 'null');
       if (user) {
@@ -74,14 +72,12 @@ const Auth = {
       } else {
         this.currentUser = null;
         this.updateUI();
-        // Only show login modal if we're sure there's no user
         if (!firebase.auth().currentUser) {
           this.showLoginModal();
         }
       }
     });
 
-    // Re-check auth state when user returns to tab (mobile popup fix)
     window.addEventListener('focus', () => {
       const user = firebase.auth().currentUser;
       if (user && this.currentUser) {
@@ -139,6 +135,7 @@ const Auth = {
           email: user.email,
           photoURL: user.photoURL || null,
           customPhotoURL: null,
+          tag: '',
           xp: 0,
           level: 1,
           coins: 0,
@@ -187,6 +184,7 @@ const Auth = {
         const updates = {};
         if (!data.audixId) updates.audixId = await this.generateUniqueAudixId();
         if (data.coins === undefined) updates.coins = 0;
+        if (data.tag === undefined) updates.tag = '';
         if (!data.inventory) {
           updates.inventory = {
             frames: [], backgrounds: [], avatarBorders: [], nameEffects: [],
@@ -235,7 +233,11 @@ const Auth = {
       if (typeof Library !== 'undefined') await Library.loadUserSongs();
       if (typeof Achievements !== 'undefined') await Achievements.loadUserAchievements();
       if (typeof Settings !== 'undefined') await Settings.load();
-      if (typeof Gamification !== 'undefined') Gamification.load();
+      if (typeof Gamification !== 'undefined') {
+        Gamification.load();
+        Gamification.recalculateLevel();
+        Gamification.updateUI();
+      }
     } catch (e) {
       console.error('[Auth] loadUserData error:', e);
     }
@@ -426,7 +428,6 @@ const Auth = {
     const doc = await this.db.collection('users').doc(this.currentUser.uid).get();
     const data = doc.data();
     if (!data || !data.inventory) {
-      // Return empty inventory structure as fallback
       return {
         frames: [], backgrounds: [], avatarBorders: [], nameEffects: [],
         badges: [], animatedAvatars: [], themes: [],
@@ -485,26 +486,47 @@ const Auth = {
     return doc.data()?.coins || 0;
   },
 
-  // ===================== QR CODE =====================
-  generateUserQRCode(containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    container.innerHTML = '';
+  // ===================== TAG SYSTEM =====================
+  async updateTag(tag) {
     if (!this.currentUser) return;
-    this.db.collection('users').doc(this.currentUser.uid).get().then(doc => {
-      const data = doc.data();
-      if (!data || !data.audixId) return;
-      const qrData = JSON.stringify({ audixId: data.audixId, name: data.displayName, app: 'audix' });
-      if (typeof QRCode !== 'undefined') {
-        new QRCode(container, {
-          text: qrData,
-          width: 128,
-          height: 128,
-          colorDark: '#0f0f1a',
-          colorLight: '#ffffff',
-          correctLevel: QRCode.CorrectLevel.M
-        });
-      }
+    const cleanTag = String(tag || '').trim().slice(0, 25);
+    await this.db.collection('users').doc(this.currentUser.uid).update({ tag: cleanTag });
+    if (typeof Utils !== 'undefined') Utils.toast('Tag updated!', 'success');
+    this.broadcastProfileUpdate();
+  },
+
+  // ===================== PFP UPLOAD =====================
+  async uploadProfilePicture(file) {
+    if (!this.currentUser) throw new Error('Not logged in');
+    if (!file) throw new Error('No file provided');
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      throw new Error('Invalid image format. Use JPG, PNG, or WEBP.');
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error('Image too large. Max 5MB.');
+    }
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const dataUrl = e.target.result;
+        try {
+          await this.updateProfile(this.currentUser.uid, {
+            customPhotoURL: dataUrl,
+            photoURL: dataUrl
+          });
+          this.currentUser.photoURL = dataUrl;
+          this.updateUI();
+          this.broadcastProfileUpdate();
+          resolve(dataUrl);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = () => reject(new Error('Failed to read image'));
+      reader.readAsDataURL(file);
     });
   },
 
@@ -514,7 +536,6 @@ const Auth = {
     try {
       const doc = await this.db.collection('users').doc(this.currentUser.uid).get();
       const data = doc.data();
-      // Ensure inventory structure exists first
       if (!data.inventory) {
         await this.db.collection('users').doc(this.currentUser.uid).update({
           inventory: {
@@ -574,7 +595,6 @@ const Auth = {
       const result = await firebase.auth().signInWithPopup(provider);
       console.log('[Auth] Popup login success:', result.user.uid);
 
-      // CRITICAL FIX: Explicitly update UI immediately after popup success
       this.currentUser = result.user;
       await this.ensureUserProfile(result.user);
       this.hideLoginModal();
@@ -625,9 +645,34 @@ const Auth = {
         Player.audio.pause();
         Player.audio.src = '';
       }
+      // Clear local gamification cache for privacy
+      const userId = this.currentUser ? this.currentUser.uid : 'guest';
       this.currentUser = null;
+
+      // Reset UI immediately
       this.updateUI();
+
+      // Clear admin perks from DOM
+      document.querySelectorAll('.theme-btn, .btn-preset').forEach(btn => {
+        if (btn.title && btn.title.includes('Admin')) {
+          btn.classList.remove('unlocked');
+          btn.classList.add('reward-locked');
+        }
+      });
+
+      // Hide admin nav
+      const adminNav = document.querySelector('.nav-link[data-page="admin"]');
+      if (adminNav) adminNav.classList.add('hidden');
+      const adminDivider = document.querySelector('.admin-nav-divider');
+      if (adminDivider) adminDivider.classList.add('hidden');
+
+      // Show login modal
       this.showLoginModal();
+
+      // Redirect to home
+      window.location.hash = 'home';
+      if (typeof App !== 'undefined') App.showPage('home');
+
       if (typeof Utils !== 'undefined') Utils.toast('Logged out successfully');
     }).catch((error) => {
       console.error('[Auth] Logout error:', error);
@@ -649,6 +694,9 @@ const Auth = {
         await this.currentUser.updateProfile({ photoURL: updates.customPhotoURL });
       } else if (updates.photoURL || updates.profilePic) {
         await this.currentUser.updateProfile({ photoURL: updates.photoURL || updates.profilePic });
+      }
+      if (updates.tag !== undefined) {
+        await userRef.update({ tag: updates.tag });
       }
       console.log('[Auth] Profile updated');
       this.broadcastProfileUpdate();
@@ -733,7 +781,6 @@ const Auth = {
   },
 
   showLoginModal() {
-    // GUARD: Don't show login modal if user is already signed in
     if (this.currentUser || firebase.auth().currentUser) {
       console.log('[Auth] showLoginModal() blocked — user is already signed in');
       this.hideLoginModal();
@@ -748,7 +795,6 @@ const Auth = {
     if (modal) modal.classList.add('hidden');
   },
 
-  // NEW: Admin detection
   isAdmin() {
     return this.currentUser && this.ADMIN_EMAILS.includes(this.currentUser.email);
   },
@@ -789,19 +835,18 @@ const Auth = {
       }
     }
 
-    // NEW: Show/hide admin nav link
     const adminNav = document.querySelector('.nav-link[data-page="admin"]');
     if (adminNav) {
       adminNav.classList.toggle('hidden', !isAdmin);
       console.log('[Auth] Admin nav visibility:', isAdmin ? 'visible' : 'hidden');
     }
+    const adminDivider = document.querySelector('.admin-nav-divider');
+    if (adminDivider) adminDivider.classList.toggle('hidden', !isAdmin);
 
-    // NEW: Apply admin perks if admin
     if (isAdmin && typeof Admin !== 'undefined') {
       Admin.applyAdminPerks();
     }
 
-    // NEW: Admin badge in sidebar
     const sidebarAdminBadge = document.getElementById('sidebarAdminBadge');
     if (sidebarAdminBadge) sidebarAdminBadge.classList.toggle('hidden', !isAdmin);
 

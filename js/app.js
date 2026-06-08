@@ -1,7 +1,7 @@
 /* ============================================
-   APP ROUTER & INITIALIZER — v3.1
-   Firebase Auth integration, Gamification, Daily Activity,
-   Admin routing, Maintenance mode, Debug logging
+   APP ROUTER & INITIALIZER — v3.2 (Critical Fixes)
+   Maintenance Mode, Player Activity, Share System,
+   Lyrics Fetch, XP Recalc, Title Cleaner
    ============================================ */
 
 const Gamification = {
@@ -29,16 +29,30 @@ const Gamification = {
 
   init() {
     this.load();
+    this.recalculateLevel();
     this.checkDailyStreak();
     this.updateUI();
   },
 
+  recalculateLevel() {
+    // Ensure level matches total XP
+    let calculatedLevel = 1;
+    let xpNeeded = this.getXPForLevel(2);
+    while (calculatedLevel < 50 && this.xp >= xpNeeded) {
+      calculatedLevel++;
+      xpNeeded = this.getXPForLevel(calculatedLevel + 1);
+    }
+    if (calculatedLevel !== this.level) {
+      console.log(`[Gamification] Level corrected: ${this.level} -> ${calculatedLevel} (XP: ${this.xp})`);
+      this.level = calculatedLevel;
+      this.save();
+    }
+  },
+
   getLevelRequirement(level) {
-    // XP needed to go from `level` to `level + 1`
     if (level < 15) {
       return 100 + (level - 1) * 40;
     } else {
-      // After level 15, increase 50% faster (60 per step instead of 40)
       return 100 + 14 * 40 + (level - 15) * 60;
     }
   },
@@ -253,7 +267,6 @@ const QuizRewards = {
     if (typeof Utils !== 'undefined') {
       Utils.toast(`🎉 ${message} +${reward.xp || 0} XP +${reward.coins || 0} Coins`, 'success');
     }
-    // Update quiz reward UI if on quiz page
     const quizRewardsEl = document.getElementById('quiz-rewards');
     if (quizRewardsEl) {
       const div = document.createElement('div');
@@ -274,17 +287,14 @@ const App = {
     this.bindNav();
     this.bindMobileMenu();
 
-    // Auth init — Firebase handles session restoration via onAuthStateChanged
     if (typeof Auth !== 'undefined') {
       await Auth.init();
     }
 
-    // Initialize gamification
     if (typeof Gamification !== 'undefined') {
       Gamification.init();
     }
 
-    // Initialize all modules
     this.initModules();
     this.handleRoute();
 
@@ -299,7 +309,6 @@ const App = {
       Achievements.set('uniqueDays', days.length);
     }
 
-    // Check for night owl / early bird
     const hour = new Date().getHours();
     if (hour >= 0 && hour < 6) {
       if (typeof Achievements !== 'undefined') Achievements.track('earlyBird');
@@ -308,42 +317,40 @@ const App = {
       if (typeof Achievements !== 'undefined') Achievements.track('nightOwl');
     }
 
-    // Admin init
     if (typeof Admin !== 'undefined') {
       Admin.init();
     }
 
-    // Activity status hook
+    // FIXED: Player activity uses actual audio element
     const audioPlayer = document.getElementById('audio-player');
     if (audioPlayer) {
       audioPlayer.addEventListener('play', () => {
-        if (typeof Player !== 'undefined' && typeof Library !== 'undefined' && Player.currentIndex !== undefined) {
-          const song = Library.songs[Player.currentIndex];
-          if (song && typeof Auth !== 'undefined') {
-            Auth.updateActivityStatus({
-              title: song.title,
-              artist: song.artist,
-              album: song.album,
-              isPlaying: true
-            });
-          }
-        }
+        this.updateActivityFromAudio(true);
       });
       audioPlayer.addEventListener('pause', () => {
-        if (typeof Auth !== 'undefined') Auth.clearActivityStatus();
+        this.updateActivityFromAudio(false);
       });
       audioPlayer.addEventListener('ended', () => {
         if (typeof Auth !== 'undefined') Auth.clearActivityStatus();
       });
     }
 
-    // Profile bindings
     if (typeof Profile !== 'undefined' && Profile.bindEvents) {
       Profile.bindEvents();
     }
 
     window.addEventListener('hashchange', () => this.handleRoute());
     console.log('[App] init() complete');
+  },
+
+  updateActivityFromAudio(isPlaying) {
+    // Get current track info from DOM (updated by player.js)
+    const title = document.getElementById('track-title')?.textContent || 'Unknown';
+    const artist = document.getElementById('track-artist')?.textContent || '';
+    const album = document.getElementById('track-album')?.textContent || '';
+    if (typeof Auth !== 'undefined') {
+      Auth.updateActivityStatus({ title, artist, album, isPlaying });
+    }
   },
 
   initModules() {
@@ -412,7 +419,7 @@ const App = {
   },
 
   showPage(page) {
-    // Maintenance mode check (admins bypass)
+    // FIXED: Maintenance mode check on every page load
     if (typeof Admin !== 'undefined' && Admin.checkMaintenance() && page !== 'admin') {
       console.log('[App] Maintenance mode active — blocking page:', page);
       page = 'maintenance';
@@ -435,7 +442,6 @@ const App = {
     if (map[page] && typeof Achievements !== 'undefined') {
       Achievements.track(map[page]);
     }
-    // Track pages visited
     if (typeof Achievements !== 'undefined') {
       const visited = new Set();
       for (const key in map) visited.add(key);

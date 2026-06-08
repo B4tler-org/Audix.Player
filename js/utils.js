@@ -52,6 +52,68 @@ const Utils = {
     return (...args) => {
       clearTimeout(t);
       t = setTimeout(() => fn(...args), ms);
-    };
+    ,
+
+  async share(data) {
+    if (navigator.share) {
+      try {
+        await navigator.share(data);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  },
+
+  copyToClipboard(text) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        this.toast('Copied to clipboard!', 'success');
+      }).catch(() => {
+        this.toast('Failed to copy', 'error');
+      });
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      this.toast('Copied to clipboard!', 'success');
+    }
+  }
+};
+  }
+,
+
+  async share(data) {
+    if (navigator.share) {
+      try {
+        await navigator.share(data);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  },
+
+  copyToClipboard(text) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        this.toast('Copied to clipboard!', 'success');
+      }).catch(() => {
+        this.toast('Failed to copy', 'error');
+      });
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      this.toast('Copied to clipboard!', 'success');
+    }
   }
 };

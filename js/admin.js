@@ -1,7 +1,7 @@
 /* ============================================
-   ADMIN PANEL — v1.0
-   Dashboard, Maintenance Mode, User Management,
-   Song Management, Achievement Stats
+   ADMIN PANEL — v1.1 (Critical Fixes)
+   User List Query, Maintenance Mode Enforcement,
+   Realtime Listeners
    ============================================ */
 
 const Admin = {
@@ -10,6 +10,7 @@ const Admin = {
   maintenanceMessage: 'Audix is under maintenance. We will be back soon!',
   users: [],
   allSongs: [],
+  _usersUnsub: null,
 
   init() {
     console.log('[Admin] init()');
@@ -28,31 +29,25 @@ const Admin = {
 
   applyAdminPerks() {
     console.log('[Admin] applyAdminPerks()');
-    // Unlock all themes
     document.querySelectorAll('.theme-btn.reward-locked').forEach(btn => {
       btn.classList.remove('reward-locked');
       btn.classList.add('unlocked');
       btn.title = 'Admin Unlocked';
     });
-    // Unlock all EQ presets
     document.querySelectorAll('.btn-preset.reward-locked').forEach(btn => {
       btn.classList.remove('reward-locked');
       btn.classList.add('unlocked');
       btn.title = 'Admin Unlocked';
     });
-    // Unlock all achievements
     if (typeof Achievements !== 'undefined') {
       Achievements.unlockAll();
     }
-    // Show admin nav link
     const adminNav = document.querySelector('.nav-link[data-page="admin"]');
     if (adminNav) adminNav.classList.remove('hidden');
-    // Show admin badge
     const adminBadge = document.getElementById('adminBadgeContainer');
     if (adminBadge) adminBadge.classList.remove('hidden');
     const sidebarAdminBadge = document.getElementById('sidebarAdminBadge');
     if (sidebarAdminBadge) sidebarAdminBadge.classList.remove('hidden');
-    // Ensure admin inventory
     if (typeof Auth !== 'undefined') {
       Auth.ensureAdminInventory();
     }
@@ -60,7 +55,6 @@ const Admin = {
   },
 
   bindEvents() {
-    // Maintenance toggle
     const maintToggle = document.getElementById('toggleMaintenance');
     if (maintToggle) {
       maintToggle.addEventListener('change', (e) => {
@@ -74,7 +68,6 @@ const Admin = {
       });
     }
 
-    // Maintenance message
     const maintMsg = document.getElementById('maintenanceMessage');
     if (maintMsg) {
       maintMsg.addEventListener('input', (e) => {
@@ -83,7 +76,6 @@ const Admin = {
       });
     }
 
-    // Refresh buttons
     document.addEventListener('click', (e) => {
       if (e.target.matches('#btn-refresh-users')) this.loadUsers();
       if (e.target.matches('#btn-refresh-songs')) this.loadAllSongs();
@@ -122,7 +114,6 @@ const Admin = {
   },
 
   checkMaintenance() {
-    // Returns true if maintenance is active and user is NOT admin
     if (!this.maintenanceMode) return false;
     return !this.isAdmin();
   },
@@ -134,7 +125,7 @@ const Admin = {
   async render() {
     console.log('[Admin] render()');
     this.renderDashboard();
-    this.renderUsers();
+    await this.loadUsers();
     this.renderSongs();
     this.renderAchievementStats();
   },
@@ -177,6 +168,15 @@ const Admin = {
       return;
     }
     try {
+      // Use realtime listener for live updates
+      if (this._usersUnsub) {
+        this._usersUnsub();
+        this._usersUnsub = null;
+      }
+
+      const container = document.getElementById('admin-users-list');
+      if (container) container.innerHTML = '<p class="admin-empty">Loading users from Firestore...</p>';
+
       const snap = await Auth.db.collection('users').get();
       this.users = [];
       snap.forEach(doc => {
@@ -186,15 +186,45 @@ const Admin = {
           displayName: d.displayName || 'User',
           email: d.email || '—',
           photoURL: d.photoURL,
+          audixId: d.audixId || '—',
           xp: d.xp || 0,
           level: d.level || 1,
+          role: (d.email && this.ADMIN_EMAILS.includes(d.email)) ? 'Admin' : 'User',
           createdAt: d.createdAt ? new Date(d.createdAt.toDate()).toLocaleDateString() : '—'
         });
       });
       console.log('[Admin] loadUsers() —', this.users.length, 'users');
       this.renderUsers();
+
+      // Set up realtime listener
+      this._usersUnsub = Auth.db.collection('users').onSnapshot(snap => {
+        this.users = [];
+        snap.forEach(doc => {
+          const d = doc.data();
+          this.users.push({
+            uid: doc.id,
+            displayName: d.displayName || 'User',
+            email: d.email || '—',
+            photoURL: d.photoURL,
+            audixId: d.audixId || '—',
+            xp: d.xp || 0,
+            level: d.level || 1,
+            role: (d.email && this.ADMIN_EMAILS.includes(d.email)) ? 'Admin' : 'User',
+            createdAt: d.createdAt ? new Date(d.createdAt.toDate()).toLocaleDateString() : '—'
+          });
+        });
+        this.renderUsers();
+        this.renderDashboard();
+      }, err => {
+        console.error('[Admin] Users listener error:', err);
+      });
+
     } catch (e) {
       console.error('[Admin] loadUsers() error:', e);
+      const container = document.getElementById('admin-users-list');
+      if (container) {
+        container.innerHTML = `<p class="admin-empty">Error loading users: ${e.message}. Check Firestore permissions.</p>`;
+      }
     }
   },
 
@@ -205,11 +235,13 @@ const Admin = {
       container.innerHTML = '<p class="admin-empty">No users found. Click Refresh to load from Firestore.</p>';
       return;
     }
-    let html = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>User</th><th>Email</th><th>Level</th><th>XP</th><th>Joined</th></tr></thead><tbody>';
+    let html = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>User</th><th>Audix ID</th><th>Email</th><th>Role</th><th>Level</th><th>XP</th><th>Joined</th></tr></thead><tbody>';
     for (const u of this.users) {
       html += `<tr>
         <td><div class="admin-user-cell"><img src="${u.photoURL || ''}" class="admin-user-pic" onerror="this.style.display='none'">${u.displayName}</div></td>
+        <td><code>${u.audixId}</code></td>
         <td>${u.email}</td>
+        <td><span class="admin-role-badge ${u.role === 'Admin' ? 'admin' : 'user'}">${u.role}</span></td>
         <td>Lv.${u.level}</td>
         <td>${u.xp} XP</td>
         <td>${u.createdAt}</td>
@@ -318,7 +350,6 @@ const Admin = {
 
 // Maintenance overlay check
 document.addEventListener('DOMContentLoaded', () => {
-  // Check maintenance after short delay to ensure Admin module loaded
   setTimeout(() => {
     if (typeof Admin !== 'undefined' && Admin.checkMaintenance()) {
       console.log('[Admin] Maintenance mode active — showing overlay');

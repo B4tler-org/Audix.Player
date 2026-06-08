@@ -1,7 +1,6 @@
 /* ============================================
-   LIBRARY MANAGER — v3.0 (Bug Fix Edition)
-   CRITICAL FIX: Songs now appear immediately after upload,
-   persist after refresh, and are playable.
+   LIBRARY MANAGER — v3.1 (Critical Fixes)
+   Audio Format Support, Title Cleaner, Lyrics Cache
    ============================================ */
 
 const Library = {
@@ -9,16 +8,39 @@ const Library = {
   currentFilter: 'all',
   searchQuery: '',
   SUPPORTED_FORMATS: ['mp3', 'm4a', 'wav', 'ogg', 'aac', 'flac', 'webm'],
+  SUPPORTED_MIME_TYPES: [
+    'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a',
+    'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/aac',
+    'audio/x-aac', 'audio/flac', 'audio/webm', 'audio/x-ms-wma'
+  ],
 
   isValidAudioFile(file) {
     const ext = file.name.split('.').pop().toLowerCase();
-    const mimeType = file.type || '';
-    const validMimeTypes = [
-      'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a',
-      'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/aac',
-      'audio/x-aac', 'audio/flac', 'audio/webm'
-    ];
-    return this.SUPPORTED_FORMATS.includes(ext) || validMimeTypes.includes(mimeType);
+    const mimeType = (file.type || '').toLowerCase();
+    // Check extension first
+    if (this.SUPPORTED_FORMATS.includes(ext)) return true;
+    // Check MIME type
+    if (this.SUPPORTED_MIME_TYPES.includes(mimeType)) return true;
+    // Fallback: if it has audio/ prefix, accept it
+    if (mimeType.startsWith('audio/')) return true;
+    return false;
+  },
+
+  getMimeType(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const mimeMap = {
+      'mp3': 'audio/mpeg',
+      'm4a': 'audio/mp4',
+      'wav': 'audio/wav',
+      'ogg': 'audio/ogg',
+      'aac': 'audio/aac',
+      'flac': 'audio/flac',
+      'webm': 'audio/webm',
+      'wma': 'audio/x-ms-wma'
+    };
+    if (mimeMap[ext]) return mimeMap[ext];
+    if (file.type && file.type.startsWith('audio/')) return file.type;
+    return 'audio/mpeg'; // safe fallback
   },
 
   async init() {
@@ -46,7 +68,6 @@ const Library = {
       });
     }
 
-    // Smart filter buttons
     document.querySelectorAll('.smart-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.smart-btn').forEach(b => b.classList.remove('active'));
@@ -65,8 +86,10 @@ const Library = {
     console.log('[Library] handleUpload() — processing', files.length, 'files');
 
     let addedCount = 0;
+    let skippedCount = 0;
     for (const file of files) {
       if (!this.isValidAudioFile(file)) {
+        skippedCount++;
         if (typeof Utils !== 'undefined') Utils.toast(`Unsupported format: ${file.name}. Supported: MP3, M4A, WAV, OGG, AAC`, 'error');
         continue;
       }
@@ -77,7 +100,6 @@ const Library = {
     this.render();
     console.log('[Library] handleUpload() complete — total songs:', this.songs.length);
 
-    // Achievement tracking
     if (typeof Achievements !== 'undefined') {
       Achievements.track('songsUploaded', this.songs.length);
     }
@@ -92,16 +114,35 @@ const Library = {
         }
       }
       if (typeof Utils !== 'undefined') {
-        Utils.toast(`${addedCount} song(s) added to Library`, 'success');
+        Utils.toast(`${addedCount} song(s) added to Library${skippedCount > 0 ? `, ${skippedCount} skipped` : ''}`, 'success');
+      }
+    } else if (skippedCount > 0) {
+      if (typeof Utils !== 'undefined') {
+        Utils.toast(`${skippedCount} file(s) skipped — unsupported format`, 'error');
       }
     }
   },
 
+  // Title cleaner
+  localCleanTitle(rawName) {
+    let s = rawName.replace(/_/g, ' ');
+    s = s.replace(/\s*\(\d{1,3}\)\s*$/, '');
+    s = s.replace(/[\[(][^\])]*(lyrics?|audio|video|hd|hq|4k|vevo|official|music\s*video|lyric\s*video|visualizer|remaster(ed)?|\d+k(bps)?|\d{3,4}p|slowed|reverb|sped\s*up|nightcore|clean|explicit|radio\s*edit|extended|instrumental)[^\])]*[\])]/gi, '');
+    s = s.replace(/\(?\b(official\s*(audio|video|music\s*video|lyric\s*video|visualizer|hd|4k|hq))\b\)?/gi, '');
+    s = s.replace(/\b(youtube|vevo|spotify|soundcloud)\b/gi, '');
+    s = s.replace(/^\d{1,3}[\s.\-_]+/, '');
+    s = s.replace(/\s+\b(lyrics?|lyric\s*video|official\s*audio|official\s*video|official|audio|video|hd|hq|4k|vevo|visualizer|remaster(ed)?|slowed|reverb|nightcore|explicit|clean)\b(\s+\b(lyrics?|audio|video|hd|hq|4k|official)\b)*\s*$/gi, '');
+    s = s.replace(/[\[(]\s*[\])]/g, '');
+    s = s.replace(/\s{2,}/g, ' ').trim().replace(/[\s\-]+$/, '').trim();
+    const sepMatch = s.match(/^(.+?)\s+[-\u2013\u2014]\s+(.+)$/);
+    if (sepMatch) return { artist: sepMatch[1].trim(), title: sepMatch[2].trim(), _source: 'local' };
+    return { artist: '', title: s.trim(), _source: 'local' };
+  },
+
   async processFile(file) {
-    console.log('[Library] processFile() —', file.name, file.type, file.size);
+    console.log('[Library] processFile() —', file.name, this.getMimeType(file), file.size);
     const id = 'song_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
-    // Extract metadata via jsmediatags
     let metadata = {
       title: file.name.replace(/\.[^/.]+$/, ''),
       artist: 'Unknown Artist',
@@ -111,6 +152,11 @@ const Library = {
       cover: null,
       hasFullMetadata: false
     };
+
+    // Clean title first
+    const cleaned = this.localCleanTitle(file.name.replace(/\.[^/.]+$/, ''));
+    if (cleaned.title) metadata.title = cleaned.title;
+    if (cleaned.artist) metadata.artist = cleaned.artist;
 
     try {
       if (typeof jsmediatags !== 'undefined') {
@@ -148,7 +194,6 @@ const Library = {
       console.error('[Library] Metadata extraction failed:', e);
     }
 
-    // Read file as ArrayBuffer for persistent storage
     let arrayBuffer;
     try {
       arrayBuffer = await file.arrayBuffer();
@@ -168,7 +213,7 @@ const Library = {
       genre: metadata.genre,
       cover: metadata.cover,
       data: arrayBuffer,
-      fileType: file.type || 'audio/mpeg',
+      fileType: this.getMimeType(file),
       fileName: file.name,
       addedAt: Date.now(),
       playCount: 0,
@@ -176,7 +221,6 @@ const Library = {
       lastPlayed: null
     };
 
-    // Save to IndexedDB
     try {
       await this.saveSongToIDB(song);
       console.log('[Library] Song saved to IDB:', song.title);
@@ -186,10 +230,8 @@ const Library = {
       return;
     }
 
-    // Add to in-memory array
     this.songs.push(song);
 
-    // Achievement: full metadata
     if (metadata.hasFullMetadata && typeof Achievements !== 'undefined') {
       Achievements.track('fullMetadata');
     }
@@ -226,7 +268,6 @@ const Library = {
       req.onsuccess = () => {
         this.songs = req.result || [];
         console.log('[Library] loadUserSongs() success —', this.songs.length, 'songs from IDB');
-        // Re-hydrate ArrayBuffer if needed (IDB should preserve it)
         resolve();
       };
       req.onerror = () => {
@@ -245,33 +286,27 @@ const Library = {
     try {
       let buffer = song.data;
 
-      // Handle various IndexedDB serialization formats
       if (buffer instanceof Uint8Array) {
         buffer = buffer.buffer;
       } else if (Array.isArray(buffer)) {
         buffer = new Uint8Array(buffer).buffer;
       } else if (typeof buffer === 'object' && buffer !== null) {
-        // IndexedDB sometimes returns ArrayBuffer as plain object with byteLength
         if (typeof buffer.byteLength === 'number') {
-          // It's an ArrayBuffer-like object, reconstruct it
           const keys = Object.keys(buffer).map(Number).filter(k => !isNaN(k)).sort((a,b) => a-b);
           if (keys.length > 0 && keys.length === buffer.byteLength) {
             const arr = keys.map(k => buffer[k]);
             buffer = new Uint8Array(arr).buffer;
           } else if (buffer.byteLength > 0) {
-            // Fallback: try to read as typed array view
             buffer = new Uint8Array(Object.values(buffer)).buffer;
           }
         }
       }
 
-      // Final safety: ensure it's an ArrayBuffer
       if (!(buffer instanceof ArrayBuffer)) {
         console.error('[Library] Could not convert song data to ArrayBuffer for', song.id, 'type:', typeof buffer);
         return '';
       }
 
-      // Normalize MIME type based on extension
       let mimeType = song.fileType;
       if (!mimeType || mimeType === 'application/octet-stream') {
         const ext = (song.fileName || '').split('.').pop().toLowerCase();
@@ -300,7 +335,6 @@ const Library = {
   getFilteredSongs() {
     let result = [...this.songs];
 
-    // Search filter
     if (this.searchQuery) {
       const q = this.searchQuery;
       result = result.filter(s =>
@@ -311,7 +345,6 @@ const Library = {
       );
     }
 
-    // Smart filter
     switch (this.currentFilter) {
       case 'most-played':
         result.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
@@ -323,11 +356,9 @@ const Library = {
         result = result.filter(s => s.favorite);
         break;
       case 'mood':
-        // For now, sort by genre as a mood proxy
         result.sort((a, b) => (a.genre || '').localeCompare(b.genre || ''));
         break;
       default:
-        // Keep original order
         break;
     }
 
@@ -372,6 +403,7 @@ const Library = {
             <button class="btn-icon btn-favorite" data-id="${song.id}" title="Favorite">
               ${song.favorite ? '&#9829;' : '&#9825;'}
             </button>
+            <button class="btn-icon btn-share-song" data-id="${song.id}" title="Share">&#128172;</button>
             <button class="btn-icon btn-delete" data-id="${song.id}" title="Delete">&#128465;</button>
           </div>
         </div>
@@ -380,7 +412,6 @@ const Library = {
     html += '</div>';
     container.innerHTML = html;
 
-    // Bind click to play
     container.querySelectorAll('.song-item').forEach(item => {
       item.addEventListener('click', (e) => {
         if (e.target.closest('.btn-icon')) return;
@@ -393,7 +424,6 @@ const Library = {
       });
     });
 
-    // Bind favorite
     container.querySelectorAll('.btn-favorite').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -406,7 +436,15 @@ const Library = {
       });
     });
 
-    // Bind delete
+    container.querySelectorAll('.btn-share-song').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        const song = this.songs.find(s => s.id === id);
+        if (song) this.shareSong(song);
+      });
+    });
+
     container.querySelectorAll('.btn-delete').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -418,13 +456,28 @@ const Library = {
     });
   },
 
+  async shareSong(song) {
+    const shareData = {
+      title: song.title,
+      text: `Listen to "${song.title}" by ${song.artist} on Audix`,
+      url: window.location.href
+    };
+    if (navigator.share) {
+      try { await navigator.share(shareData); } catch (e) {}
+    } else {
+      const text = `"${song.title}" by ${song.artist} — Audix`;
+      navigator.clipboard.writeText(text).then(() => {
+        if (typeof Utils !== 'undefined') Utils.toast('Song info copied!', 'success');
+      });
+    }
+  },
+
   async deleteSong(id) {
     console.log('[Library] deleteSong() —', id);
     const idx = this.songs.findIndex(s => s.id === id);
     if (idx === -1) return;
     this.songs.splice(idx, 1);
 
-    // Delete from IDB
     try {
       const tx = Auth.idb.transaction('userSongs', 'readwrite');
       const store = tx.objectStore('userSongs');
@@ -442,7 +495,6 @@ const Library = {
     if (typeof Utils !== 'undefined') Utils.toast('Song deleted', 'info');
   },
 
-  // Admin helper: get all songs for admin view
   getAllSongs() {
     return this.songs;
   }

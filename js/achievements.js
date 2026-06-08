@@ -233,7 +233,11 @@ const Achievements = {
       if (unlockedCount >= parseInt(count) && !granted.includes(count)) {
         granted.push(count);
         if (typeof Auth !== 'undefined' && Auth.addItemToInventory) {
-          Auth.addItemToInventory(reward);
+          try {
+            Auth.addItemToInventory(reward);
+          } catch (e) {
+            console.warn('[Achievements] Failed to add milestone item:', e);
+          }
         }
         if (typeof Utils !== 'undefined') Utils.toast(`🏆 Milestone Reward: ${reward.name} unlocked!`, 'success');
         newRewards++;
@@ -361,6 +365,7 @@ const Achievements = {
   },
 
   async save() {
+    try {
     const userId = (typeof Auth !== 'undefined' && Auth.getUserId) ? Auth.getUserId() : 'guest';
     const data = {
       unlocked: Array.from(this.unlocked),
@@ -380,6 +385,9 @@ const Achievements = {
       }
     }
     console.log('[Achievements] saved —', this.unlocked.size, 'unlocked');
+    } catch (e) {
+      console.error('[Achievements] save failed:', e);
+    }
   },
 
   async load() {

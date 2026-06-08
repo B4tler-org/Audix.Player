@@ -1,4 +1,9 @@
 const Profile = {
+  init() {
+    this.bindEvents();
+    this.updateDisplay();
+  },
+
   async updateDisplay() {
     if (typeof Auth === 'undefined' || !Auth.currentUser) return;
     const user = Auth.currentUser;
@@ -6,15 +11,19 @@ const Profile = {
     const data = doc.data();
     if (!data) return;
 
+    // Audix ID
     const audixIdEl = document.getElementById('profileAudixId');
     if (audixIdEl) audixIdEl.textContent = data.audixId || '—';
 
+    // Username
     const profileUsername = document.getElementById('profileUsername');
     if (profileUsername) profileUsername.textContent = data.displayName || user.displayName || 'User';
 
+    // Email
     const profileEmail = document.getElementById('profileEmail');
     if (profileEmail) profileEmail.textContent = data.email || user.email || '—';
 
+    // Joined date
     const profileJoined = document.getElementById('profileJoined');
     if (profileJoined && data.createdAt) {
       const date = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
@@ -23,16 +32,39 @@ const Profile = {
       profileJoined.textContent = '—';
     }
 
-    // Add verified tick next to username for admins
+    // Profile Picture - FIXED
+    const profilePfp = document.getElementById('profilePfp');
+    const avatarPlaceholder = document.getElementById('avatarPlaceholder');
+    const pfpUrl = data.customPhotoURL || data.photoURL || user.photoURL || null;
+
+    if (profilePfp) {
+      if (pfpUrl) {
+        profilePfp.src = pfpUrl;
+        profilePfp.classList.remove('hidden');
+        if (avatarPlaceholder) avatarPlaceholder.classList.add('hidden');
+      } else {
+        profilePfp.classList.add('hidden');
+        if (avatarPlaceholder) avatarPlaceholder.classList.remove('hidden');
+      }
+    }
+
+    // Tag display
+    const tagEl = document.getElementById('profileTag');
+    if (tagEl) tagEl.textContent = data.tag || '';
+    const tagInput = document.getElementById('tagInput');
+    if (tagInput) tagInput.value = data.tag || '';
+
+    // Admin badge with SVG
     const profileUsernameRow = document.getElementById('profileUsername')?.closest('.info-row');
     if (profileUsernameRow && Auth.isAdmin()) {
       let tick = profileUsernameRow.querySelector('.admin-verified-tick');
       if (!tick) {
         tick = document.createElement('span');
         tick.className = 'admin-verified-tick';
-        tick.innerHTML = ' &#10004;';
-        tick.style.color = '#3498db';
-        tick.style.fontSize = '1rem';
+        tick.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        tick.style.marginLeft = '6px';
+        tick.style.display = 'inline-flex';
+        tick.style.verticalAlign = 'middle';
         profileUsernameRow.appendChild(tick);
       }
     }
@@ -40,6 +72,7 @@ const Profile = {
     const adminBadgeContainer = document.getElementById('adminBadgeContainer');
     if (adminBadgeContainer) adminBadgeContainer.classList.toggle('hidden', !Auth.isAdmin());
 
+    // Activity Status
     const activityCard = document.getElementById('activityStatusCard');
     const activitySong = document.getElementById('activitySong');
     const activityArtist = document.getElementById('activityArtist');
@@ -53,6 +86,7 @@ const Profile = {
       }
     }
 
+    // Stats
     const songCountEl = document.getElementById('profileSongCount');
     if (songCountEl) songCountEl.textContent = (typeof Library !== 'undefined') ? Library.songs.length : 0;
 
@@ -69,10 +103,54 @@ const Profile = {
     const coinsEl = document.getElementById('profileCoins');
     if (coinsEl) coinsEl.textContent = (data.coins || 0) + ' Coins';
 
-    Auth.generateUserQRCode('profileQRCode');
+    // Apply equipped frame visually
+    this.applyEquippedFrame(data);
+
     this.renderFriends();
     this.renderFriendRequests();
     this.renderInventory();
+  },
+
+  applyEquippedFrame(data) {
+    const avatarWrap = document.getElementById('profileAvatar');
+    if (!avatarWrap) return;
+
+    // Remove old frame
+    const oldFrame = avatarWrap.querySelector('.avatar-frame');
+    if (oldFrame) oldFrame.remove();
+
+    const inv = data.inventory || {};
+    const equipped = inv.equipped || {};
+    const frameId = equipped.frame;
+    if (!frameId) return;
+
+    const frameItem = (inv.frames || []).find(f => f.id === frameId);
+    if (!frameItem) return;
+
+    const frame = document.createElement('div');
+    frame.className = 'avatar-frame';
+    frame.style.cssText = `
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 2;
+    `;
+
+    if (frameItem.id === 'admin_frame_gold') {
+      frame.style.border = '3px solid #f1c40f';
+      frame.style.boxShadow = '0 0 12px rgba(241,196,15,0.6), inset 0 0 8px rgba(241,196,15,0.3)';
+    } else if (frameItem.animated) {
+      frame.style.border = '3px solid var(--accent)';
+      frame.style.boxShadow = '0 0 12px var(--accent)';
+      frame.style.animation = 'framePulse 2s ease-in-out infinite';
+    } else {
+      frame.style.border = '3px solid var(--accent)';
+      frame.style.boxShadow = '0 0 8px var(--accent)';
+    }
+
+    avatarWrap.style.position = 'relative';
+    avatarWrap.appendChild(frame);
   },
 
   async renderFriends() {
@@ -175,13 +253,14 @@ const Profile = {
         const isEquipped = item.classList.contains('equipped');
         if (isEquipped) await Auth.unequipItem(type);
         else await Auth.equipItem(id, type);
-        this.renderInventory();
+        await this.renderInventory();
+        await this.updateDisplay(); // refresh frame visual
       });
     });
   },
 
   bindEvents() {
-    // Use event delegation for inventory tabs so they work even if DOM is re-rendered
+    // Inventory tabs
     document.body.addEventListener('click', (e) => {
       if (e.target.matches('.inv-tab')) {
         document.querySelectorAll('.inv-tab').forEach(t => t.classList.remove('active'));
@@ -191,6 +270,7 @@ const Profile = {
       }
     });
 
+    // Friend search
     const searchBtn = document.getElementById('btn-search-friend');
     const searchInput = document.getElementById('friendSearchInput');
     if (searchBtn && searchInput) {
@@ -198,6 +278,7 @@ const Profile = {
       searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') this.searchFriend(searchInput.value); });
     }
 
+    // Copy ID
     const copyBtn = document.getElementById('btn-copy-id');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
@@ -210,16 +291,60 @@ const Profile = {
       });
     }
 
-    const scanBtn = document.getElementById('btn-scan-qr');
-    if (scanBtn) scanBtn.addEventListener('click', () => this.openQRScanner());
-    const closeQrBtn = document.getElementById('btn-close-qr');
-    if (closeQrBtn) closeQrBtn.addEventListener('click', () => this.closeQRScanner());
-
+    // Privacy
     const privacySelect = document.getElementById('activityPrivacy');
     if (privacySelect) {
       privacySelect.addEventListener('change', (e) => {
         if (typeof Auth !== 'undefined') Auth.toggleActivityPrivacy(e.target.value);
       });
+    }
+
+    // PFP Upload - FIXED
+    const pfpInput = document.getElementById('pfp-input');
+    if (pfpInput) {
+      pfpInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+          if (typeof Utils !== 'undefined') Utils.toast('Uploading profile picture...', 'info');
+          await Auth.uploadProfilePicture(file);
+          if (typeof Utils !== 'undefined') Utils.toast('Profile picture updated!', 'success');
+          await this.updateDisplay();
+        } catch (err) {
+          console.error('[Profile] PFP upload error:', err);
+          if (typeof Utils !== 'undefined') Utils.toast(err.message || 'Upload failed', 'error');
+        }
+        pfpInput.value = '';
+      });
+    }
+
+    // Tag edit
+    const tagBtn = document.getElementById('btn-save-tag');
+    const tagInput = document.getElementById('tagInput');
+    if (tagBtn && tagInput) {
+      tagBtn.addEventListener('click', async () => {
+        const tag = tagInput.value.trim();
+        if (tag.length > 25) {
+          if (typeof Utils !== 'undefined') Utils.toast('Tag must be 25 characters or less', 'error');
+          return;
+        }
+        await Auth.updateTag(tag);
+        await this.updateDisplay();
+      });
+    }
+
+    // Logout
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        if (typeof Auth !== 'undefined') Auth.logout();
+      });
+    }
+
+    // Share profile
+    const shareProfileBtn = document.getElementById('btn-share-profile');
+    if (shareProfileBtn) {
+      shareProfileBtn.addEventListener('click', () => this.shareProfile());
     }
   },
 
@@ -245,55 +370,24 @@ const Profile = {
     return doc.data()?.friends?.list?.includes(uid) || false;
   },
 
-  openQRScanner() {
-    const modal = document.getElementById('qrScanModal');
-    if (modal) modal.classList.remove('hidden');
-    const video = document.getElementById('qrVideo');
-    const canvas = document.getElementById('qrCanvas');
-    if (!video || !canvas) return;
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      .then(stream => {
-        video.srcObject = stream;
-        video.play();
-        this.scanQRFrame(video, canvas, stream);
-      })
-      .catch(err => {
-        console.error('[Profile] Camera access denied:', err);
-        if (typeof Utils !== 'undefined') Utils.toast('Camera access denied. Use ID search instead.', 'error');
-        this.closeQRScanner();
-      });
-  },
-
-  scanQRFrame(video, canvas, stream) {
-    if (!video.srcObject) return;
-    const ctx = canvas.getContext('2d');
-    canvas.width = video.videoWidth || 300;
-    canvas.height = video.videoHeight || 200;
-    const scan = () => {
-      if (!video.srcObject) return;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      if (typeof jsQR !== 'undefined') {
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
-        if (code) {
-          try {
-            const data = JSON.parse(code.data);
-            if (data.audixId) { this.closeQRScanner(); stream.getTracks().forEach(t => t.stop()); document.getElementById('friendSearchInput').value = data.audixId; this.searchFriend(data.audixId); return; }
-          } catch (e) {
-            if (code.data.includes('Audix ')) { this.closeQRScanner(); stream.getTracks().forEach(t => t.stop()); document.getElementById('friendSearchInput').value = code.data; this.searchFriend(code.data); return; }
-          }
-        }
-      }
-      requestAnimationFrame(scan);
+  async shareProfile() {
+    const audixId = document.getElementById('profileAudixId')?.textContent;
+    const username = document.getElementById('profileUsername')?.textContent;
+    const shareData = {
+      title: `Audix Profile: ${username}`,
+      text: `Check out my Audix profile! ID: ${audixId}`,
+      url: window.location.href
     };
-    requestAnimationFrame(scan);
-  },
-
-  closeQRScanner() {
-    const modal = document.getElementById('qrScanModal');
-    if (modal) modal.classList.add('hidden');
-    const video = document.getElementById('qrVideo');
-    if (video && video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (e) { /* cancelled */ }
+    } else {
+      // Fallback: copy to clipboard
+      const text = `Audix Profile: ${username} — ID: ${audixId}`;
+      navigator.clipboard.writeText(text).then(() => {
+        if (typeof Utils !== 'undefined') Utils.toast('Profile link copied!', 'success');
+      });
+    }
   }
 };
-
