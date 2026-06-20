@@ -403,19 +403,6 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .gen-result-item{display:flex;align-items:center;gap:var(--sp3);padding:8px 10px;background:var(--bg4);border-radius:var(--radius-sm);cursor:pointer;transition:border-color .2s;border:1px solid transparent}
 .gen-result-item:hover{border-color:var(--border)}
 
-.achievement-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp3)}
-.achievement-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--sp3);text-align:center;display:flex;flex-direction:column;gap:var(--sp2)}
-.achievement-card.unlocked{border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.05)}
-.achievement-icon{font-size:2rem}
-.achievement-name{font-family:'Rajdhani';font-weight:700;font-size:.82rem;letter-spacing:.5px}
-.achievement-desc{font-size:.68rem;color:var(--text3);line-height:1.4}
-.achievement-progress{background:var(--bg4);border-radius:2px;height:4px;overflow:hidden}
-.achievement-progress-bar{height:100%;background:var(--grad);border-radius:2px;transition:width .5s}
-.achievement-unlock-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);z-index:9999;background:rgba(0,0,0,.9);border:1px solid rgba(251,191,36,.5);border-radius:var(--radius-lg);padding:24px 28px;text-align:center;pointer-events:none;opacity:0;transition:all .3s}
-.achievement-unlock-toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-.achievement-unlock-toast .au-icon{font-size:3rem;margin-bottom:8px}
-.achievement-unlock-toast .au-title{font-size:1rem;font-weight:800;letter-spacing:1px}
-.achievement-unlock-toast .au-name{font-size:.82rem;opacity:.9;margin-top:3px}
 .karaoke-stage{background:#000;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;min-height:200px;display:flex;align-items:center;justify-content:center;position:relative}
 .karaoke-line{font-size:1.4rem;font-weight:800;text-align:center;padding:var(--sp4);line-height:1.5}
 .karaoke-line span{color:var(--text3);transition:color .1s}
@@ -1049,7 +1036,6 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
       <div class="nav-item" onclick="openTab('equalizer')" id="nav-equalizer"><span class="nav-icon">🎛</span>Equalizer</div>
       <div class="nav-item" onclick="openTab('visualizer')" id="nav-visualizer"><span class="nav-icon">🌈</span>Visualizer</div>
       <div class="nav-item" onclick="openTab('aihub')" id="nav-aihub"><span class="nav-icon">🤖</span>AI Hub</div>
-      <div class="nav-item" onclick="openTab('achievements')" id="nav-achievements"><span class="nav-icon">🏆</span>Achievements</div>
       <div class="nav-item" onclick="toggleDjPanel()" id="nav-dj"><span class="nav-icon">🎧</span>DJ Claude</div>
       <div class="nav-item" onclick="openTab('karaoke')" id="nav-karaoke"><span class="nav-icon">🎤</span>Karaoke</div>
       <div class="nav-item" onclick="openSleepTimer()" id="nav-sleep"><span class="nav-icon">😴</span>Sleep Timer</div>
@@ -1517,13 +1503,6 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
         </div>
       </div>
 
-
-      <!-- ACHIEVEMENTS TAB -->
-      <div class="tab-content" id="tab-achievements">
-        <div class="lib-header"><div class="lib-title">🏆 Achievements</div></div>
-        <div class="achievement-grid" id="achievementGrid"></div>
-      </div>
-
       <!-- KARAOKE TAB -->
       <div class="tab-content" id="tab-karaoke">
         <div class="lib-header"><div class="lib-title">🎤 Karaoke Mode</div></div>
@@ -1615,7 +1594,6 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
       <div class="bn-item" id="bn-equalizer" onclick="openTab('equalizer')"><span class="bn-icon">🎛</span><span>EQ</span></div>
       <div class="bn-item" id="bn-visualizer" onclick="openTab('visualizer')"><span class="bn-icon">🌈</span><span>Viz</span></div>
       <div class="bn-item" id="bn-aihub" onclick="openTab('aihub')"><span class="bn-icon">🤖</span><span>AI Hub</span></div>
-      <div class="bn-item" id="bn-achievements" onclick="openTab('achievements')"><span class="bn-icon">🏆</span><span>Awards</span></div>
       <div class="bn-item" id="bn-dj" onclick="toggleDjPanel()"><span class="bn-icon">🎧</span><span>DJ</span></div>
       <div class="bn-item" id="bn-karaoke" onclick="openTab('karaoke')"><span class="bn-icon">🎤</span><span>Karaoke</span></div>
       <div class="bn-item" id="bn-sleep" onclick="openSleepTimer()"><span class="bn-icon">😴</span><span>Sleep</span></div>
@@ -1730,13 +1708,6 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 
 <!-- DJ FAB -->
 <button class="dj-fab" id="djFab" onclick="toggleDjPanel()" title="AI Chat DJ">🎧</button>
-
-<!-- ACHIEVEMENT TOAST -->
-<div class="achievement-unlock-toast" id="achieveUnlockToast">
-  <div class="au-icon" id="achieveUnlockIcon">🏆</div>
-  <div class="au-title">ACHIEVEMENT UNLOCKED!</div>
-  <div class="au-name" id="achieveUnlockName">-</div>
-</div>
 
 
 <!-- DJ PANEL -->
@@ -2415,7 +2386,11 @@ function handleFileUpload(e) {
 function randomMusicEmoji(){return ['🎵','🎶','🎸','🎹','🎷','🎺','🥁','🎻','🎤','💿'][Math.floor(Math.random()*10)]}
 
 // ========== PLAYBACK ==========
-async function playTrack(idx) {
+// `autoplay` defaults to true: changing tracks (Next/Previous/Shuffle/Repeat/
+// Playlist autoplay/selecting from library) should always start playback of
+// the new track immediately, and the UI must never claim "Playing" while the
+// audio element is actually paused.
+async function playTrack(idx, autoplay = true) {
   if(idx<0||idx>=state.tracks.length) return;
   state.currentIdx = idx;
   const track = state.tracks[idx];
@@ -2436,9 +2411,13 @@ async function playTrack(idx) {
     }
   }
 
-  // Stop current playback cleanly
+  // Stop current playback cleanly. Immediately reflect the paused state in
+  // the UI so we're never showing "Playing" while audio is actually paused
+  // during the load of the new track.
   audio.pause();
   audio.src = '';
+  state.isPlaying = false;
+  updatePlayerUI();
 
   await new Promise(r => setTimeout(r, 80));
 
@@ -2460,11 +2439,15 @@ async function playTrack(idx) {
     audio.addEventListener('error',   onErr,   { once: true });
   });
 
-  // Show title/artist immediately, reset lyrics panel
+  // Show title/artist immediately, reset lyrics panel. state.isPlaying is
+  // still false here, so this correctly paints the paused/loading state
+  // (album art rotation stopped, play button showing ▶, etc.)
   updatePlayerUI();
   const btn = document.getElementById('lyricsFetchBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
   clearLyrics();
+
+  if (!autoplay) return;
 
   audio.play().then(() => {
     state.isPlaying = true;
@@ -2496,9 +2479,21 @@ async function playTrack(idx) {
 function togglePlay() {
   if(state.currentIdx<0 && state.tracks.length>0){playTrack(0);return;}
   if(state.currentIdx<0) return;
-  if(state.isPlaying){audio.pause();state.isPlaying=false;}
-  else{audio.play();state.isPlaying=true;}
-  updatePlayerUI();
+  if(state.isPlaying){
+    audio.pause();
+    state.isPlaying=false;
+    updatePlayerUI();
+  } else {
+    audio.play().then(() => {
+      state.isPlaying=true;
+      updatePlayerUI();
+    }).catch(err => {
+      console.log('Playback error:', err);
+      toast('Playback failed: ' + err.message, 'error');
+      state.isPlaying=false;
+      updatePlayerUI();
+    });
+  }
 }
 function nextTrack() {
   if(!state.tracks.length) return;
@@ -2572,7 +2567,18 @@ audio.onloadedmetadata=()=>{
   document.getElementById('durTime').textContent=fmtTime(audio.duration);
 };
 audio.onended=()=>{
-  if(state.repeat==='one'){audio.play();return;}
+  if(state.repeat==='one'){
+    audio.currentTime = 0;
+    audio.play().then(()=>{
+      state.isPlaying = true;
+      updatePlayerUI();
+    }).catch(err=>{
+      console.log('Playback error:', err);
+      state.isPlaying = false;
+      updatePlayerUI();
+    });
+    return;
+  }
   if(state.repeat==='all'||state.currentIdx<state.tracks.length-1) nextTrack();
   else{state.isPlaying=false;updatePlayerUI();}
 };
@@ -6182,7 +6188,6 @@ async function runSmartAutoTag() {
   if (btn) { btn.textContent = '🧠 Auto Tag'; btn.disabled = false; }
   toast(`✓ Found metadata for ${fixed} of ${total} track${total > 1 ? 's' : ''}`, 'success');
   renderTrackList();
-  checkAchievements();
 }
 
 // ============================================================
@@ -6286,7 +6291,6 @@ window.openTab = function(tab) {
     });
   }
   if (tab === 'aihub') { renderStreakCalendar(); renderTopCharts(); renderMonthlyStats(); }
-  if (tab === 'achievements') renderAchievements();
 };
 
 
@@ -6400,160 +6404,9 @@ window.addEventListener('DOMContentLoaded', () => {
   }, 3500);
 });
 
-// ============================================================
-// ===== FEATURE: MUSIC ACHIEVEMENTS ==========================
-// ============================================================
-const ACHIEVEMENTS_DEF = [
-  { id: 'first_play', icon: '🎵', name: 'First Note', desc: 'Play your first song', target: 1, type: 'plays' },
-  { id: 'plays_10', icon: '🎶', name: 'Getting Groovy', desc: 'Play 10 songs', target: 10, type: 'plays' },
-  { id: 'plays_50', icon: '🎤', name: 'Music Lover', desc: 'Play 50 songs', target: 50, type: 'plays' },
-  { id: 'plays_100', icon: '🥇', name: '100 Songs Played', desc: 'Play 100 songs total', target: 100, type: 'plays' },
-  { id: 'plays_500', icon: '🌟', name: 'Audiophile', desc: 'Play 500 songs', target: 500, type: 'plays' },
-  { id: 'night_owl', icon: '🦉', name: 'Night Owl Listener', desc: 'Play music after midnight (12am–4am)', target: 1, type: 'night_plays' },
-  { id: 'rock_master', icon: '🎸', name: 'Rock Master', desc: 'Listen to 20 songs tagged as Rock', target: 20, type: 'genre_rock' },
-  { id: 'playlist_creator', icon: '📋', name: 'Playlist Creator', desc: 'Create your first playlist', target: 1, type: 'playlists' },
-  { id: 'library_builder', icon: '📚', name: 'Library Builder', desc: 'Add 10 songs to your library', target: 10, type: 'library' },
-  { id: 'streak_3', icon: '🔥', name: 'On Fire', desc: 'Maintain a 3-day listening streak', target: 3, type: 'streak' },
-  { id: 'streak_7', icon: '⚡', name: 'Week Warrior', desc: 'Maintain a 7-day listening streak', target: 7, type: 'streak' },
-  { id: 'streak_30', icon: '🏆', name: 'Legendary Streak', desc: 'Maintain a 30-day listening streak', target: 30, type: 'streak' },
-  { id: 'eq_user', icon: '🎛', name: 'Sound Engineer', desc: 'Apply 3 different EQ presets', target: 3, type: 'eq_presets' },
-  { id: 'night_10', icon: '🌙', name: 'Midnight Regular', desc: 'Play music after midnight 10 times', target: 10, type: 'night_plays' },
-  { id: 'fav_5', icon: '❤️', name: 'Music Crush', desc: 'Add 5 songs to favourites', target: 5, type: 'favs' },
-  { id: 'viz_explorer', icon: '🌈', name: 'Visualizer Explorer', desc: 'Try 5 different visualizer styles', target: 5, type: 'viz_types' },
-  { id: 'ai_user', icon: '🤖', name: 'AI Enthusiast', desc: 'Use AI features 5 times', target: 5, type: 'ai_uses' },
-];
-
-let _achieveStats = JSON.parse(localStorage.getItem('audix_achieve_stats') || '{}');
-let _unlockedAchievements = JSON.parse(localStorage.getItem('audix_achievements') || '[]');
-
-function getAchieveProgress(def) {
-  const s = _achieveStats;
-  switch (def.type) {
-    case 'plays': return (loadStats().plays || []).length;
-    case 'night_plays': return s.night_plays || 0;
-    case 'genre_rock': return s.genre_rock || 0;
-    case 'playlists': return state.playlists.length;
-    case 'library': return state.tracks.length;
-    case 'streak': return loadStats().streak || 0;
-    case 'eq_presets': return s.eq_presets || 0;
-    case 'favs': return state.favs.length;
-    case 'viz_types': return s.viz_types_tried || 0;
-    case 'ai_uses': return s.ai_uses || 0;
-    default: return 0;
-  }
-}
-
-function checkAchievements() {
-  let newUnlock = null;
-  ACHIEVEMENTS_DEF.forEach(def => {
-    if (_unlockedAchievements.includes(def.id)) return;
-    const progress = getAchieveProgress(def);
-    if (progress >= def.target) {
-      _unlockedAchievements.push(def.id);
-      newUnlock = def;
-    }
-  });
-  localStorage.setItem('audix_achievements', JSON.stringify(_unlockedAchievements));
-  if (newUnlock) showAchievementUnlock(newUnlock);
-  // Update badge in nav if achievements tab open
-  updateAchieveScore();
-}
-
-function showAchievementUnlock(def) {
-  const toast = document.getElementById('achieveUnlockToast');
-  const icon = document.getElementById('achieveUnlockIcon');
-  const name = document.getElementById('achieveUnlockName');
-  if (!toast) return;
-  icon.textContent = def.icon;
-  name.textContent = def.name;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3000);
-}
-
-function updateAchieveScore() {
-  const el = document.getElementById('achieveScore');
-  if (el) el.textContent = _unlockedAchievements.length + ' / ' + ACHIEVEMENTS_DEF.length;
-}
-
-function renderAchievements() {
-  const list = document.getElementById('achievementsList');
-  if (!list) return;
-  updateAchieveScore();
-  const sorted = [...ACHIEVEMENTS_DEF].sort((a, b) => {
-    const ua = _unlockedAchievements.includes(a.id);
-    const ub = _unlockedAchievements.includes(b.id);
-    if (ua && !ub) return -1;
-    if (!ua && ub) return 1;
-    return 0;
-  });
-  list.innerHTML = sorted.map(def => {
-    const unlocked = _unlockedAchievements.includes(def.id);
-    const progress = getAchieveProgress(def);
-    const pct = Math.min(100, Math.round((progress / def.target) * 100));
-    return `<div class="achievement ${unlocked ? 'unlocked' : 'locked'}">
-      <div class="achievement-icon">${def.icon}</div>
-      <div class="achievement-info">
-        <div class="achievement-name">${def.name}</div>
-        <div class="achievement-desc">${def.desc}</div>
-        <div class="achievement-progress">
-          <div class="achievement-prog-fill" style="width:${pct}%"></div>
-        </div>
-        <div style="font-family:'Share Tech Mono';font-size:0.6rem;color:var(--text3);margin-top:3px">${Math.min(progress, def.target)} / ${def.target}</div>
-      </div>
-      ${unlocked ? '<div class="achievement-badge">✓ DONE</div>' : ''}
-    </div>`;
-  }).join('');
-}
-
-// Hook achievement tracking into various actions
-function _trackAchieveEvent(type) {
-  if (!_achieveStats[type]) _achieveStats[type] = 0;
-  _achieveStats[type]++;
-  localStorage.setItem('audix_achieve_stats', JSON.stringify(_achieveStats));
-  checkAchievements();
-}
-
-// Track night listening
-audio.addEventListener('play', () => {
-  const h = new Date().getHours();
-  if (h >= 0 && h < 4) _trackAchieveEvent('night_plays');
-  checkAchievements();
-});
-
-
-// Track EQ presets
-const _origApplyPreset = applyPreset;
-window.applyPreset = function(name, btn) {
-  _origApplyPreset(name, btn);
-  _trackAchieveEvent('eq_presets');
-};
-
-// Track visualizer type changes
-const _origSetFullVizType = setFullVizType;
-window.setFullVizType = function(type, el) {
-  _origSetFullVizType(type, el);
-  if (!_achieveStats._vizTypesSeen) _achieveStats._vizTypesSeen = [];
-  if (!_achieveStats._vizTypesSeen.includes(type)) {
-    _achieveStats._vizTypesSeen.push(type);
-    _achieveStats.viz_types_tried = _achieveStats._vizTypesSeen.length;
-    localStorage.setItem('audix_achieve_stats', JSON.stringify(_achieveStats));
-    checkAchievements();
-  }
-};
-
-// Track AI usage
-const _origCallClaude = callClaude;
-window.callClaude = async function(messages, maxTokens) {
-  const result = await _origCallClaude(messages, maxTokens);
-  _trackAchieveEvent('ai_uses');
-  return result;
-};
-
-// Check achievements on boot
+// Check boot tasks
 window.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
-    updateAchieveScore();
-    checkAchievements();
     initCrossfade();
   }, 4000);
 });
@@ -7262,8 +7115,6 @@ function getBackupData() {
     stats: JSON.parse(localStorage.getItem('audix_stats') || '{}'),
     notes: JSON.parse(localStorage.getItem('audix_notes') || '[]'),
     heatmap: JSON.parse(localStorage.getItem('audix_heatmap') || '{}'),
-    achievements: JSON.parse(localStorage.getItem('audix_achievements') || '[]'),
-    achieveStats: JSON.parse(localStorage.getItem('audix_achieve_stats') || '{}'),
     theme: document.documentElement.getAttribute('data-theme') || 'dark',
     quizHighScore: localStorage.getItem('audix_quiz_high') || '0'
   };
@@ -7294,8 +7145,6 @@ function importBackup(event) {
       if (data.stats) localStorage.setItem('audix_stats', JSON.stringify(data.stats));
       if (data.notes) localStorage.setItem('audix_notes', JSON.stringify(data.notes));
       if (data.heatmap) localStorage.setItem('audix_heatmap', JSON.stringify(data.heatmap));
-      if (data.achievements) localStorage.setItem('audix_achievements', JSON.stringify(data.achievements));
-      if (data.achieveStats) localStorage.setItem('audix_achieve_stats', JSON.stringify(data.achieveStats));
       if (data.quizHighScore) localStorage.setItem('audix_quiz_high', data.quizHighScore);
       showToast('✅ Backup restored! Reload to apply.');
       renderBackupSummary(data);
@@ -7312,7 +7161,6 @@ function renderBackupSummary(data) {
   const items = [
     { label: 'Playlists', val: (data.playlists||[]).length },
     { label: 'Favourites', val: (data.favs||[]).length },
-    { label: 'Achievements', val: (data.achievements||[]).length },
     { label: 'Notes', val: (data.notes||[]).length }
   ];
   el.innerHTML = items.map(i => `
@@ -7401,8 +7249,8 @@ function updateMediaSession() {
     artwork
   });
 
-  navigator.mediaSession.setActionHandler('play',         () => { audio.play(); state.isPlaying = true; updatePlayerUI(); });
-  navigator.mediaSession.setActionHandler('pause',        () => { audio.pause(); state.isPlaying = false; updatePlayerUI(); });
+  navigator.mediaSession.setActionHandler('play',         () => { if(!state.isPlaying) togglePlay(); });
+  navigator.mediaSession.setActionHandler('pause',        () => { if(state.isPlaying) togglePlay(); });
   navigator.mediaSession.setActionHandler('previoustrack',() => { if(typeof prevTrack!=='undefined') prevTrack(); });
   navigator.mediaSession.setActionHandler('nexttrack',    () => { if(typeof nextTrack!=='undefined') nextTrack(); });
   navigator.mediaSession.setActionHandler('seekbackward', (d) => { audio.currentTime = Math.max(0, audio.currentTime - (d.seekOffset || 10)); });
