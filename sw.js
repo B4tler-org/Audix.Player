@@ -6,7 +6,7 @@
    whatever is cached only when the network is unavailable.
    ============================================ */
 
-const CACHE_NAME = 'audix-v3';
+const CACHE_NAME = 'audix-v4';
 
 // This app is a single HTML file — there is no separate /css or /js
 // bundle to pre-cache. Only the app shell itself is precached on install;

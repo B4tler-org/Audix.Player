@@ -979,7 +979,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 
 <div id="app">
   <div class="topbar">
-    <div class="topbar-logo">AUDIX<span>MUSIC PLAYER</span></div>
+    <div class="topbar-logo">AUDIX<span>MUSIC PLAYER · BUILD 2026-06-20-1</span></div>
     <div class="topbar-actions">
       <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
       <button class="icon-btn" onclick="openTab('search')" title="Search">🔍</button>
@@ -1795,28 +1795,29 @@ function _updateStickyHeader() {
   const shArtist = document.getElementById('shArtist');
   const shArt = document.getElementById('shArt');
   const shEmoji = document.getElementById('shArtEmoji');
-  if (!shTitle) return;
+  if (!shTitle || !shArtist) return;
   if (track) {
-    shTitle.textContent = track.name || 'No Track Selected';
+    shTitle.textContent = track.name || 'Unknown';
     shArtist.textContent = track.artist || 'Unknown Artist';
-    if (typeof state !== 'undefined' && state.isPlaying) shArt.classList.add('playing');
-    else shArt.classList.remove('playing');
-    const cachedArt = typeof _artCache !== 'undefined' && track ? _artCache.get(String(track.id)) : null;
-    if (cachedArt) {
-      shEmoji.style.display = 'none';
-      let img = shArt.querySelector('img.sh-art-img');
-      if (!img) { img = document.createElement('img'); img.className = 'sh-art-img'; img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:8px'; shArt.appendChild(img); }
-      img.src = cachedArt;
-    } else {
-      shEmoji.style.display = '';
-      const img = shArt.querySelector('img.sh-art-img');
-      if (img) img.remove();
-      shEmoji.textContent = track.emoji || '🎵';
+    if (shArt) {
+      if (typeof state !== 'undefined' && state.isPlaying) shArt.classList.add('playing');
+      else shArt.classList.remove('playing');
+      const cachedArt = typeof _artCache !== 'undefined' ? _artCache.get(String(track.id)) : null;
+      if (cachedArt) {
+        if (shEmoji) shEmoji.style.display = 'none';
+        let img = shArt.querySelector('img.sh-art-img');
+        if (!img) { img = document.createElement('img'); img.className = 'sh-art-img'; img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:8px'; shArt.appendChild(img); }
+        img.src = cachedArt;
+      } else {
+        if (shEmoji) { shEmoji.style.display = ''; shEmoji.textContent = track.emoji || '🎵'; }
+        const img = shArt.querySelector('img.sh-art-img');
+        if (img) img.remove();
+      }
     }
   } else {
     shTitle.textContent = 'No Track Selected';
     shArtist.textContent = 'Choose a song from Library';
-    shArt.classList.remove('playing');
+    if (shArt) shArt.classList.remove('playing');
   }
 }
 document.addEventListener('DOMContentLoaded', () => {
@@ -2437,20 +2438,23 @@ async function playTrack(idx, autoplay = true) {
   state.currentIdx = idx;
   const track = state.tracks[idx];
   addToHistory(track);
-  if(!track.url) {
-    toast('Track file unavailable — try re-adding it to the library','error');
-    return;
-  }
 
-  // If blob URL is missing, try to rebuild from IndexedDB
-  if (!track.url) {
-    const blob = await idbGetAudio(track.id).catch(() => null);
-    if (blob) {
-      track.url = URL.createObjectURL(blob);
-    } else {
-      toast('Track file missing — please re-add it to the library', 'error');
-      return;
-    }
+  // Blob URLs only live as long as the page session that created them —
+  // they go stale on every reload. So even if track.url looks like a
+  // non-empty string, it may point at a blob that no longer exists in this
+  // session. Always try to (re)build a fresh blob URL from IndexedDB first;
+  // only fall back to whatever's already on the track object if that fails.
+  let resolvedUrl = null;
+  try {
+    const blob = await idbGetAudio(track.id);
+    if (blob) resolvedUrl = URL.createObjectURL(blob);
+  } catch(e) { /* IndexedDB unavailable — fall through to track.url below */ }
+
+  if (resolvedUrl) {
+    track.url = resolvedUrl;
+  } else if (!track.url) {
+    toast('Track file missing — please re-add it to the library', 'error');
+    return;
   }
   if (myToken !== _playToken) return; // a newer track was selected meanwhile
 
