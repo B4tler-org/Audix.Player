@@ -985,6 +985,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
       <button class="icon-btn" onclick="openTab('search')" title="Search">🔍</button>
       <button class="icon-btn" id="wakeBtn" onclick="toggleWakeMode()" title="Wake Mode">⚫ WAKE</button>
       <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceMode()" title="Voice">🏙️</button>
+      <button class="icon-btn" id="apiKeyBtn" onclick="openApiKeyModal()" title="AI API Key" style="position:relative">🔑<span id="apiKeyDot" style="display:none;position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 2px var(--bg2,#fff)"></span></button>
     </div>
   </div>
 
@@ -1448,6 +1449,25 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 
       <!-- AI HUB TAB -->
       <div class="tab-content" id="tab-aihub">
+        <div class="aihub-section">
+          <div class="aihub-section-title">🔑 AI API Key</div>
+          <div style="font-size:.82rem;color:var(--text2);font-family:'Rajdhani';line-height:1.5">AI Hub, DJ Claude, AI playlists, song notes, lyrics tools and the music quiz all run on this key. Get a free one at <a href="https://console.groq.com" target="_blank" style="color:var(--cyan)">console.groq.com</a></div>
+          <div id="aihubKeyStatusRow" style="display:flex;align-items:center;gap:8px;font-size:.82rem;font-family:'Rajdhani';font-weight:700">
+            <span id="aihubKeyDot" style="width:9px;height:9px;border-radius:50%;background:#ef4444;flex-shrink:0"></span>
+            <span id="aihubKeyStatusText">No API key set — AI features are disabled</span>
+          </div>
+          <input id="aihubApiKeyInput" type="password"
+            placeholder="gsk_..."
+            style="width:100%;background:var(--bg4);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;color:var(--text);font-family:'Share Tech Mono';font-size:.85rem;outline:none;transition:border-color .2s"
+            onfocus="this.style.borderColor='var(--cyan)'"
+            onblur="this.style.borderColor='var(--border)'"
+            onkeydown="if(event.key==='Enter')saveApiKeyFromAiHub()"
+          >
+          <div style="display:flex;gap:8px">
+            <button onclick="saveApiKeyFromAiHub()" style="flex:1;background:var(--grad);border:none;border-radius:var(--radius-sm);padding:10px;color:white;font-family:'Exo 2';font-weight:700;font-size:.85rem;min-height:44px">Save Key</button>
+            <button onclick="clearApiKeyFromAiHub()" style="background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 16px;color:var(--text2);font-family:'Exo 2';font-weight:600;font-size:.85rem;min-height:44px">Clear</button>
+          </div>
+        </div>
         <div class="aihub-section">
           <div class="aihub-section-title">🔥 Listening Streak</div>
           <div class="streak-display">
@@ -2414,14 +2434,19 @@ async function playTrack(idx, autoplay = true) {
   // Stop current playback cleanly. Immediately reflect the paused state in
   // the UI so we're never showing "Playing" while audio is actually paused
   // during the load of the new track.
+  // Note: we deliberately do NOT set audio.src = '' here — assigning an
+  // empty string makes the browser try to resolve it as a URL, which fires
+  // a spurious "no supported sources" error on the audio element and can
+  // race with the canplay/error listeners below, causing playback to fail
+  // even though the new track's URL is perfectly valid.
   audio.pause();
-  audio.src = '';
   state.isPlaying = false;
   updatePlayerUI();
 
   await new Promise(r => setTimeout(r, 80));
 
   audio.src    = track.url;
+  audio.load();
   audio.volume = state.volume;
 
   setupAudioContext();
@@ -2430,11 +2455,11 @@ async function playTrack(idx, autoplay = true) {
       await state.audioCtx.resume();
   } catch(e) { console.warn('[Audix] resume error:', e); }
 
-  // Wait for canplay
-  await new Promise(r => {
-    if(audio.readyState >= 2) { r(); return; }
-    const onReady = () => { audio.removeEventListener('error', onErr); r(); };
-    const onErr   = () => { audio.removeEventListener('canplay', onReady); r(); };
+  // Wait for canplay (or bail out cleanly if the file genuinely fails to load)
+  const loadFailed = await new Promise(resolve => {
+    if(audio.readyState >= 2) { resolve(false); return; }
+    const onReady = () => { audio.removeEventListener('error', onErr); resolve(false); };
+    const onErr   = () => { audio.removeEventListener('canplay', onReady); resolve(true); };
     audio.addEventListener('canplay', onReady, { once: true });
     audio.addEventListener('error',   onErr,   { once: true });
   });
@@ -2444,6 +2469,13 @@ async function playTrack(idx, autoplay = true) {
   // (album art rotation stopped, play button showing ▶, etc.)
   updatePlayerUI();
   const btn = document.getElementById('lyricsFetchBtn');
+
+  if (loadFailed) {
+    toast('Playback failed: track could not be loaded', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Identify Track'; }
+    return;
+  }
+
   if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
   clearLyrics();
 
@@ -5962,6 +5994,24 @@ function closeApiKeyModal() {
   document.getElementById('apiKeyModal').style.display = 'none';
 }
 
+// Keeps the topbar dot, the modal, and the AI Hub settings card all
+// showing the same up-to-date key status, regardless of which surface
+// the key was saved/cleared from.
+function refreshApiKeyUI() {
+  const existing = getGroqKey();
+  const topDot = document.getElementById('apiKeyDot');
+  if (topDot) topDot.style.display = existing ? 'block' : 'none';
+
+  const hubDot = document.getElementById('aihubKeyDot');
+  const hubText = document.getElementById('aihubKeyStatusText');
+  const hubInput = document.getElementById('aihubApiKeyInput');
+  if (hubDot) hubDot.style.background = existing ? '#22c55e' : '#ef4444';
+  if (hubText) hubText.textContent = existing
+    ? '✓ Key is set — AI features active'
+    : 'No API key set — AI features are disabled';
+  if (hubInput) hubInput.placeholder = existing ? 'Key saved — paste new to replace' : 'gsk_...';
+}
+
 function saveApiKey() {
   const val = document.getElementById('apiKeyInput').value.trim();
   if (!val || val.includes('•')) {
@@ -5975,9 +6025,9 @@ function saveApiKey() {
     return;
   }
   localStorage.setItem('audix_groq_key', val);
-  document.getElementById('apiKeyDot').style.display = 'block';
   document.getElementById('apiKeyStatus').textContent = '✓ Key saved! AI features are now active.';
   document.getElementById('apiKeyStatus').style.color = '#22c55e';
+  refreshApiKeyUI();
   toast('🔑 Groq API key saved — AI features enabled!', 'success');
   setTimeout(closeApiKeyModal, 1200);
 }
@@ -5986,16 +6036,39 @@ function clearApiKey() {
   localStorage.removeItem('audix_groq_key');
   document.getElementById('apiKeyInput').value = '';
   document.getElementById('apiKeyInput').placeholder = 'gsk_...';
-  document.getElementById('apiKeyDot').style.display = 'none';
   document.getElementById('apiKeyStatus').textContent = 'Key cleared.';
   document.getElementById('apiKeyStatus').style.color = 'var(--text2)';
+  refreshApiKeyUI();
   toast('API key removed', '');
 }
 
-// Show green dot if key already saved
-window.addEventListener('DOMContentLoaded', () => {
-  if (getGroqKey()) document.getElementById('apiKeyDot').style.display = 'block';
-});
+// Save/clear from the AI Hub settings card
+function saveApiKeyFromAiHub() {
+  const input = document.getElementById('aihubApiKeyInput');
+  const val = input.value.trim();
+  if (!val) {
+    toast('Please enter a valid key.', 'error');
+    return;
+  }
+  if (!val.startsWith('gsk_')) {
+    toast('Groq keys start with gsk_ — check your key.', 'error');
+    return;
+  }
+  localStorage.setItem('audix_groq_key', val);
+  input.value = '';
+  refreshApiKeyUI();
+  toast('🔑 Groq API key saved — AI features enabled!', 'success');
+}
+
+function clearApiKeyFromAiHub() {
+  localStorage.removeItem('audix_groq_key');
+  document.getElementById('aihubApiKeyInput').value = '';
+  refreshApiKeyUI();
+  toast('API key removed', '');
+}
+
+// Sync all key-status UI on boot
+window.addEventListener('DOMContentLoaded', refreshApiKeyUI);
 </script>
 
 <script>
