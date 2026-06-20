@@ -2088,6 +2088,25 @@ const state = {
 const audio = document.getElementById('audioEl');
 const EQ_FREQS = ['32','64','125','250','500','1K','2K','4K','8K','16K'];
 
+// Calling audio.pause(), audio.load(), or setting audio.src while a play()
+// promise is still pending makes the browser reject that promise with an
+// AbortError ("The play() request was interrupted by a call to pause().").
+// This is expected and benign whenever the user switches or stops tracks
+// quickly — not a real playback failure. Every call to audio.play() in the
+// app should go through this helper instead of calling audio.play()
+// directly: it resolves to true on success, false if the attempt was simply
+// superseded/aborted (nothing to report), and only re-throws for genuine
+// playback errors so callers can still show a real failure toast.
+async function safePlay() {
+  try {
+    await audio.play();
+    return true;
+  } catch (err) {
+    if (err && err.name === 'AbortError') return false;
+    throw err;
+  }
+}
+
 // ========== TIPS ==========
 const TIPS = [
   "💡 Tip: Use the AI Equalizer to auto-optimize sound for your genre!",
@@ -2492,8 +2511,8 @@ async function playTrack(idx, autoplay = true) {
 
   if (!autoplay) return;
 
-  audio.play().then(() => {
-    if (myToken !== _playToken) return; // a newer track took over before play() resolved
+  safePlay().then(played => {
+    if (!played || myToken !== _playToken) return; // aborted, or a newer track took over before play() resolved
     state.isPlaying = true;
     updatePlayerUI();
     // Enable button and kick off pipeline AFTER play() succeeds so
@@ -2513,11 +2532,7 @@ async function playTrack(idx, autoplay = true) {
       setTimeout(startPipeline, 400);
     }
   }).catch(err => {
-    // A newer playTrack() call pausing/reloading the element while this
-    // play() was still pending is expected and not a real failure — the
-    // browser reports it as an AbortError with this exact message. Stay
-    // quiet in that case; only surface genuine playback failures.
-    if (myToken !== _playToken || err?.name === 'AbortError') return;
+    if (myToken !== _playToken) return;
     console.log('Playback error:', err);
     toast('Playback failed: ' + err.message, 'error');
     state.isPlaying = false;
@@ -2533,7 +2548,8 @@ function togglePlay() {
     state.isPlaying=false;
     updatePlayerUI();
   } else {
-    audio.play().then(() => {
+    safePlay().then(played => {
+      if (!played) return;
       state.isPlaying=true;
       updatePlayerUI();
     }).catch(err => {
@@ -2618,7 +2634,8 @@ audio.onloadedmetadata=()=>{
 audio.onended=()=>{
   if(state.repeat==='one'){
     audio.currentTime = 0;
-    audio.play().then(()=>{
+    safePlay().then(played=>{
+      if (!played) return;
       state.isPlaying = true;
       updatePlayerUI();
     }).catch(err=>{
@@ -7024,7 +7041,7 @@ function quizPlaySnippet() {
   // Temporarily play first 5 seconds
   audio.src = _quizCurrentTrack.url || '';
   audio.currentTime = 0;
-  audio.play();
+  safePlay().catch(err => console.log('Quiz snippet playback error:', err));
   document.getElementById('quizPlayBtn').textContent = '🔊 Playing…';
   setTimeout(() => { audio.pause(); document.getElementById('quizPlayBtn').textContent = '▶ Replay'; }, 5000);
 }
