@@ -2410,8 +2410,15 @@ function randomMusicEmoji(){return ['🎵','🎶','🎸','🎹','🎷','🎺','�
 // Playlist autoplay/selecting from library) should always start playback of
 // the new track immediately, and the UI must never claim "Playing" while the
 // audio element is actually paused.
+// Monotonically increasing token. Each playTrack() call gets its own token;
+// if a newer call starts before an older one finishes, the older call's
+// remaining async work (and especially its eventual audio.play()) is
+// abandoned instead of fighting over the shared <audio> element.
+let _playToken = 0;
+
 async function playTrack(idx, autoplay = true) {
   if(idx<0||idx>=state.tracks.length) return;
+  const myToken = ++_playToken;
   state.currentIdx = idx;
   const track = state.tracks[idx];
   addToHistory(track);
@@ -2430,6 +2437,7 @@ async function playTrack(idx, autoplay = true) {
       return;
     }
   }
+  if (myToken !== _playToken) return; // a newer track was selected meanwhile
 
   // Stop current playback cleanly. Immediately reflect the paused state in
   // the UI so we're never showing "Playing" while audio is actually paused
@@ -2444,6 +2452,7 @@ async function playTrack(idx, autoplay = true) {
   updatePlayerUI();
 
   await new Promise(r => setTimeout(r, 80));
+  if (myToken !== _playToken) return; // superseded while waiting
 
   audio.src    = track.url;
   audio.load();
@@ -2454,6 +2463,7 @@ async function playTrack(idx, autoplay = true) {
     if(state.audioCtx && state.audioCtx.state === 'suspended')
       await state.audioCtx.resume();
   } catch(e) { console.warn('[Audix] resume error:', e); }
+  if (myToken !== _playToken) return; // superseded while waiting
 
   // Wait for canplay (or bail out cleanly if the file genuinely fails to load)
   const loadFailed = await new Promise(resolve => {
@@ -2463,6 +2473,7 @@ async function playTrack(idx, autoplay = true) {
     audio.addEventListener('canplay', onReady, { once: true });
     audio.addEventListener('error',   onErr,   { once: true });
   });
+  if (myToken !== _playToken) return; // superseded while waiting
 
   // Show title/artist immediately, reset lyrics panel. state.isPlaying is
   // still false here, so this correctly paints the paused/loading state
@@ -2482,6 +2493,7 @@ async function playTrack(idx, autoplay = true) {
   if (!autoplay) return;
 
   audio.play().then(() => {
+    if (myToken !== _playToken) return; // a newer track took over before play() resolved
     state.isPlaying = true;
     updatePlayerUI();
     // Enable button and kick off pipeline AFTER play() succeeds so
@@ -2501,6 +2513,11 @@ async function playTrack(idx, autoplay = true) {
       setTimeout(startPipeline, 400);
     }
   }).catch(err => {
+    // A newer playTrack() call pausing/reloading the element while this
+    // play() was still pending is expected and not a real failure — the
+    // browser reports it as an AbortError with this exact message. Stay
+    // quiet in that case; only surface genuine playback failures.
+    if (myToken !== _playToken || err?.name === 'AbortError') return;
     console.log('Playback error:', err);
     toast('Playback failed: ' + err.message, 'error');
     state.isPlaying = false;
