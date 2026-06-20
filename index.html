@@ -1820,10 +1820,6 @@ function _updateStickyHeader() {
   }
 }
 document.addEventListener('DOMContentLoaded', () => {
-  const origUpdate = window.updatePlayerUI;
-  if (typeof origUpdate === 'function') {
-    window.updatePlayerUI = function() { origUpdate.apply(this, arguments); _updateStickyHeader(); };
-  }
   if (window.innerWidth >= 768) {
     const hdr = document.getElementById('eqSectionHeader');
     const body = document.getElementById('eqSectionBody');
@@ -2706,6 +2702,8 @@ function updatePlayerUI(){
     }
   }
   renderTrackList();
+  // Keep the sticky mini header (shown when scrolled) in sync too.
+  if (typeof _updateStickyHeader === 'function') try { _updateStickyHeader(); } catch(e) {}
 }
 
 // ========== LIBRARY ==========
@@ -4679,6 +4677,21 @@ if('serviceWorker' in navigator){
       if(navigator.storage && navigator.storage.persist){
         await navigator.storage.persist();
       }
+
+      // Proactively check for a newer sw.js (and therefore a newer cached
+      // app shell) every time the app loads, instead of waiting for the
+      // browser's own update heuristic.
+      reg.update().catch(() => {});
+
+      // If a new service worker takes control (e.g. after the cache was
+      // bumped in a new release), reload once so the page actually uses
+      // the fresh index.html instead of silently keeping the old one.
+      let _swRefreshed = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (_swRefreshed) return;
+        _swRefreshed = true;
+        window.location.reload();
+      });
     } catch(err){
       console.log('[Audix] SW not available in this environment');
     }

@@ -1,26 +1,20 @@
 /* ============================================
-   AUDIX SERVICE WORKER — v2.0
-   Cache-first strategy with versioning
+   AUDIX SERVICE WORKER — v3.0
+   Network-first for the app shell (index.html / "/"), so edits to the
+   single-file app are always picked up immediately. Cache-first / SWR for
+   third-party static assets (CDN libs) that rarely change. Falls back to
+   whatever is cached only when the network is unavailable.
    ============================================ */
 
-const CACHE_NAME = 'audix-v2';
+const CACHE_NAME = 'audix-v3';
+
+// This app is a single HTML file — there is no separate /css or /js
+// bundle to pre-cache. Only the app shell itself is precached on install;
+// everything else (CDN libraries, lyrics API, album art, etc.) is cached
+// opportunistically as it's fetched.
 const ASSETS = [
   '/',
-  '/index.html',
-  '/css/style.css',
-  '/js/utils.js',
-  '/js/auth.js',
-  '/js/achievements.js',
-  '/js/library.js',
-  '/js/radio.js',
-  '/js/quiz.js',
-  '/js/equalizer.js',
-  '/js/player.js',
-  '/js/profile.js',
-  '/js/settings.js',
-  '/js/notifications.js',
-  '/js/app.js',
-  '/assets/qr-support.jpg'
+  '/index.html'
 ];
 
 self.addEventListener('install', (event) => {
@@ -50,6 +44,37 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   if (!url.protocol.startsWith('http')) return;
 
+  // Never intercept audio/streaming requests — let the browser handle
+  // range requests for local blob/audio URLs and m3u8 playlists directly.
+  if (url.pathname.endsWith('.m3u8') || request.headers.get('accept')?.includes('audio')) {
+    return;
+  }
+
+  // The app shell itself: index.html and "/". Always go to the network
+  // first so any edit to the file is reflected immediately on next load.
+  // Only fall back to the cached copy if the network request fails
+  // (e.g. offline), and refresh the cache whenever the network succeeds.
+  const isAppShell = request.mode === 'navigate' ||
+    url.pathname === '/' ||
+    url.pathname.endsWith('/index.html');
+
+  if (isAppShell && url.origin === self.location.origin) {
+    event.respondWith(
+      fetch(request, { cache: 'no-store' }).then((networkResponse) => {
+        if (networkResponse && networkResponse.ok) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        }
+        return networkResponse;
+      }).catch(() => caches.match(request).then((cached) => {
+        return cached || caches.match('/index.html');
+      }))
+    );
+    return;
+  }
+
+  // Third-party CDN libraries: stale-while-revalidate — serve from cache
+  // instantly if present, but always refresh the cache in the background.
   if (url.hostname.includes('cdnjs.cloudflare.com')) {
     event.respondWith(
       caches.match(request).then((cached) => {
@@ -66,6 +91,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Lyrics API: always try the network; only fail gracefully when offline.
   if (url.hostname.includes('lrclib.net')) {
     event.respondWith(
       fetch(request).catch(() => {
@@ -77,10 +103,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname.endsWith('.m3u8') || request.headers.get('accept')?.includes('audio')) {
-    return;
-  }
-
+  // Everything else (images, fonts, misc assets): cache-first with
+  // background refresh.
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) {
