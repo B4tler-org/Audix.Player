@@ -1790,35 +1790,43 @@ function toggleSection(headerEl) {
 }
 // Sticky header mirror
 function _updateStickyHeader() {
-  const track = typeof state !== 'undefined' && state.tracks && state.tracks[state.currentIdx];
+  let track = null;
+  try { track = state && state.tracks ? state.tracks[state.currentIdx] : null; }
+  catch(e) { return; } // state not initialized yet (e.g. called too early) — nothing to show yet anyway
   const shTitle = document.getElementById('shTitle');
   const shArtist = document.getElementById('shArtist');
   const shArt = document.getElementById('shArt');
   const shEmoji = document.getElementById('shArtEmoji');
   if (!shTitle || !shArtist) return;
+
+  // Text content first and unconditionally — this is the part the user
+  // actually sees as "stuck on No Track Selected", so it must never be
+  // skipped because an art-lookup or class-toggle below happens to throw.
   if (track) {
     shTitle.textContent = track.name || 'Unknown';
     shArtist.textContent = track.artist || 'Unknown Artist';
-    if (shArt) {
-      if (typeof state !== 'undefined' && state.isPlaying) shArt.classList.add('playing');
-      else shArt.classList.remove('playing');
-      const cachedArt = typeof _artCache !== 'undefined' ? _artCache.get(String(track.id)) : null;
-      if (cachedArt) {
-        if (shEmoji) shEmoji.style.display = 'none';
-        let img = shArt.querySelector('img.sh-art-img');
-        if (!img) { img = document.createElement('img'); img.className = 'sh-art-img'; img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:8px'; shArt.appendChild(img); }
-        img.src = cachedArt;
-      } else {
-        if (shEmoji) { shEmoji.style.display = ''; shEmoji.textContent = track.emoji || '🎵'; }
-        const img = shArt.querySelector('img.sh-art-img');
-        if (img) img.remove();
-      }
-    }
   } else {
     shTitle.textContent = 'No Track Selected';
     shArtist.textContent = 'Choose a song from Library';
-    if (shArt) shArt.classList.remove('playing');
   }
+
+  try {
+    if (!shArt) return;
+    if (!track) { shArt.classList.remove('playing'); return; }
+    if (state.isPlaying) shArt.classList.add('playing');
+    else shArt.classList.remove('playing');
+    const cachedArt = (typeof _artCache !== 'undefined' && _artCache) ? _artCache.get(String(track.id)) : null;
+    if (cachedArt) {
+      if (shEmoji) shEmoji.style.display = 'none';
+      let img = shArt.querySelector('img.sh-art-img');
+      if (!img) { img = document.createElement('img'); img.className = 'sh-art-img'; img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:8px'; shArt.appendChild(img); }
+      img.src = cachedArt;
+    } else {
+      if (shEmoji) { shEmoji.style.display = ''; shEmoji.textContent = track.emoji || '🎵'; }
+      const img = shArt.querySelector('img.sh-art-img');
+      if (img) img.remove();
+    }
+  } catch(e) { console.warn('[Audix] sticky header art update failed:', e); }
 }
 document.addEventListener('DOMContentLoaded', () => {
   if (window.innerWidth >= 768) {
@@ -2678,6 +2686,12 @@ function updatePlayerUI(){
   playBtn.textContent=state.isPlaying?'⏸':'▶';
   if(state.isPlaying){ art.classList.add('playing'); const cdw=document.getElementById('premiumCdWrap'); if(cdw) cdw.classList.add('playing'); }
   else{ art.classList.remove('playing'); const cdw=document.getElementById('premiumCdWrap'); if(cdw) cdw.classList.remove('playing'); }
+
+  // Keep the sticky mini header in sync FIRST and unconditionally — this
+  // must never be skipped because something further down in this function
+  // (track list rendering, art lookups, media session, etc.) throws.
+  if (typeof _updateStickyHeader === 'function') try { _updateStickyHeader(); } catch(e) { console.warn('[Audix] sticky header update failed:', e); }
+
   if(track){
     document.getElementById('songTitle').textContent=track.name||'Unknown';
     document.getElementById('songArtist').textContent=track.artist||'Unknown Artist';
@@ -2688,26 +2702,26 @@ function updatePlayerUI(){
     document.getElementById('tagBpm').textContent='BPM: '+(track.bpm||'—');
     document.getElementById('vizFullTitle').textContent=track.name||'—';
     document.getElementById('vizFullArtist').textContent=track.artist||'—';
-    updateFavBtn();
+    try { updateFavBtn(); } catch(e) { console.warn('[Audix] updateFavBtn failed:', e); }
     try { updateVizTabNowPlaying(); } catch(e) {}
     // Update OS notification panel
     if (typeof updateMediaSession === 'function') try { updateMediaSession(); } catch(e) {}
 
     // Load album art — check cache first, then IDB
-    const cached = _artCache.get(String(track.id));
-    if (cached !== undefined) {
-      setPlayerArt(cached);
-    } else {
-      setPlayerArt(null); // clear old art immediately
-      idbGetArt(track.id).then(dataUrl => {
-        _artCache.set(String(track.id), dataUrl);
-        setPlayerArt(dataUrl);
-      }).catch(() => setPlayerArt(null));
-    }
+    try {
+      const cached = _artCache.get(String(track.id));
+      if (cached !== undefined) {
+        setPlayerArt(cached);
+      } else {
+        setPlayerArt(null); // clear old art immediately
+        idbGetArt(track.id).then(dataUrl => {
+          _artCache.set(String(track.id), dataUrl);
+          setPlayerArt(dataUrl);
+        }).catch(() => setPlayerArt(null));
+      }
+    } catch(e) { console.warn('[Audix] album art lookup failed:', e); }
   }
-  renderTrackList();
-  // Keep the sticky mini header (shown when scrolled) in sync too.
-  if (typeof _updateStickyHeader === 'function') try { _updateStickyHeader(); } catch(e) {}
+  try { renderTrackList(); } catch(e) { console.warn('[Audix] renderTrackList failed:', e); }
 }
 
 // ========== LIBRARY ==========
@@ -5771,8 +5785,8 @@ function _stopWakeWord() {
 
 // ========== HOOK recordPlay into playTrack ==========
 const _origPlayTrack = playTrack;
-const _playTrackHooked = async function(idx) {
-  await _origPlayTrack(idx);
+const _playTrackHooked = async function(idx, autoplay = true) {
+  await _origPlayTrack(idx, autoplay);
   if (idx >= 0 && idx < state.tracks.length) recordPlay(state.tracks[idx]);
 };
 window.playTrack = _playTrackHooked;
