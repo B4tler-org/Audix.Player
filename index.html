@@ -123,7 +123,7 @@ button{cursor:pointer;font-family:inherit}
 .hero-art-section{position:relative;border-radius:var(--radius-lg);overflow:hidden;background:var(--bg3);border:1px solid var(--border);flex-shrink:0}
 .hero-bg-blur{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(40px) brightness(.8) saturate(1.2);transform:scale(1.15);transition:background-image .8s;opacity:.25;z-index:0}
 .hero-art-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:var(--sp5) var(--sp5) var(--sp4);gap:var(--sp4);background:linear-gradient(180deg,rgba(255,255,255,.1) 0%,rgba(255,255,255,.7) 100%)}
-.album-art{width:100%;height:100%;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:4rem;position:relative;overflow:hidden;transition:box-shadow .4s,transform .4s;flex-shrink:0}
+.album-art{width:100%;height:100%;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:4rem;position:relative;overflow:hidden;transition:box-shadow .4s;flex-shrink:0}
 .album-art img.art-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:1}
 /* .album-art .spin-ring replaced by CD rotation */
 /* handled by CD rotation */
@@ -672,7 +672,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
     0 0 0 6px rgba(255,255,255,.9),
     0 0 0 8px rgba(0,0,0,.06),
     0 16px 48px rgba(0,0,0,.18);
-  transition:box-shadow .4s,transform .4s;
+  transition:box-shadow .4s;
   flex-shrink:0;
   /* CD spin animation */
   animation:artSpin 8s linear infinite paused;
