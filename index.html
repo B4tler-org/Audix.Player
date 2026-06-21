@@ -1672,6 +1672,10 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
         <div class="id3-art-hint">
           <b>Tap artwork</b> to change<br>Supports JPG, PNG, WebP<br>
           <button onclick="generateAICoverArt()" id="genArtBtn" style="margin-top:8px;background:linear-gradient(135deg,#8b5cf6,#00d4ff);border:none;border-radius:8px;padding:6px 14px;color:white;font-family:'Rajdhani';font-weight:700;font-size:.78rem;cursor:pointer">🎨 AI Generate</button>
+          <div id="genArtActions" style="display:none;margin-top:6px;gap:6px;flex-wrap:wrap">
+            <button onclick="downloadCoverArt()" style="background:var(--bg4);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);font-family:'Rajdhani';font-weight:700;font-size:.78rem;cursor:pointer">⬇️ Download</button>
+            <button onclick="shareCoverArt()" id="shareArtBtn" style="background:var(--bg4);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);font-family:'Rajdhani';font-weight:700;font-size:.78rem;cursor:pointer">📤 Share</button>
+          </div>
           <div id="genArtStatus" style="font-size:.62rem;color:var(--text3);font-family:'Share Tech Mono';margin-top:3px"></div>
         </div>
         <input type="file" id="id3ArtInput" accept="image/*" style="display:none" onchange="handleId3ArtChange(event)">
@@ -2755,6 +2759,11 @@ function openId3Editor(trackId) {
   if (!track) return;
   _id3EditingId = String(trackId);
   _id3NewArtDataUrl = null;
+  _coverArtLastMeta = { title: '', artist: '' };
+  const genArtActions = document.getElementById('genArtActions');
+  if (genArtActions) genArtActions.style.display = 'none';
+  const genArtStatus = document.getElementById('genArtStatus');
+  if (genArtStatus) genArtStatus.textContent = '';
 
   // Populate fields
   document.getElementById('id3Title').value    = track.name    || '';
@@ -7684,11 +7693,14 @@ async function generateAICoverArt() {
     const dataUrl = await _coverArtComposeText(bgDataUrl, { title, artist, album, genre, mood, duration, size: SIZE });
 
     _id3NewArtDataUrl = dataUrl;
+    _coverArtLastMeta = { title, artist };
     const preview = document.getElementById('id3ArtPreview');
     if (preview) {
       preview.innerHTML = '<img src="' + dataUrl + '" style="width:100%;height:100%;object-fit:cover;border-radius:10px">';
     }
-    if (status) status.textContent = '\u2713 Done! Hit Save to apply.';
+    const actions = document.getElementById('genArtActions');
+    if (actions) actions.style.display = 'flex';
+    if (status) status.textContent = '\u2713 Done! Download, share, or hit Save to apply.';
   } catch(e) {
     if (status) status.textContent = '\u2717 Failed \u2014 check connection';
     console.error('[Audix] AI cover art error:', e);
@@ -7783,6 +7795,14 @@ function _coverArtComposeText(bgDataUrl, meta) {
         ctx.fillStyle = 'rgba(255,255,255,0.92)';
         ctx.fillText(safeArtist, margin, artistY, maxTextWidth);
 
+        // ---- Audix brand watermark (bottom-right of the artwork) ----
+        const wmPx = Math.round(SIZE * 0.026);
+        ctx.font = '800 ' + wmPx + 'px ' + fontFamily;
+        ctx.fillStyle = 'rgba(255,255,255,0.65)';
+        ctx.textAlign = 'right';
+        ctx.shadowBlur = Math.round(SIZE * 0.01);
+        ctx.fillText('AUDIX', SIZE - margin, margin + wmPx * 0.75);
+
         ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
 
         resolve(canvas.toDataURL('image/png'));
@@ -7791,6 +7811,68 @@ function _coverArtComposeText(bgDataUrl, meta) {
     img.onerror = function() { reject(new Error('Background image failed to load')); };
     img.src = bgDataUrl;
   });
+}
+
+// Remembers the title/artist used for the most recently generated
+// cover, so Download/Share can build a sensible filename and caption.
+let _coverArtLastMeta = { title: '', artist: '' };
+
+function _coverArtFilename() {
+  const base = [_coverArtLastMeta.artist, _coverArtLastMeta.title].filter(Boolean).join(' - ') || 'audix-cover-art';
+  return base.replace(/[^\w\s\-]/g, '').trim().replace(/\s+/g, '-').toLowerCase() + '.png';
+}
+
+function downloadCoverArt() {
+  if (!_id3NewArtDataUrl) { toast('Generate cover art first', 'error'); return; }
+  try {
+    const a = document.createElement('a');
+    a.download = _coverArtFilename();
+    a.href = _id3NewArtDataUrl;
+    a.click();
+    toast('Cover art downloaded!', 'success');
+  } catch (e) {
+    console.error('[Audix] Cover art download error:', e);
+    toast('Could not download cover art', 'error');
+  }
+}
+
+// Uses the native share sheet (navigator.share) when available — this
+// is what was missing before; previously there was no way to get a
+// generated cover out of the app except via the "Save" (embed) button.
+// Falls back to clipboard copy, then to plain download, for browsers
+// without Web Share support (e.g. desktop Chrome/Firefox).
+async function shareCoverArt() {
+  if (!_id3NewArtDataUrl) { toast('Generate cover art first', 'error'); return; }
+  const btn = document.getElementById('shareArtBtn');
+  const filename = _coverArtFilename();
+  const caption = [_coverArtLastMeta.title, _coverArtLastMeta.artist].filter(Boolean).join(' — ') || 'Audix AI cover art';
+
+  try {
+    const r = await fetch(_id3NewArtDataUrl);
+    const blob = await r.blob();
+    const file = new File([blob], filename, { type: 'image/png' });
+
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: caption, text: caption });
+      return; // success — share sheet handled it, no toast needed
+    }
+
+    // Fallback 1: copy image to clipboard
+    if (navigator.clipboard && window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      toast('Sharing not supported here — copied to clipboard instead', 'success');
+      return;
+    }
+
+    // Fallback 2: plain download
+    downloadCoverArt();
+  } catch (e) {
+    if (e?.name === 'AbortError') return; // user cancelled the share sheet
+    console.error('[Audix] Cover art share error:', e);
+    toast('Could not share — try Download instead', 'error');
+  } finally {
+    if (btn) btn.textContent = '📤 Share';
+  }
 }
 
 </script>
