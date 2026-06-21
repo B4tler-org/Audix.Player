@@ -981,6 +981,612 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 @media(max-width:600px){.sidebar{display:none}.bottom-nav{display:flex}.tab-content{padding:var(--sp3) var(--sp3) 88px}#toast{bottom:92px;right:var(--sp3)}#pipelineStages{display:none}.meta-grid{grid-template-columns:1fr}.topbar{padding:10px 14px;height:58px}.topbar-logo{font-size:1.2rem}.dj-fab{bottom:84px;right:var(--sp3)}}
 @media(min-width:430px){.album-art{width:100%;height:100%}.genre-grid{grid-template-columns:repeat(4,1fr)}}
 @media(min-width:768px){.sidebar{display:flex}.bottom-nav{display:none}.tab-content{padding:var(--sp5) var(--sp5) var(--sp5)}#toast{bottom:var(--sp5);right:var(--sp5)}#pipelineStages{display:flex!important}.dj-fab{bottom:var(--sp5)}.album-art{width:100%;height:100%}.genre-grid{grid-template-columns:repeat(5,1fr)}#vizTabCanvas{height:300px}}
+
+/* ═══════════════════════════════════════
+   AUDIX — POLISH & ANIMATION LAYER
+   ═══════════════════════════════════════ */
+
+/* ── Respect reduced-motion preference ── */
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+
+/* ── Global micro-transition upgrade ── */
+.nav-item,.icon-btn,.ctrl-btn,.play-btn,.qa-chip,.bn-item,
+.song-item,.track-row,.mood-badge,.aq-btn,.quality-option,
+.section-card,.sleep-opt,.genre-card,.dj-suggest-chip{
+  will-change:transform,opacity;
+}
+
+/* ─────────────────────────────────────────
+   LOADER — smoother particles & fade-out
+   ───────────────────────────────────────── */
+#loader{
+  transition:opacity .5s ease,visibility .5s ease;
+}
+#loader.hiding{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+.loader-logo{
+  letter-spacing:6px;
+  animation:logoPulse 1.8s ease-in-out infinite,logoSlideIn .6s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes logoSlideIn{from{opacity:0;transform:translateY(24px) scale(.9)}to{opacity:1;transform:none}}
+.loader-sub{animation:tipFade .5s ease .35s both}
+.loader-bar-wrap{animation:tipFade .5s ease .55s both}
+.loader-tip{animation:tipFade .5s ease .75s both}
+
+/* ─────────────────────────────────────────
+   APP ENTRANCE — fade + lift
+   ───────────────────────────────────────── */
+#app.visible{
+  animation:appReveal .55s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes appReveal{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:none}
+}
+
+/* ─────────────────────────────────────────
+   TOPBAR — slide down on entry
+   ───────────────────────────────────────── */
+.topbar{
+  animation:topbarIn .45s cubic-bezier(.22,1,.36,1) .1s both;
+}
+@keyframes topbarIn{
+  from{opacity:0;transform:translateY(-100%)}
+  to{opacity:1;transform:none}
+}
+
+/* ─────────────────────────────────────────
+   SIDEBAR — slide in from left
+   ───────────────────────────────────────── */
+.sidebar{
+  animation:sidebarIn .5s cubic-bezier(.22,1,.36,1) .15s both;
+}
+@keyframes sidebarIn{
+  from{opacity:0;transform:translateX(-28px)}
+  to{opacity:1;transform:none}
+}
+
+/* ─────────────────────────────────────────
+   NAV ITEMS — staggered pop-in
+   ───────────────────────────────────────── */
+.nav-item{
+  animation:navPop .4s cubic-bezier(.34,1.56,.64,1) both;
+  transition:all .2s cubic-bezier(.34,1.56,.64,1);
+}
+.nav-item:nth-child(1){animation-delay:.18s}
+.nav-item:nth-child(2){animation-delay:.21s}
+.nav-item:nth-child(3){animation-delay:.24s}
+.nav-item:nth-child(4){animation-delay:.27s}
+.nav-item:nth-child(5){animation-delay:.30s}
+.nav-item:nth-child(6){animation-delay:.33s}
+.nav-item:nth-child(7){animation-delay:.36s}
+.nav-item:nth-child(8){animation-delay:.39s}
+.nav-item:nth-child(9){animation-delay:.42s}
+.nav-item:nth-child(10){animation-delay:.45s}
+.nav-item:nth-child(11){animation-delay:.48s}
+.nav-item:nth-child(12){animation-delay:.51s}
+@keyframes navPop{
+  from{opacity:0;transform:translateX(-16px) scale(.92)}
+  to{opacity:1;transform:none}
+}
+.nav-item:hover{
+  transform:translateX(3px) scale(1.01);
+}
+.nav-item.active{
+  animation:none;
+  transform:none;
+}
+
+/* ─────────────────────────────────────────
+   TAB CONTENT — fade + slide transition
+   ───────────────────────────────────────── */
+.tab-content.active{
+  animation:tabFadeIn .35s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes tabFadeIn{
+  from{opacity:0;transform:translateY(14px)}
+  to{opacity:1;transform:none}
+}
+
+/* ─────────────────────────────────────────
+   SECTION CARDS — scroll-aware stagger
+   ───────────────────────────────────────── */
+.section-card{
+  transition:box-shadow .25s ease,transform .25s ease;
+}
+.section-card:hover{
+  box-shadow:0 6px 28px rgba(229,57,53,.1),0 2px 8px rgba(0,0,0,.07);
+  transform:translateY(-1px);
+}
+
+/* ─────────────────────────────────────────
+   HERO ART — entrance bounce
+   ───────────────────────────────────────── */
+.hero-art-section{
+  transition:box-shadow .4s ease;
+}
+#nowPlayingHero{
+  animation:heroEntrance .6s cubic-bezier(.22,1,.36,1) .25s both;
+}
+@keyframes heroEntrance{
+  from{opacity:0;transform:scale(.96) translateY(12px)}
+  to{opacity:1;transform:none}
+}
+
+/* ─────────────────────────────────────────
+   CD ARTWORK — glow pulse while playing
+   ───────────────────────────────────────── */
+.album-art.playing{
+  filter:drop-shadow(0 0 18px rgba(229,57,53,.35));
+}
+
+/* ─────────────────────────────────────────
+   PLAY BUTTON — enhanced ripple press
+   ───────────────────────────────────────── */
+.play-btn{
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease;
+  position:relative;
+  overflow:hidden;
+}
+.play-btn::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:rgba(255,255,255,.25);
+  transform:scale(0);
+  opacity:0;
+  transition:transform .4s ease,opacity .4s ease;
+}
+.play-btn:active::before{
+  transform:scale(2.5);
+  opacity:1;
+  transition:none;
+}
+.play-btn:hover{
+  transform:scale(1.1);
+  box-shadow:0 8px 28px rgba(229,57,53,.5);
+}
+.play-btn:active{
+  transform:scale(.93);
+}
+
+/* ─────────────────────────────────────────
+   CTRL BUTTONS — springy tap
+   ───────────────────────────────────────── */
+.ctrl-btn{
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1),background .18s,color .18s,border-color .18s;
+}
+.ctrl-btn:hover{
+  transform:scale(1.08);
+}
+.ctrl-btn:active{
+  transform:scale(.88);
+}
+
+/* ─────────────────────────────────────────
+   ICON BUTTONS (topbar)
+   ───────────────────────────────────────── */
+.icon-btn{
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1),background .18s,box-shadow .18s;
+}
+.icon-btn:hover{
+  transform:scale(1.1) rotate(-4deg);
+}
+.icon-btn:active{
+  transform:scale(.9);
+}
+
+/* ─────────────────────────────────────────
+   PROGRESS BAR — thumb pop on hover
+   ───────────────────────────────────────── */
+.progress-bar{
+  transition:height .18s cubic-bezier(.34,1.56,.64,1);
+}
+.progress-bar:hover{
+  height:8px;
+}
+.progress-bar:hover .progress-fill::after{
+  opacity:1;
+  transform:translateY(-50%) scale(1.15);
+}
+
+/* ─────────────────────────────────────────
+   SONG / TRACK ITEMS — slide-in stagger
+   ───────────────────────────────────────── */
+.song-item,.track-row{
+  transition:background .18s ease,border-color .18s ease,transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s ease;
+  animation:itemReveal .35s cubic-bezier(.22,1,.36,1) both;
+}
+.song-item:hover,.track-row:hover{
+  transform:translateX(4px);
+  box-shadow:0 2px 12px rgba(229,57,53,.09);
+}
+.song-item:active,.track-row:active{
+  transform:scale(.98);
+}
+@keyframes itemReveal{
+  from{opacity:0;transform:translateX(-12px)}
+  to{opacity:1;transform:none}
+}
+
+/* ─────────────────────────────────────────
+   QUICK ACTION CHIPS — bounce in
+   ───────────────────────────────────────── */
+.qa-chip{
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),background .2s,color .2s,border-color .2s,box-shadow .2s;
+}
+.qa-chip:hover{
+  transform:translateY(-3px) scale(1.04);
+  box-shadow:0 4px 16px rgba(229,57,53,.18);
+}
+.qa-chip:active{
+  transform:scale(.93);
+}
+
+/* ─────────────────────────────────────────
+   BOTTOM NAV ITEMS — spring tap
+   ───────────────────────────────────────── */
+.bn-item{
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),color .18s,background .18s;
+}
+.bn-item:hover{
+  transform:translateY(-4px) scale(1.05);
+}
+.bn-item:active{
+  transform:scale(.88);
+}
+.bn-item.active{
+  animation:bnActivePop .35s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes bnActivePop{
+  from{transform:scale(.85)}
+  to{transform:scale(1)}
+}
+
+/* ─────────────────────────────────────────
+   BOTTOM NAV — slide up on entry
+   ───────────────────────────────────────── */
+.bottom-nav{
+  animation:bottomNavIn .5s cubic-bezier(.22,1,.36,1) .2s both;
+}
+@keyframes bottomNavIn{
+  from{opacity:0;transform:translateY(80px)}
+  to{opacity:1;transform:none}
+}
+
+/* ─────────────────────────────────────────
+   MODALS — scale + fade
+   ───────────────────────────────────────── */
+@keyframes modalIn{
+  from{opacity:0;transform:scale(.88) translateY(16px)}
+  to{opacity:1;transform:none}
+}
+.id3-box,.quality-box,.playlist-box,.share-card-box,.transfer-box{
+  animation:modalIn .3s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+/* ─────────────────────────────────────────
+   TOAST — improved slide in/out
+   ───────────────────────────────────────── */
+@keyframes toastIn{
+  from{opacity:0;transform:translateX(40px) scale(.9)}
+  to{opacity:1;transform:none}
+}
+@keyframes toastOut{
+  from{opacity:1;transform:none}
+  to{opacity:0;transform:translateX(40px) scale(.9)}
+}
+.toast-item{
+  animation:toastIn .32s cubic-bezier(.34,1.56,.64,1),toastOut .3s ease 2.7s forwards;
+}
+
+/* ─────────────────────────────────────────
+   MOOD BADGES — pop on detection
+   ───────────────────────────────────────── */
+.mood-badge{
+  transition:all .22s cubic-bezier(.34,1.56,.64,1);
+}
+.mood-badge:hover,.mood-badge.detected{
+  transform:scale(1.1) translateY(-2px);
+}
+.mood-badge:active{
+  transform:scale(.92);
+}
+
+/* ─────────────────────────────────────────
+   SONG META TAGS — gentle fade in
+   ───────────────────────────────────────── */
+.tag{
+  animation:tagPop .35s cubic-bezier(.34,1.56,.64,1) both;
+  transition:all .2s ease;
+}
+.tag:hover{
+  transform:scale(1.08);
+}
+@keyframes tagPop{
+  from{opacity:0;transform:scale(.7)}
+  to{opacity:1;transform:none}
+}
+
+/* ─────────────────────────────────────────
+   INSIGHT CHIPS — count-up shimmer
+   ───────────────────────────────────────── */
+.insight-val{
+  position:relative;
+  animation:insightFade .5s ease both;
+}
+@keyframes insightFade{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:none}
+}
+
+/* ─────────────────────────────────────────
+   SLEEP / QUALITY OPTIONS — spring select
+   ───────────────────────────────────────── */
+.sleep-opt,.quality-option,.genre-card{
+  transition:all .22s cubic-bezier(.34,1.56,.64,1);
+}
+.sleep-opt:hover,.genre-card:hover{
+  transform:scale(1.06);
+}
+.sleep-opt:active,.genre-card:active{
+  transform:scale(.93);
+}
+.sleep-opt.active{
+  animation:selectBounce .3s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes selectBounce{
+  0%{transform:scale(.9)}
+  60%{transform:scale(1.06)}
+  100%{transform:scale(1)}
+}
+
+/* ─────────────────────────────────────────
+   PLAYLIST CHIPS — pop-in
+   ───────────────────────────────────────── */
+.pl-chip,.dj-suggest-chip{
+  transition:all .2s cubic-bezier(.34,1.56,.64,1);
+}
+.pl-chip:hover,.dj-suggest-chip:hover{
+  transform:scale(1.07) translateY(-2px);
+}
+.pl-chip:active,.dj-suggest-chip:active{
+  transform:scale(.93);
+}
+
+/* ─────────────────────────────────────────
+   FAV BUTTON — heart pulse on activate
+   ───────────────────────────────────────── */
+.sh-fav{
+  transition:all .22s cubic-bezier(.34,1.56,.64,1);
+}
+.sh-fav:hover{
+  transform:scale(1.2) rotate(-8deg);
+}
+.sh-fav.active{
+  animation:heartBeat .4s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes heartBeat{
+  0%{transform:scale(1)}
+  30%{transform:scale(1.4) rotate(-10deg)}
+  60%{transform:scale(.9)}
+  100%{transform:scale(1)}
+}
+
+/* ─────────────────────────────────────────
+   SONG TITLE CHANGE — crossfade
+   ───────────────────────────────────────── */
+.song-title.updating,.song-artist.updating,.sh-title.updating{
+  animation:titleSwap .3s ease both;
+}
+@keyframes titleSwap{
+  0%{opacity:0;transform:translateY(8px)}
+  100%{opacity:1;transform:none}
+}
+
+/* ─────────────────────────────────────────
+   DJ TYPING DOTS — smoother bounce
+   ───────────────────────────────────────── */
+@keyframes djTyping{
+  0%,80%,100%{transform:translateY(0) scale(.6);opacity:.3}
+  40%{transform:translateY(-6px) scale(1);opacity:1}
+}
+
+/* ─────────────────────────────────────────
+   AQ BUTTONS — active flash
+   ───────────────────────────────────────── */
+.aq-btn{
+  transition:all .2s cubic-bezier(.34,1.56,.64,1);
+}
+.aq-btn:hover{
+  transform:scale(1.08);
+}
+.aq-btn.active{
+  animation:aqActivate .3s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes aqActivate{
+  from{transform:scale(.85)}
+  to{transform:scale(1)}
+}
+
+/* ─────────────────────────────────────────
+   UPLOAD BTN — glow on hover
+   ───────────────────────────────────────── */
+.upload-btn{
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;
+}
+.upload-btn:hover{
+  transform:translateY(-2px) scale(1.04);
+  box-shadow:0 6px 20px rgba(229,57,53,.3);
+}
+.upload-btn:active{
+  transform:scale(.94);
+}
+
+/* ─────────────────────────────────────────
+   STICKY HEADER — smooth reveal on scroll
+   ───────────────────────────────────────── */
+.sticky-header{
+  animation:stickyIn .4s cubic-bezier(.22,1,.36,1) .3s both;
+}
+@keyframes stickyIn{
+  from{opacity:0;transform:translateY(-10px)}
+  to{opacity:1;transform:none}
+}
+
+/* ─────────────────────────────────────────
+   PLAYER CONTROLS CARD — glide up
+   ───────────────────────────────────────── */
+.player-controls-card{
+  animation:cardUp .5s cubic-bezier(.22,1,.36,1) .35s both;
+}
+@keyframes cardUp{
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1;transform:none}
+}
+
+/* ─────────────────────────────────────────
+   QUICK ACTIONS SECTION
+   ───────────────────────────────────────── */
+.quick-actions-section{
+  animation:cardUp .5s cubic-bezier(.22,1,.36,1) .45s both;
+}
+
+/* ─────────────────────────────────────────
+   INSIGHTS ROW
+   ───────────────────────────────────────── */
+.insights-row{
+  animation:cardUp .5s cubic-bezier(.22,1,.36,1) .5s both;
+}
+
+/* ─────────────────────────────────────────
+   SCROLLBAR — smoother appearance
+   ───────────────────────────────────────── */
+::-webkit-scrollbar-thumb{
+  transition:background .2s;
+}
+::-webkit-scrollbar-thumb:hover{
+  background:rgba(229,57,53,.4);
+}
+
+/* ─────────────────────────────────────────
+   SONG ITEM PLAYING STATE — pulse outline
+   ───────────────────────────────────────── */
+.song-item.playing,.track-row.playing{
+  border-color:rgba(229,57,53,.4)!important;
+  box-shadow:0 0 0 2px rgba(229,57,53,.12),0 2px 12px rgba(229,57,53,.1);
+  animation:playingPulse 2.4s ease-in-out infinite;
+}
+@keyframes playingPulse{
+  0%,100%{box-shadow:0 0 0 2px rgba(229,57,53,.12),0 2px 12px rgba(229,57,53,.1)}
+  50%{box-shadow:0 0 0 4px rgba(229,57,53,.18),0 4px 20px rgba(229,57,53,.18)}
+}
+
+/* ─────────────────────────────────────────
+   EQ SECTION — fadein
+   ───────────────────────────────────────── */
+#aiEqSection{
+  animation:cardUp .4s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ─────────────────────────────────────────
+   VIZ CANVAS WRAP — pulse border while playing
+   ───────────────────────────────────────── */
+.viz-tab-canvas-wrap{
+  transition:box-shadow .3s ease;
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+}
+
+/* ─────────────────────────────────────────
+   LIBRARY SEARCH BAR
+   ───────────────────────────────────────── */
+.lib-search-wrap{
+  display:flex;align-items:center;gap:10px;
+  background:#FFFFFF;
+  border:1.5px solid rgba(0,0,0,.08);
+  border-radius:16px;
+  padding:10px 14px;
+  transition:border-color .2s,box-shadow .2s;
+  flex-shrink:0;
+}
+.lib-search-wrap:focus-within{
+  border-color:var(--cyan);
+  box-shadow:0 0 0 3px rgba(229,57,53,.1),0 2px 12px rgba(229,57,53,.08);
+}
+.lib-search-icon{font-size:1rem;flex-shrink:0;opacity:.5;transition:opacity .2s;}
+.lib-search-wrap:focus-within .lib-search-icon{opacity:1;}
+.lib-search-input{
+  flex:1;border:none;outline:none;background:transparent;
+  color:var(--text);font-family:'Exo 2',sans-serif;
+  font-size:.92rem;font-weight:500;min-width:0;
+}
+.lib-search-input::placeholder{color:var(--text3);}
+.lib-search-clear{
+  background:rgba(0,0,0,.07);border:none;border-radius:50%;
+  width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+  font-size:.65rem;color:var(--text3);cursor:pointer;flex-shrink:0;
+  transition:background .15s,transform .15s;
+}
+.lib-search-clear:hover{background:rgba(229,57,53,.15);color:var(--cyan);transform:scale(1.15);}
+.lib-search-results{
+  background:#FFFFFF;border:1px solid rgba(0,0,0,.07);border-radius:16px;
+  overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.08);flex-shrink:0;
+  animation:srReveal .25s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes srReveal{
+  from{opacity:0;transform:translateY(-8px) scale(.98)}
+  to{opacity:1;transform:none}
+}
+.lib-sr-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px 8px;border-bottom:1px solid rgba(0,0,0,.05);
+}
+.lib-sr-count{font-family:'Share Tech Mono';font-size:.68rem;color:var(--text3);letter-spacing:1px;}
+.lib-sr-clear-search{
+  background:none;border:none;font-family:'Rajdhani';font-size:.75rem;font-weight:700;
+  color:var(--cyan);cursor:pointer;letter-spacing:.5px;padding:2px 6px;border-radius:6px;
+  transition:background .15s;
+}
+.lib-sr-clear-search:hover{background:rgba(229,57,53,.08);}
+.lib-sr-empty{text-align:center;padding:28px 16px;color:var(--text3);font-family:'Rajdhani';font-size:.92rem;line-height:1.6;}
+.lib-sr-item{
+  display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;
+  border-bottom:1px solid rgba(0,0,0,.04);
+  transition:background .15s,transform .15s cubic-bezier(.34,1.56,.64,1);
+  animation:itemReveal .28s cubic-bezier(.22,1,.36,1) both;
+}
+.lib-sr-item:last-child{border-bottom:none;}
+.lib-sr-item:hover{background:rgba(229,57,53,.05);transform:translateX(3px);}
+.lib-sr-item:active{transform:scale(.98);}
+.lib-sr-item.is-playing{background:rgba(229,57,53,.07);}
+.lib-sr-thumb{
+  width:40px;height:40px;border-radius:10px;background:var(--bg4);
+  display:flex;align-items:center;justify-content:center;font-size:1.2rem;
+  flex-shrink:0;overflow:hidden;border:1px solid rgba(0,0,0,.05);
+}
+.lib-sr-thumb img{width:100%;height:100%;object-fit:cover;border-radius:9px;}
+.lib-sr-info{flex:1;min-width:0;}
+.lib-sr-name{
+  font-size:.88rem;font-weight:700;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;color:var(--text);line-height:1.2;
+}
+.lib-sr-name mark{background:rgba(229,57,53,.18);color:var(--cyan);border-radius:3px;padding:0 2px;font-style:normal;}
+.lib-sr-artist{
+  font-size:.72rem;color:var(--text3);font-family:'Rajdhani';letter-spacing:.3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;
+}
+.lib-sr-artist mark{background:rgba(229,57,53,.12);color:var(--cyan);border-radius:3px;padding:0 2px;font-style:normal;}
+.lib-sr-dur{font-family:'Share Tech Mono';font-size:.65rem;color:var(--text3);flex-shrink:0;}
+.lib-sr-play-icon{font-size:.8rem;color:var(--cyan);flex-shrink:0;animation:playIconPulse 1.4s ease-in-out infinite;}
+@keyframes playIconPulse{0%,100%{opacity:1}50%{opacity:.4}}
+
 </style>
 </head>
 <body>
@@ -1301,6 +1907,14 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
           </div>
           <input type="file" id="fileInput" accept="audio/*" multiple style="display:none" onchange="handleFileUpload(event)">
         </div>
+        <!-- LIBRARY SEARCH -->
+        <div class="lib-search-wrap" id="libSearchWrap">
+          <span class="lib-search-icon">🔍</span>
+          <input type="text" id="libSearchInput" class="lib-search-input" placeholder="Search your library…" autocomplete="off" oninput="onLibSearch(this.value)">
+          <button class="lib-search-clear" id="libSearchClear" onclick="clearLibSearch()" style="display:none">✕</button>
+        </div>
+        <div id="libSearchResults" class="lib-search-results" style="display:none"></div>
+
         <div class="storage-info" id="storageInfo">
           <span id="storageText">📦 Checking storage…</span>
           <button class="clear-all-btn" onclick="clearAllTracks()">🗑 Clear All</button>
@@ -7874,6 +8488,326 @@ async function shareCoverArt() {
     if (btn) btn.textContent = '📤 Share';
   }
 }
+
+</script>
+
+<script>
+/* ════════════════════════════════════════
+   AUDIX — Animation Enhancement Layer
+   ════════════════════════════════════════ */
+
+/* ── Smoother loader hide ── */
+(function patchLoader(){
+  const orig = window.hideLoader || null;
+  const loaderEl = document.getElementById('loader');
+  if(!loaderEl) return;
+
+  function smoothHide(){
+    loaderEl.classList.add('hiding');
+    setTimeout(()=>{
+      loaderEl.style.display='none';
+    }, 520);
+  }
+
+  // Intercept the style.display='none' approach used by the app
+  const observer = new MutationObserver(()=>{
+    if(loaderEl.style.display==='none' && !loaderEl.classList.contains('hiding')){
+      // Undo the instant hide and replace with smooth fade
+      loaderEl.style.display='';
+      smoothHide();
+      observer.disconnect();
+    }
+  });
+  observer.observe(loaderEl, {attributes:true, attributeFilter:['style']});
+})();
+
+/* ── Tab switch: animate out old, in new ── */
+(function patchOpenTab(){
+  const _orig = window.openTab;
+  if(typeof _orig !== 'function') return;
+  window.openTab = function(tab){
+    // Find currently active tab content and briefly animate out
+    const active = document.querySelector('.tab-content.active');
+    if(active){
+      active.style.transition='opacity .15s ease,transform .15s ease';
+      active.style.opacity='0';
+      active.style.transform='translateY(6px)';
+    }
+    setTimeout(()=>{
+      if(active){ active.style.transition=''; active.style.opacity=''; active.style.transform=''; }
+      _orig(tab);
+      // New tab gets CSS animation via .active class
+      const next = document.getElementById('tab-'+tab);
+      if(next){
+        next.style.animationName='none';
+        requestAnimationFrame(()=>{
+          requestAnimationFrame(()=>{
+            next.style.animationName='';
+          });
+        });
+      }
+      // Animate bottom-nav active item
+      const bnActive = document.querySelector('.bn-item.active');
+      if(bnActive){ bnActive.classList.remove('active'); void bnActive.offsetWidth; bnActive.classList.add('active'); }
+    }, 130);
+  };
+})();
+
+/* ── Song title crossfade when track changes ── */
+(function patchTitleUpdate(){
+  const targets = ['songTitle','songArtist','shTitle','shArtist'];
+  const original = {};
+  targets.forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    // Observe text changes
+    const mo = new MutationObserver(()=>{
+      el.classList.remove('updating');
+      void el.offsetWidth;
+      el.classList.add('updating');
+    });
+    mo.observe(el,{childList:true,characterData:true,subtree:true});
+  });
+})();
+
+/* ── Stagger song list items on render ── */
+(function patchSongList(){
+  const trackList = document.getElementById('trackList');
+  if(!trackList) return;
+  const mo = new MutationObserver(()=>{
+    const items = trackList.querySelectorAll('.song-item,.track-row');
+    items.forEach((el,i)=>{
+      el.style.animationDelay = Math.min(i*28, 400)+'ms';
+      el.style.animationName='none';
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{ el.style.animationName=''; });
+      });
+    });
+  });
+  mo.observe(trackList,{childList:true});
+})();
+
+/* ── Play button ripple on click ── */
+(function playBtnRipple(){
+  const btn = document.getElementById('playBtn');
+  if(!btn) return;
+  btn.addEventListener('click',()=>{
+    btn.classList.add('tapped');
+    setTimeout(()=>btn.classList.remove('tapped'), 300);
+  });
+})();
+
+/* ── Fav button heartbeat ── */
+(function favBtnPop(){
+  const btn = document.getElementById('favBtn');
+  if(!btn) return;
+  btn.addEventListener('click',()=>{
+    btn.classList.remove('active');
+    void btn.offsetWidth;
+    if(btn.classList.contains('active') || btn.style.color==='rgb(239, 68, 68)'){
+      btn.style.animationName='none';
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{ btn.style.animationName=''; }));
+    }
+  });
+})();
+
+/* ── Insight value count-up animation ── */
+(function insightCountUp(){
+  function animateCount(el){
+    const val = parseFloat(el.textContent.replace(/[^\d.]/g,''));
+    if(isNaN(val)||val===0) return;
+    const suffix = el.textContent.replace(/[\d.]/g,'');
+    const dur = 600;
+    const start = performance.now();
+    function frame(now){
+      const p = Math.min((now-start)/dur,1);
+      const ease = 1-Math.pow(1-p,3);
+      el.textContent = Math.round(val*ease) + suffix;
+      if(p<1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+  // Re-run count-up when AI hub tab opens
+  document.addEventListener('click', e=>{
+    const nav = e.target.closest('[onclick*="aihub"],[onclick*="openTab"]');
+    if(!nav) return;
+    setTimeout(()=>{
+      document.querySelectorAll('.insight-val,.streak-count').forEach(animateCount);
+    }, 350);
+  });
+})();
+
+/* ── Scroll-reveal for tab content children ── */
+(function scrollReveal(){
+  if(!('IntersectionObserver' in window)) return;
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.style.opacity='1';
+        e.target.style.transform='none';
+        io.unobserve(e.target);
+      }
+    });
+  },{threshold:0.08,rootMargin:'0px 0px -20px 0px'});
+
+  function observeCards(){
+    document.querySelectorAll('.section-card:not([data-observed])').forEach((el,i)=>{
+      el.dataset.observed='1';
+      el.style.opacity='0';
+      el.style.transform='translateY(16px)';
+      el.style.transition=`opacity .4s ease ${i*60}ms, transform .4s cubic-bezier(.22,1,.36,1) ${i*60}ms`;
+      io.observe(el);
+    });
+  }
+
+  // Observe on tab switch
+  document.addEventListener('click', e=>{
+    setTimeout(observeCards, 200);
+  });
+  setTimeout(observeCards, 600);
+})();
+
+/* ── Modal open/close animation polish ── */
+(function patchModals(){
+  const modalIds = ['id3Modal','qualityModal','playlistModal','transferModal','shareCardModal','sleepTimerModal'];
+  modalIds.forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    const mo = new MutationObserver(()=>{
+      if(el.classList.contains('active')){
+        const box = el.querySelector('.id3-box,.quality-box,.playlist-box,.share-card-box,.transfer-box,.sleep-box');
+        if(box){
+          box.style.animationName='none';
+          void box.offsetWidth;
+          box.style.animationName='';
+        }
+      }
+    });
+    mo.observe(el,{attributes:true,attributeFilter:['class']});
+  });
+})();
+
+/* ════════════════════════════════════════
+   LIBRARY SEARCH — live filter
+   ════════════════════════════════════════ */
+(function initLibSearch(){
+
+  function fmtTimeSr(s){
+    s=Math.round(s||0);
+    const m=Math.floor(s/60), sec=s%60;
+    return m+':'+(sec<10?'0':'')+sec;
+  }
+
+  function highlight(str, q){
+    if(!q) return str;
+    const esc = q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    return str.replace(new RegExp('('+esc+')', 'gi'), '<mark>$1</mark>');
+  }
+
+  function getArtThumb(t){
+    if(window._artCache && _artCache.get(String(t.id))){
+      return `<img src="${_artCache.get(String(t.id))}" alt="">`;
+    }
+    return t.emoji || '🎵';
+  }
+
+  function renderResults(tracks, q){
+    const panel = document.getElementById('libSearchResults');
+    const mainList = document.getElementById('trackList');
+    const storageInfo = document.getElementById('storageInfo');
+
+    if(!q){
+      panel.style.display = 'none';
+      mainList.style.display = '';
+      storageInfo.style.display = '';
+      return;
+    }
+
+    // Hide normal list while searching
+    mainList.style.display = 'none';
+    storageInfo.style.display = 'none';
+    panel.style.display = '';
+
+    // Restart animation
+    panel.style.animationName = 'none';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ panel.style.animationName = ''; }));
+
+    if(!tracks.length){
+      panel.innerHTML = `
+        <div class="lib-sr-header">
+          <span class="lib-sr-count">0 RESULTS</span>
+          <button class="lib-sr-clear-search" onclick="clearLibSearch()">Clear</button>
+        </div>
+        <div class="lib-sr-empty">No songs found for "<strong>${q}</strong>"<br><span style="font-size:.8rem">Try a different title or artist name</span></div>`;
+      return;
+    }
+
+    const rows = tracks.map((t, i) => {
+      const realIdx = window.state ? state.tracks.indexOf(t) : -1;
+      const isPlaying = window.state && realIdx === state.currentIdx && state.isPlaying;
+      return `<div class="lib-sr-item ${isPlaying ? 'is-playing':''}"
+                   onclick="playTrack(${realIdx})"
+                   style="animation-delay:${Math.min(i*30,300)}ms">
+        <div class="lib-sr-thumb">${getArtThumb(t)}</div>
+        <div class="lib-sr-info">
+          <div class="lib-sr-name">${highlight(t.name||'Untitled', q)}</div>
+          <div class="lib-sr-artist">${highlight(t.artist||'Unknown Artist', q)}</div>
+        </div>
+        <div class="lib-sr-dur">${fmtTimeSr(t.duration)}</div>
+        ${isPlaying ? '<div class="lib-sr-play-icon">▶</div>' : ''}
+      </div>`;
+    }).join('');
+
+    panel.innerHTML = `
+      <div class="lib-sr-header">
+        <span class="lib-sr-count">${tracks.length} RESULT${tracks.length!==1?'S':''}</span>
+        <button class="lib-sr-clear-search" onclick="clearLibSearch()">Clear</button>
+      </div>
+      ${rows}`;
+  }
+
+  let _debounce = null;
+  window.onLibSearch = function(raw){
+    const q = raw.trim();
+    const clearBtn = document.getElementById('libSearchClear');
+    if(clearBtn) clearBtn.style.display = q ? '' : 'none';
+
+    clearTimeout(_debounce);
+    _debounce = setTimeout(()=>{
+      if(!q){
+        renderResults([], '');
+        return;
+      }
+      const lower = q.toLowerCase();
+      const all = (window.state && state.tracks) ? state.tracks : [];
+      const filtered = all.filter(t =>
+        (t.name||'').toLowerCase().includes(lower) ||
+        (t.artist||'').toLowerCase().includes(lower) ||
+        (t.album||'').toLowerCase().includes(lower)
+      );
+      renderResults(filtered, q);
+    }, 120);
+  };
+
+  window.clearLibSearch = function(){
+    const inp = document.getElementById('libSearchInput');
+    if(inp){ inp.value = ''; inp.focus(); }
+    const clearBtn = document.getElementById('libSearchClear');
+    if(clearBtn) clearBtn.style.display = 'none';
+    renderResults([], '');
+  };
+
+  // Re-run results when a track plays (to update the ▶ indicator)
+  const _origPlayTrack = window.playTrack;
+  if(typeof _origPlayTrack === 'function'){
+    window.playTrack = function(idx){
+      _origPlayTrack(idx);
+      const inp = document.getElementById('libSearchInput');
+      if(inp && inp.value.trim()) setTimeout(()=>onLibSearch(inp.value), 100);
+    };
+  }
+
+})();
 
 </script>
 </body>
