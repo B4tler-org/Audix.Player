@@ -635,12 +635,10 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
     rgba(255,255,255,.05) 300deg,
     rgba(229,57,53,.25) 360deg
   );
-  animation:cdDiscSpin 8s linear infinite paused;
   opacity:0;
   transition:opacity .4s;
 }
 .premium-cd-wrap.playing::before{
-  animation-play-state:running;
   opacity:1;
 }
 
@@ -660,7 +658,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 
 @keyframes cdDiscSpin{to{transform:rotate(360deg)}}
 
-/* The actual album art circle */
+/* The actual album art circle — spin lives on the wrapper, not here */
 .album-art{
   width:100%;height:100%;
   border-radius:50% !important;
@@ -674,23 +672,26 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
     0 16px 48px rgba(0,0,0,.18);
   transition:box-shadow .4s;
   flex-shrink:0;
-  /* CD spin animation */
-  animation:artSpin 8s linear infinite paused;
 }
 .album-art.playing{
-  animation-play-state:running;
   box-shadow:
     0 0 0 6px rgba(255,255,255,.95),
     0 0 0 8px rgba(229,57,53,.15),
     0 20px 60px rgba(229,57,53,.2),
     0 0 0 0 transparent;
 }
-@keyframes artSpin{to{transform:rotate(360deg)}}
 
-/* When paused: freeze rotation smoothly */
-.album-art:not(.playing){
+/* Spin on the wrapper — children of .album-art changing never restarts this */
+.premium-cd-wrap{
+  animation:artSpin 8s linear infinite paused;
+}
+.premium-cd-wrap.playing{
+  animation-play-state:running;
+}
+.premium-cd-wrap:not(.playing){
   animation-play-state:paused;
 }
+@keyframes artSpin{to{transform:rotate(360deg)}}
 
 /* art-img must fill circle */
 .album-art img.art-img{
