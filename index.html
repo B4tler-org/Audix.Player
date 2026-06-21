@@ -462,6 +462,13 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .dj-fab:active{transform:scale(.95)}
 .sleep-modal-bg{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.7);display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(10px)}
 .sleep-modal-bg.active{display:flex}
+#shareCardModal{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px);padding:var(--sp4)}
+#shareCardModal.active{display:flex}
+.share-card-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:380px;padding:var(--sp4);display:flex;flex-direction:column;gap:var(--sp3);max-height:92vh;overflow:auto;animation:sheetUp .25s cubic-bezier(.4,0,.2,1)}
+.share-card-preview{border-radius:var(--radius-md);overflow:hidden;line-height:0}
+.share-card-actions{display:flex;gap:var(--sp2)}
+.share-action-btn{flex:1;background:var(--grad);border:none;border-radius:var(--radius-sm);padding:12px;color:white;font-family:'Exo 2';font-weight:700;font-size:.85rem;min-height:46px;cursor:pointer}
+.share-close-btn{background:var(--bg4);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 18px;color:var(--text2);font-family:'Exo 2';font-weight:600;font-size:.85rem;min-height:46px;cursor:pointer}
 .sleep-sheet{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-width:480px;padding:var(--sp5) var(--sp4) max(var(--sp6),env(safe-area-inset-bottom));animation:sheetUp .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;gap:var(--sp4)}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .sleep-header{display:flex;align-items:center;justify-content:space-between}
@@ -1140,6 +1147,7 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
             <button class="qa-chip" onclick="openTab('visualizer')">🌈 Visualizer</button>
             <button class="qa-chip" onclick="toggleDjPanel()">🎧 DJ Claude</button>
             <button class="qa-chip" onclick="openQuality()">🎵 Quality</button>
+            <button class="qa-chip" onclick="openShareCard()">📤 Share Now Playing</button>
           </div>
         </div>
 
@@ -6553,9 +6561,9 @@ window.addEventListener('DOMContentLoaded', () => {
 <!-- ===== SHARE CARD MODAL ===== -->
 <div id="shareCardModal">
   <div class="share-card-box">
-    <div style="font-size:1rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-family:'Exo 2';text-align:center">📤 Share Now Playing</div>
+    <div style="font-size:1rem;font-weight:800;color:var(--text);font-family:'Exo 2';text-align:center">📤 Share Now Playing</div>
     <div class="share-card-preview">
-      <canvas id="shareCardCanvas" width="720" height="720" style="width:100%;border-radius:20px"></canvas>
+      <canvas id="shareCardCanvas" width="720" height="720" style="width:100%;display:block"></canvas>
     </div>
     <div class="share-card-actions">
       <button class="share-action-btn" onclick="downloadShareCard()">⬇ Download</button>
@@ -6829,7 +6837,7 @@ function setSpeed(rate, btn) {
   }
   document.querySelectorAll('#speedRow .speed-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
-  showToast(`Speed: ${rate}×`);
+  toast(`Speed: ${rate}×`);
 }
 
 // ── WAVEFORM SCRUBBER ──────────────────────────────────────
@@ -6898,79 +6906,137 @@ function openShareCard() {
 function closeShareCard() {
   document.getElementById('shareCardModal').classList.remove('active');
 }
+
 function renderShareCard() {
   const canvas = document.getElementById('shareCardCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const W = 720, H = 720;
+  const W = 720, H = 1280; // tall card, matches the mockup's portrait layout
   canvas.width = W; canvas.height = H;
 
-  // Background gradient
-  const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, '#0a0a1a');
-  bg.addColorStop(0.5, '#12082a');
-  bg.addColorStop(1, '#0a1a2a');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
+  const title  = document.getElementById('songTitle')?.textContent || 'No Track Selected';
+  const artist = document.getElementById('songArtist')?.textContent || 'Choose a song from Library';
+  const imgEl  = document.querySelector('#albumArt img');
+  const hasArt = imgEl && imgEl.src && imgEl.naturalWidth > 0;
 
-  // Glow circles
-  const gc = ctx.createRadialGradient(W*0.2, H*0.3, 0, W*0.2, H*0.3, 300);
-  gc.addColorStop(0, 'rgba(139,92,246,0.25)');
-  gc.addColorStop(1, 'transparent');
-  ctx.fillStyle = gc;
-  ctx.fillRect(0, 0, W, H);
-  const gc2 = ctx.createRadialGradient(W*0.8, H*0.7, 0, W*0.8, H*0.7, 280);
-  gc2.addColorStop(0, 'rgba(0,212,255,0.18)');
-  gc2.addColorStop(1, 'transparent');
-  ctx.fillStyle = gc2;
-  ctx.fillRect(0, 0, W, H);
+  function drawCard() {
+    // ---- Base background ----
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, W, H);
 
-  // Album art circle
-  const artX = W/2, artY = H*0.38, artR = 170;
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(artX, artY, artR, 0, Math.PI*2);
-  ctx.fillStyle = '#1a1a30';
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(0,212,255,0.4)';
-  ctx.lineWidth = 3;
-  ctx.stroke();
+    // ---- Blurred album art background ----
+    if (hasArt) {
+      try {
+        ctx.save();
+        ctx.filter = 'blur(40px) brightness(0.55)';
+        // Overscan so the blur doesn't reveal edges
+        ctx.drawImage(imgEl, -60, -60, W + 120, H + 120);
+        ctx.restore();
+      } catch (e) { /* CORS-tainted image — just keep flat background */ }
+    } else {
+      const fallback = ctx.createLinearGradient(0, 0, W, H);
+      fallback.addColorStop(0, '#E53935');
+      fallback.addColorStop(1, '#7a1212');
+      ctx.fillStyle = fallback;
+      ctx.fillRect(0, 0, W, H);
+    }
 
-  // Album art image or emoji
-  const imgEl = document.querySelector('#albumArt img');
-  if (imgEl && imgEl.src) {
-    try {
-      ctx.clip();
-      ctx.drawImage(imgEl, artX - artR, artY - artR, artR*2, artR*2);
-    } catch(e) { drawAlbumEmoji(ctx, artX, artY, artR); }
-  } else { drawAlbumEmoji(ctx, artX, artY, artR); }
-  ctx.restore();
+    // ---- Dark gradient overlay for legibility ----
+    const overlay = ctx.createLinearGradient(0, 0, 0, H);
+    overlay.addColorStop(0, 'rgba(0,0,0,.55)');
+    overlay.addColorStop(0.45, 'rgba(0,0,0,.35)');
+    overlay.addColorStop(1, 'rgba(0,0,0,.75)');
+    ctx.fillStyle = overlay;
+    ctx.fillRect(0, 0, W, H);
 
-  // Song info
-  const title = document.getElementById('songTitle')?.textContent || 'No Track';
-  const artist = document.getElementById('songArtist')?.textContent || '—';
+    // ---- Square cover art ----
+    const artSize = 420, artX = (W - artSize) / 2, artY = 170;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.5)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 18;
+    roundRect(ctx, artX, artY, artSize, artSize, 24);
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fill();
+    ctx.restore();
 
-  ctx.textAlign = 'center';
-  ctx.fillStyle = 'white';
-  ctx.font = 'bold 42px "Exo 2", sans-serif';
-  wrapText(ctx, title, W/2, artY + artR + 56, W - 80, 50);
+    ctx.save();
+    roundRect(ctx, artX, artY, artSize, artSize, 24);
+    ctx.clip();
+    if (hasArt) {
+      try { ctx.drawImage(imgEl, artX, artY, artSize, artSize); }
+      catch (e) { drawAlbumEmoji(ctx, artX + artSize / 2, artY + artSize / 2, artSize / 2); }
+    } else {
+      drawAlbumEmoji(ctx, artX + artSize / 2, artY + artSize / 2, artSize / 2);
+    }
+    ctx.restore();
 
-  ctx.fillStyle = '#00d4ff';
-  ctx.font = '600 28px "Rajdhani", sans-serif';
-  ctx.fillText(artist, W/2, artY + artR + 130);
+    // ---- Song title / artist ----
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 46px "Exo 2", sans-serif';
+    wrapText(ctx, title, W / 2, artY + artSize + 80, W - 100, 54);
 
-  // AUDIX badge
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
-  roundRect(ctx, W/2 - 80, H - 90, 160, 40, 20);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.font = '700 18px "Exo 2"';
-  ctx.fillText('AUDIX MUSIC PLAYER', W/2, H - 64);
+    ctx.fillStyle = '#ff8a80';
+    ctx.font = '600 30px "Rajdhani", sans-serif';
+    ctx.fillText(artist, W / 2, artY + artSize + 145);
 
-  // TikTok
-  ctx.fillStyle = 'rgba(0,212,255,0.6)';
-  ctx.font = '500 16px "Rajdhani"';
-  ctx.fillText('@audixmusic.player', W/2, H - 40);
+    // ---- Progress bar ----
+    const pbY = artY + artSize + 215, pbX = 90, pbW = W - 180;
+    const dur = (typeof audio !== 'undefined' && isFinite(audio.duration) && audio.duration > 0) ? audio.duration : 0;
+    const cur = (typeof audio !== 'undefined') ? audio.currentTime : 0;
+    const pct = dur > 0 ? Math.min(1, cur / dur) : 0.35;
+
+    ctx.fillStyle = 'rgba(255,255,255,.25)';
+    roundRect(ctx, pbX, pbY, pbW, 6, 3);
+    ctx.fill();
+    ctx.fillStyle = '#E53935';
+    roundRect(ctx, pbX, pbY, pbW * pct, 6, 3);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(pbX + pbW * pct, pbY + 3, 9, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+
+    // ---- Transport row: ♡  ⏮  ▶  ⏭  🔀 ----
+    const rowY = pbY + 90;
+    const icons = ['♡', '⏮', '▶', '⏭', '🔀'];
+    const spacing = pbW / (icons.length - 1);
+    ctx.textBaseline = 'middle';
+    icons.forEach((icon, i) => {
+      const x = pbX + spacing * i;
+      if (icon === '▶') {
+        ctx.beginPath();
+        ctx.arc(x, rowY, 38, 0, Math.PI * 2);
+        ctx.fillStyle = '#E53935';
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '32px sans-serif';
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,.9)';
+        ctx.font = '34px sans-serif';
+      }
+      ctx.fillText(icon, x, rowY + (icon === '▶' ? 1 : 0));
+    });
+    ctx.textBaseline = 'alphabetic';
+
+    // ---- Brand footer (bottom right) ----
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 26px "Exo 2", sans-serif';
+    ctx.fillText('Audix', W - 70, H - 110);
+    ctx.fillStyle = 'rgba(255,255,255,.7)';
+    ctx.font = '600 18px "Rajdhani", sans-serif';
+    ctx.letterSpacing = '2px';
+    ctx.fillText('MUSIC PLAYER', W - 70, H - 80);
+    ctx.letterSpacing = '0px';
+  }
+
+  if (hasArt && !imgEl.complete) {
+    imgEl.addEventListener('load', drawCard, { once: true });
+  } else {
+    drawCard();
+  }
 }
 
 function drawAlbumEmoji(ctx, x, y, r) {
@@ -7015,20 +7081,27 @@ function roundRect(ctx, x, y, w, h, r) {
 
 function downloadShareCard() {
   const canvas = document.getElementById('shareCardCanvas');
-  const a = document.createElement('a');
-  a.download = 'audix-now-playing.png';
-  a.href = canvas.toDataURL('image/png');
-  a.click();
-  showToast('Share card downloaded!');
+  if (!canvas) return;
+  try {
+    const a = document.createElement('a');
+    a.download = 'audix-now-playing.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    toast('Share card downloaded!', 'success');
+  } catch (e) {
+    console.log('Share card download error:', e);
+    toast('Could not download share card', 'error');
+  }
 }
 
 async function copyShareCard() {
   const canvas = document.getElementById('shareCardCanvas');
+  if (!canvas) return;
   canvas.toBlob(async blob => {
     try {
       await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
-      showToast('Copied to clipboard!');
-    } catch(e) { showToast('Copy not supported — use Download instead'); }
+      toast('Copied to clipboard!', 'success');
+    } catch(e) { toast('Copy not supported — use Download instead', 'error'); }
   });
 }
 
@@ -7040,7 +7113,7 @@ let _quizTimer = null;
 
 function startQuiz() {
   if (typeof state === 'undefined' || state.tracks.length < 4) {
-    showToast('Add at least 4 tracks to play the quiz!');
+    toast('Add at least 4 tracks to play the quiz!');
     return;
   }
   _quizScore = 0; _quizStreak = 0; _quizRound = 0;
@@ -7123,7 +7196,7 @@ function endQuiz() {
   audio.pause();
   document.getElementById('quizStatePlaying').style.display = 'none';
   document.getElementById('quizStateStart').style.display = 'block';
-  showToast(`Quiz over! Score: ${_quizScore}`);
+  toast(`Quiz over! Score: ${_quizScore}`);
 }
 
 function updateQuizUI() {
@@ -7183,7 +7256,7 @@ function clearHeatmapData() {
   _heatmapData = {};
   localStorage.removeItem('audix_heatmap');
   renderHeatmap();
-  showToast('Heatmap data cleared');
+  toast('Heatmap data cleared');
 }
 
 // Hook into audio play for heatmap tracking
@@ -7193,7 +7266,7 @@ if (typeof audio !== 'undefined') {
 
 // ── DUPLICATE DETECTOR ─────────────────────────────────────
 function runDuplicateDetector() {
-  if (typeof state === 'undefined' || !state.tracks.length) { showToast('No tracks in library'); return; }
+  if (typeof state === 'undefined' || !state.tracks.length) { toast('No tracks in library'); return; }
   const dupes = [];
   const seen = {};
   state.tracks.forEach(track => {
@@ -7234,12 +7307,12 @@ function removeDupe(trackId, itemId) {
   }
   const el = document.getElementById(itemId);
   if (el) el.remove();
-  showToast('Duplicate removed');
+  toast('Duplicate removed');
 }
 
 function removeAllDupes() {
   document.querySelectorAll('.dupe-remove-btn').forEach(btn => btn.click());
-  showToast('All duplicates removed');
+  toast('All duplicates removed');
 }
 
 // ── BACKUP & RESTORE ───────────────────────────────────────
@@ -7265,7 +7338,7 @@ function exportBackup() {
   a.href = URL.createObjectURL(blob);
   a.download = `audix-backup-${new Date().toISOString().slice(0,10)}.json`;
   a.click();
-  showToast('Backup exported!');
+  toast('Backup exported!');
   renderBackupSummary(data);
 }
 
@@ -7284,10 +7357,10 @@ function importBackup(event) {
       if (data.notes) localStorage.setItem('audix_notes', JSON.stringify(data.notes));
       if (data.heatmap) localStorage.setItem('audix_heatmap', JSON.stringify(data.heatmap));
       if (data.quizHighScore) localStorage.setItem('audix_quiz_high', data.quizHighScore);
-      showToast('✅ Backup restored! Reload to apply.');
+      toast('✅ Backup restored! Reload to apply.');
       renderBackupSummary(data);
     } catch(err) {
-      showToast('❌ Invalid backup file');
+      toast('❌ Invalid backup file');
     }
   };
   reader.readAsText(file);
