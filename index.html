@@ -1023,11 +1023,11 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
    APP ENTRANCE — fade + lift
    ───────────────────────────────────────── */
 #app.visible{
-  animation:appReveal .55s cubic-bezier(.22,1,.36,1) both;
+  animation:appReveal .55s ease both;
 }
 @keyframes appReveal{
-  from{opacity:0;transform:translateY(10px)}
-  to{opacity:1;transform:none}
+  from{opacity:0}
+  to{opacity:1}
 }
 
 /* ─────────────────────────────────────────
@@ -1087,11 +1087,11 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
    TAB CONTENT — fade + slide transition
    ───────────────────────────────────────── */
 .tab-content.active{
-  animation:tabFadeIn .35s cubic-bezier(.22,1,.36,1) both;
+  animation:tabFadeIn .35s ease both;
 }
 @keyframes tabFadeIn{
-  from{opacity:0;transform:translateY(14px)}
-  to{opacity:1;transform:none}
+  from{opacity:0}
+  to{opacity:1}
 }
 
 /* ─────────────────────────────────────────
@@ -1112,11 +1112,11 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
   transition:box-shadow .4s ease;
 }
 #nowPlayingHero{
-  animation:heroEntrance .6s cubic-bezier(.22,1,.36,1) .25s both;
+  animation:heroEntrance .6s ease .25s both;
 }
 @keyframes heroEntrance{
-  from{opacity:0;transform:scale(.96) translateY(12px)}
-  to{opacity:1;transform:none}
+  from{opacity:0}
+  to{opacity:1}
 }
 
 /* ─────────────────────────────────────────
@@ -8530,12 +8530,11 @@ async function shareCoverArt() {
     // Find currently active tab content and briefly animate out
     const active = document.querySelector('.tab-content.active');
     if(active){
-      active.style.transition='opacity .15s ease,transform .15s ease';
+      active.style.transition='opacity .15s ease';
       active.style.opacity='0';
-      active.style.transform='translateY(6px)';
     }
     setTimeout(()=>{
-      if(active){ active.style.transition=''; active.style.opacity=''; active.style.transform=''; }
+      if(active){ active.style.transition=''; active.style.opacity=''; }
       _orig(tab);
       // New tab gets CSS animation via .active class
       const next = document.getElementById('tab-'+tab);
