@@ -469,18 +469,28 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 .share-card-actions{display:flex;gap:var(--sp2)}
 .share-action-btn{flex:1;background:var(--grad);border:none;border-radius:var(--radius-sm);padding:12px;color:white;font-family:'Exo 2';font-weight:700;font-size:.85rem;min-height:46px;cursor:pointer}
 .share-close-btn{background:var(--bg4);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 18px;color:var(--text2);font-family:'Exo 2';font-weight:600;font-size:.85rem;min-height:46px;cursor:pointer}
-.sleep-sheet{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-width:480px;padding:var(--sp5) var(--sp4) max(var(--sp6),env(safe-area-inset-bottom));animation:sheetUp .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;gap:var(--sp4)}
+#sleepTimerModal{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.7);display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(10px)}
+#sleepTimerModal.active{display:flex}
+#shareCardModal{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px);padding:var(--sp4)}
+#shareCardModal.active{display:flex}
+.share-card-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:380px;padding:var(--sp4);display:flex;flex-direction:column;gap:var(--sp3);max-height:92vh;overflow:auto;animation:sheetUp .25s cubic-bezier(.4,0,.2,1)}
+.share-card-preview{border-radius:var(--radius-md);overflow:hidden;line-height:0}
+.share-card-actions{display:flex;gap:var(--sp2)}
+.share-action-btn{flex:1;background:var(--grad);border:none;border-radius:var(--radius-sm);padding:12px;color:white;font-family:'Exo 2';font-weight:700;font-size:.85rem;min-height:46px;cursor:pointer}
+.share-close-btn{background:var(--bg4);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 18px;color:var(--text2);font-family:'Exo 2';font-weight:600;font-size:.85rem;min-height:46px;cursor:pointer}
+.sleep-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-width:480px;max-height:88vh;overflow:auto;padding:var(--sp5) var(--sp4) max(var(--sp6),env(safe-area-inset-bottom));animation:sheetUp .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;gap:var(--sp4)}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.sleep-header{display:flex;align-items:center;justify-content:space-between}
 .sleep-title{font-size:1rem;font-weight:800}
-.sleep-close{background:var(--bg4);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--text2);min-height:32px}
+.sleep-close{background:var(--bg4);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;color:var(--text2);font-family:'Exo 2';font-weight:600;font-size:.85rem;min-height:44px;width:100%;cursor:pointer}
 .sleep-options{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp2)}
-.sleep-option{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--sp3) var(--sp4);text-align:center;cursor:pointer;transition:all .2s;min-height:56px;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani';font-weight:700;font-size:.9rem;letter-spacing:.5px}
-.sleep-option:hover,.sleep-option.active{background:var(--grad);color:white;border-color:transparent}
-.sleep-custom-row{display:flex;gap:var(--sp2);align-items:center}
-.sleep-custom-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-family:'Exo 2';font-size:.9rem;outline:none}
-.sleep-set-btn{background:var(--grad);border:none;border-radius:var(--radius-sm);padding:10px 18px;color:white;font-weight:700;min-height:44px}
+.sleep-opt{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--sp3) var(--sp4);text-align:center;cursor:pointer;transition:all .2s;min-height:56px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'Rajdhani';font-weight:700;font-size:.9rem;letter-spacing:.5px}
+.sleep-opt:hover,.sleep-opt.active{background:var(--grad);color:white;border-color:transparent}
+.so-time{font-family:'Share Tech Mono';font-weight:700}
+.sleep-custom{display:flex;gap:var(--sp2);align-items:center}
+.sleep-custom input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-family:'Exo 2';font-size:.9rem;outline:none;min-height:44px}
+.sleep-set-btn{background:var(--grad);border:none;border-radius:var(--radius-sm);padding:10px 18px;color:white;font-weight:700;min-height:44px;cursor:pointer}
 .sleep-status{text-align:center;font-family:'Share Tech Mono';font-size:.8rem;color:var(--cyan)}
+.sleep-cancel-btn{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius-sm);padding:10px;color:#ef4444;font-family:'Exo 2';font-weight:600;font-size:.85rem;width:100%;min-height:44px;cursor:pointer}
 #id3Modal,#qualityModal,#playlistModal,#transferModal{position:fixed;inset:0;z-index:6000;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;backdrop-filter:blur(12px);padding:var(--sp4)}
 #id3Modal.active,#qualityModal.active,#playlistModal.active,#transferModal.active{display:flex}
 .id3-box,.quality-box,.playlist-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:420px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;animation:modalIn .3s ease;position:relative}
@@ -1711,29 +1721,6 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 </div>
 
 <!-- SLEEP TIMER -->
-<div class="sleep-modal-bg" id="sleepModal">
-  <div class="sleep-sheet">
-    <div class="sleep-header">
-      <div class="sleep-title">😴 Sleep Timer</div>
-      <button class="sleep-close" onclick="closeSleepTimer()">&#x2715;</button>
-    </div>
-    <div class="sleep-options">
-      <div class="sleep-option" onclick="setSleepTimer(15,this)">15 min</div>
-      <div class="sleep-option" onclick="setSleepTimer(30,this)">30 min</div>
-      <div class="sleep-option" onclick="setSleepTimer(45,this)">45 min</div>
-      <div class="sleep-option" onclick="setSleepTimer(60,this)">60 min</div>
-      <div class="sleep-option" onclick="setSleepTimer(90,this)">90 min</div>
-      <div class="sleep-option" onclick="setSleepAtEndOfSong()">End of Song</div>
-    </div>
-    <div class="sleep-custom-row">
-      <input type="number" class="sleep-custom-input" id="sleepCustomMin" placeholder="Custom (min)" min="1" max="480">
-      <button class="sleep-set-btn" onclick="setCustomSleepTimer()">Set</button>
-    </div>
-    <div class="sleep-status" id="sleepStatus"></div>
-    <button onclick="cancelSleepTimer()" id="cancelSleepBtn" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius-sm);padding:10px;color:#ef4444;font-family:'Exo 2';font-weight:600;font-size:.85rem;width:100%;min-height:44px">Cancel Timer</button>
-  </div>
-</div>
-
 <!-- DJ FAB -->
 <button class="dj-fab" id="djFab" onclick="toggleDjPanel()" title="AI Chat DJ">🎧</button>
 
@@ -1843,35 +1830,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (hdr && body) { body.classList.remove('collapsed'); hdr.classList.add('expanded'); }
   }
 });
-// Sleep timer
-function openSleepTimer() { document.getElementById('sleepModal').classList.add('active'); }
-function closeSleepTimer() { document.getElementById('sleepModal').classList.remove('active'); }
-let _sleepTimerTimeout = null;
-function setSleepTimer(min, el) {
-  document.querySelectorAll('.sleep-option').forEach(o => o.classList.remove('active'));
-  if (el) el.classList.add('active');
-  if (_sleepTimerTimeout) clearTimeout(_sleepTimerTimeout);
-  _sleepTimerTimeout = setTimeout(() => { if (typeof audio !== 'undefined') audio.pause(); }, min * 60 * 1000);
-  document.getElementById('sleepStatus').textContent = `Timer set: ${min} minutes`;
-  document.getElementById('cancelSleepBtn').style.display = '';
-}
-function setSleepAtEndOfSong() {
-  if (_sleepTimerTimeout) clearTimeout(_sleepTimerTimeout);
-  if (typeof audio !== 'undefined') audio.addEventListener('ended', () => audio.pause(), { once: true });
-  document.getElementById('sleepStatus').textContent = 'Will stop at end of current song';
-  document.getElementById('cancelSleepBtn').style.display = '';
-}
-function setCustomSleepTimer() {
-  const min = parseInt(document.getElementById('sleepCustomMin').value);
-  if (!min || min < 1) return;
-  setSleepTimer(min, null);
-}
-function cancelSleepTimer() {
-  if (_sleepTimerTimeout) { clearTimeout(_sleepTimerTimeout); _sleepTimerTimeout = null; }
-  document.getElementById('sleepStatus').textContent = 'Timer cancelled';
-  document.getElementById('cancelSleepBtn').style.display = 'none';
-  document.querySelectorAll('.sleep-option').forEach(o => o.classList.remove('active'));
-}
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
