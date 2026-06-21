@@ -65,14 +65,14 @@ button{cursor:pointer;font-family:inherit}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 #loader{position:fixed;inset:0;z-index:9999;background:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
-.loader-logo{font-size:3rem;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:logoPulse 1.5s ease-in-out infinite}
+.loader-logo{font-size:3rem;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:logoPulse 2.8s ease-in-out infinite}
 .loader-sub{font-family:'Rajdhani',sans-serif;font-size:.85rem;letter-spacing:6px;color:#999999;text-transform:uppercase}
 .loader-bar-wrap{width:220px;height:2px;background:#E0E0E0;border-radius:2px;overflow:hidden}
 .loader-bar{height:100%;background:var(--grad);border-radius:2px;width:0;animation:loadFill 2.5s ease forwards}
 .loader-tip{font-size:.8rem;color:var(--text2);text-align:center;max-width:260px;line-height:1.5;opacity:0;animation:tipFade .5s ease .5s forwards;font-family:'Rajdhani',sans-serif}
 .loader-particles{position:absolute;inset:0;pointer-events:none}
 .lp{position:absolute;width:3px;height:3px;border-radius:50%;background:var(--cyan);animation:particleFloat linear infinite;opacity:.4}
-@keyframes logoPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.5)}}
+@keyframes logoPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.85;transform:scale(1.04)}}
 @keyframes loadFill{0%{width:0}100%{width:100%}}
 @keyframes tipFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes particleFloat{0%{opacity:0;transform:translateY(100vh)}10%{opacity:1}90%{opacity:.5}100%{opacity:0;transform:translateY(-10vh)}}
@@ -1012,12 +1012,12 @@ input[type=range].eq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:
 }
 .loader-logo{
   letter-spacing:6px;
-  animation:logoPulse 1.8s ease-in-out infinite,logoSlideIn .6s cubic-bezier(.22,1,.36,1) both;
+  animation:logoSlideIn .7s cubic-bezier(.22,1,.36,1) both;
 }
-@keyframes logoSlideIn{from{opacity:0;transform:translateY(24px) scale(.9)}to{opacity:1;transform:none}}
-.loader-sub{animation:tipFade .5s ease .35s both}
-.loader-bar-wrap{animation:tipFade .5s ease .55s both}
-.loader-tip{animation:tipFade .5s ease .75s both}
+@keyframes logoSlideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.loader-sub{animation:tipFade .5s ease .4s both}
+.loader-bar-wrap{animation:tipFade .5s ease .6s both}
+.loader-tip{animation:tipFade .5s ease .8s both}
 
 /* ─────────────────────────────────────────
    APP ENTRANCE — fade + lift
