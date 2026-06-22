@@ -1,0 +1,305 @@
+/* ============================================================
+   AUDIX — Music Notification Component
+   Isolated stylesheet. Does NOT touch any existing Audix CSS.
+   ============================================================ */
+
+/* ── Container ─────────────────────────────────────────────── */
+#music-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 8500; /* below modals (9000+) but above content */
+  width: 320px;
+  pointer-events: none;
+
+  /* hidden by default */
+  opacity: 0;
+  transform: translateX(calc(100% + 32px));
+  transition: opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#music-notification.mn-visible {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+#music-notification.mn-hiding {
+  opacity: 0;
+  transform: translateX(calc(100% + 32px));
+  transition: opacity 0.28s ease-in,
+              transform 0.28s ease-in;
+}
+
+/* ── Card shell ─────────────────────────────────────────────── */
+.mn-card {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(229, 57, 53, 0.15);
+  border-radius: 18px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(229, 57, 53, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Subtle red accent line along the top */
+.mn-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #E53935, #ef5350, #E53935);
+  background-size: 200% 100%;
+  animation: mn-shimmer 2.4s linear infinite;
+}
+
+@keyframes mn-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Inner layout ───────────────────────────────────────────── */
+.mn-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px 14px 14px;
+}
+
+/* ── Album art ──────────────────────────────────────────────── */
+.mn-art-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+}
+
+.mn-art {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #F0F0F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  position: relative;
+  z-index: 1;
+}
+
+.mn-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 11px;
+}
+
+/* Spinning vinyl ring shown when playing */
+.mn-art-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 15px;
+  border: 2px solid transparent;
+  border-top-color: #E53935;
+  border-right-color: rgba(229, 57, 53, 0.3);
+  animation: mn-spin 1.6s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.mn-art-ring.mn-playing {
+  opacity: 1;
+}
+
+@keyframes mn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Text info ──────────────────────────────────────────────── */
+.mn-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mn-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 2.5px;
+  color: #E53935;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.mn-title {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.mn-artist {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #777;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* ── Equalizer bars ─────────────────────────────────────────── */
+.mn-eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.mn-eq-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #ef5350, #E53935);
+  transform-origin: bottom;
+}
+
+.mn-eq-bar:nth-child(1) { animation: mn-eq1 0.7s ease-in-out infinite alternate; }
+.mn-eq-bar:nth-child(2) { animation: mn-eq2 0.5s ease-in-out infinite alternate; }
+.mn-eq-bar:nth-child(3) { animation: mn-eq3 0.9s ease-in-out infinite alternate; }
+.mn-eq-bar:nth-child(4) { animation: mn-eq2 0.6s ease-in-out infinite alternate; }
+.mn-eq-bar:nth-child(5) { animation: mn-eq1 0.8s ease-in-out infinite alternate; }
+
+@keyframes mn-eq1 {
+  from { height: 3px; }
+  to   { height: 14px; }
+}
+@keyframes mn-eq2 {
+  from { height: 5px; }
+  to   { height: 11px; }
+}
+@keyframes mn-eq3 {
+  from { height: 2px; }
+  to   { height: 14px; }
+}
+
+/* Pause eq bars when not playing */
+#music-notification:not(.mn-playing) .mn-eq-bar {
+  animation-play-state: paused;
+  height: 4px;
+  opacity: 0.4;
+}
+
+/* ── Dismiss button ─────────────────────────────────────────── */
+.mn-dismiss {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bbb;
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1;
+}
+
+.mn-dismiss:hover {
+  background: rgba(0, 0, 0, 0.07);
+  color: #555;
+}
+
+/* ── Auto-dismiss progress bar ──────────────────────────────── */
+.mn-progress {
+  height: 2px;
+  background: rgba(229, 57, 53, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.mn-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #E53935, #ef5350);
+  width: 100%;
+  transform-origin: left;
+  animation: none;
+}
+
+.mn-progress-fill.mn-countdown {
+  animation: mn-countdown var(--mn-duration, 4s) linear forwards;
+}
+
+@keyframes mn-countdown {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* ── Paused state label ─────────────────────────────────────── */
+#music-notification.mn-paused .mn-label-text::after {
+  content: ' · PAUSED';
+  opacity: 0.6;
+}
+
+/* ── Responsive: mobile ─────────────────────────────────────── */
+@media (max-width: 600px) {
+  #music-notification {
+    top: auto;
+    bottom: calc(88px + env(safe-area-inset-bottom));
+    right: 10px;
+    left: 10px;
+    width: auto;
+    transform: translateY(calc(100% + 32px));
+  }
+
+  #music-notification.mn-visible {
+    transform: translateY(0);
+  }
+
+  #music-notification.mn-hiding {
+    transform: translateY(calc(100% + 32px));
+  }
+}
+
+/* ── Reduced motion ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  #music-notification,
+  #music-notification.mn-visible,
+  #music-notification.mn-hiding {
+    transition: opacity 0.2s;
+    transform: none !important;
+  }
+
+  .mn-art-ring,
+  .mn-eq-bar,
+  .mn-card::before {
+    animation: none !important;
+  }
+
+  .mn-progress-fill.mn-countdown {
+    animation-duration: 0.01ms !important;
+  }
+}
